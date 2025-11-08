@@ -9,8 +9,16 @@ class CacheManager {
 
   async initialize() {
     try {
+      // Skip Redis if URL is not set or is a placeholder
+      const redisUrl = process.env.REDIS_URL;
+      if (!redisUrl || redisUrl === 'redis://disabled' || redisUrl === 'disabled' || redisUrl === '') {
+        logger.info('⚠️  Redis disabled - running without cache');
+        this.isConnected = false;
+        return null;
+      }
+
       this.client = redis.createClient({
-        url: process.env.REDIS_URL || 'redis://localhost:6379',
+        url: redisUrl,
         password: process.env.REDIS_PASSWORD || undefined,
         retry_strategy: (options) => {
           if (options.error && options.error.code === 'ECONNREFUSED') {
