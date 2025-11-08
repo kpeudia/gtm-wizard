@@ -78,9 +78,13 @@ class GTMBrainApp {
 
   async initializeServices() {
     try {
-      // Initialize Redis for caching and conversation state
-      await initializeRedis();
-      logger.info('✅ Redis connection established');
+      // Initialize Redis for caching and conversation state (skip if not available)
+      if (process.env.REDIS_URL && process.env.REDIS_URL.includes('redis://red-')) {
+        await initializeRedis();
+        logger.info('✅ Redis connection established');
+      } else {
+        logger.info('ℹ️  Redis not configured - running without cache');
+      }
 
       // Initialize Salesforce connection
       await initializeSalesforce();
