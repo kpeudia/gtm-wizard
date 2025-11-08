@@ -1,0 +1,123 @@
+{
+  "segments": {
+    "enterprise": {
+      "definition": "Amount >= 100000",
+      "label": "Enterprise",
+      "description": "Deals $100K and above"
+    },
+    "mid-market": {
+      "definition": "Amount >= 25000 AND Amount < 100000",
+      "label": "Mid-Market", 
+      "description": "Deals between $25K-$100K"
+    },
+    "smb": {
+      "definition": "Amount < 25000",
+      "label": "SMB",
+      "description": "Deals under $25K"
+    }
+  },
+  "deal_health": {
+    "stale": {
+      "definition": "LastActivityDate < LAST_N_DAYS:30 AND IsClosed = false",
+      "label": "Stale",
+      "description": "Open deals with no activity in 30+ days"
+    },
+    "at_risk": {
+      "definition": "CloseDate < NEXT_N_DAYS:7 AND Probability < 50 AND IsClosed = false",
+      "label": "At Risk",
+      "description": "Deals closing within 7 days with low probability"
+    },
+    "hot": {
+      "definition": "Probability > 75 AND CloseDate = THIS_MONTH AND IsClosed = false",
+      "label": "Hot",
+      "description": "High probability deals closing this month"
+    },
+    "stuck": {
+      "definition": "Days_in_Stage__c > 60 AND IsClosed = false",
+      "label": "Stuck",
+      "description": "Deals in current stage for 60+ days"
+    }
+  },
+  "stage_groups": {
+    "active": {
+      "stages": ["Stage 0 - Qualifying", "Stage 1 - Discovery", "Stage 2 - SQO", "Stage 3 - Pilot", "Stage 4 - Proposal"],
+      "label": "Active Pipeline",
+      "description": "All active pipeline stages"
+    },
+    "early": {
+      "stages": ["Stage 1 - Discovery"],
+      "label": "Early Stage",
+      "description": "Discovery and qualification phase"
+    },
+    "mid": {
+      "stages": ["Stage 2 - SQO", "Stage 3 - Pilot"],
+      "label": "Mid Stage", 
+      "description": "Solution design and pilot phases"
+    },
+    "late": {
+      "stages": ["Stage 4 - Proposal"],
+      "label": "Late Stage",
+      "description": "Proposal and negotiation phase"
+    },
+    "closed": {
+      "stages": ["Closed Won", "Closed Lost"],
+      "label": "Closed",
+      "description": "Finalized deals"
+    }
+  },
+  "deal_types": {
+    "bookings": {
+      "definition": "Type = 'New Business' OR Type = 'Upsell'",
+      "label": "Bookings",
+      "description": "New customer acquisitions and expansions"
+    },
+    "arr": {
+      "definition": "Type = 'Renewal' OR Type = 'Upsell'", 
+      "label": "ARR/Recurring",
+      "description": "Annual recurring revenue deals"
+    },
+    "new_business": {
+      "definition": "Type = 'New Business'",
+      "label": "New Business",
+      "description": "New customer acquisitions"
+    }
+  },
+  "stage_mapping": {
+    "Stage 0 - Qualifying": "Stage 0 - Qualifying",
+    "Stage 1 - Discovery": "Stage 1 - Discovery", 
+    "Stage 2 - SQO": "Stage 2 - SQO",
+    "Stage 3 - Pilot": "Stage 3 - Pilot",
+    "Stage 4 - Proposal": "Stage 4 - Proposal",
+    "Stage 6. Closed(Won)": "Closed Won",
+    "Stage 7. Closed(Lost)": "Closed Lost"
+  },
+  "time_periods": {
+    "today": "CloseDate = TODAY",
+    "this_week": "CloseDate = THIS_WEEK",
+    "this_month": "CloseDate = THIS_MONTH", 
+    "this_quarter": "CloseDate = THIS_QUARTER",
+    "this_year": "CloseDate = THIS_YEAR",
+    "next_30_days": "CloseDate = NEXT_N_DAYS:30",
+    "last_30_days": "CloseDate = LAST_N_DAYS:30",
+    "last_week": "CloseDate = LAST_WEEK",
+    "last_month": "CloseDate = LAST_MONTH",
+    "last_quarter": "CloseDate = LAST_QUARTER"
+  },
+  "common_filters": {
+    "open_deals": "IsClosed = false",
+    "won_deals": "IsClosed = true AND IsWon = true", 
+    "lost_deals": "IsClosed = true AND IsWon = false",
+    "new_business": "Type = 'New Business'",
+    "upsells": "Type = 'Upsell'",
+    "renewals": "Type = 'Renewal'"
+  },
+  "thresholds": {
+    "enterprise_amount": 100000,
+    "mid_market_min": 25000,
+    "stale_days": 30,
+    "stuck_days": 60,
+    "at_risk_days": 7,
+    "high_probability": 75,
+    "low_probability": 25
+  }
+}

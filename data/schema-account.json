@@ -1,0 +1,184 @@
+{
+  "objectName": "Account",
+  "labelSynonyms": {
+    "account": "Account",
+    "company": "Account",
+    "customer": "Account",
+    "client": "Account"
+  },
+  "fields": [
+    {
+      "apiName": "Id",
+      "label": "Account ID",
+      "type": "id",
+      "synonyms": ["id", "account id"]
+    },
+    {
+      "apiName": "Name",
+      "label": "Account Name",
+      "type": "string",
+      "synonyms": ["name", "account name", "company name", "customer name"]
+    },
+    {
+      "apiName": "Website",
+      "label": "Website",
+      "type": "url",
+      "synonyms": ["website", "url", "domain"]
+    },
+    {
+      "apiName": "Industry",
+      "label": "Industry",
+      "type": "picklist",
+      "synonyms": ["industry", "vertical", "sector"],
+      "values": ["Healthcare & Pharmaceuticals", "Technology", "Financial Services", "Manufacturing"]
+    },
+    {
+      "apiName": "AnnualRevenue",
+      "label": "Annual Revenue",
+      "type": "currency",
+      "synonyms": ["annual revenue", "revenue", "company revenue"]
+    },
+    {
+      "apiName": "Domain",
+      "label": "Domain",
+      "type": "string",
+      "custom": true,
+      "synonyms": ["domain", "company domain"]
+    },
+    {
+      "apiName": "CLO_Engaged__c",
+      "label": "CLO Engaged",
+      "type": "boolean",
+      "custom": true,
+      "synonyms": ["clo engaged", "clo"]
+    },
+    {
+      "apiName": "CLO_Reports_to_CEO__c",
+      "label": "CLO Reports to CEO",
+      "type": "boolean",
+      "custom": true,
+      "synonyms": ["clo reports to ceo", "clo ceo"]
+    },
+    {
+      "apiName": "Customer_Type__c",
+      "label": "Customer Type",
+      "type": "picklist",
+      "custom": true,
+      "synonyms": ["customer type", "account type"]
+    },
+    {
+      "apiName": "Is_New_Logo__c",
+      "label": "Is New Logo",
+      "type": "boolean",
+      "custom": true,
+      "synonyms": ["new logo", "is new logo"]
+    },
+    {
+      "apiName": "Nearest_Target_Sign_Date__c",
+      "label": "Nearest Target Sign Date",
+      "type": "date",
+      "custom": true,
+      "synonyms": ["nearest target sign", "target sign date"]
+    },
+    {
+      "apiName": "First_Meeting_Date__c",
+      "label": "First Meeting Date",
+      "type": "date",
+      "custom": true,
+      "synonyms": ["first meeting", "first meeting date"]
+    },
+    {
+      "apiName": "First_Deal_Closed__c",
+      "label": "First Deal Closed",
+      "type": "date",
+      "custom": true,
+      "synonyms": ["first deal closed", "first close"]
+    },
+    {
+      "apiName": "Nurture__c",
+      "label": "Nurture",
+      "type": "boolean",
+      "custom": true,
+      "synonyms": ["nurture"]
+    },
+    {
+      "apiName": "OwnerId",
+      "label": "Owner ID",
+      "type": "reference"
+    },
+    {
+      "apiName": "Owner.Name",
+      "label": "Owner Name",
+      "type": "string",
+      "relationship": "User",
+      "synonyms": ["owner", "account owner", "rep", "ae"]
+    },
+    {
+      "apiName": "CreatedDate",
+      "label": "Created Date",
+      "type": "datetime",
+      "synonyms": ["created", "created date"]
+    },
+    {
+      "apiName": "LastModifiedDate",
+      "label": "Last Modified Date",
+      "type": "datetime",
+      "synonyms": ["updated", "last modified", "modified"]
+    },
+    {
+      "apiName": "LastActivityDate",
+      "label": "Last Activity Date",
+      "type": "date",
+      "synonyms": ["last activity", "activity date", "last touched"]
+    },
+    {
+      "apiName": "Key_Decision_Makers__c",
+      "label": "Key Decision Makers",
+      "type": "string",
+      "custom": true,
+      "synonyms": ["key decision makers", "decision makers", "kdm", "stakeholders"]
+    },
+    {
+      "apiName": "Legal_Department_Size__c",
+      "label": "Legal Department Size",
+      "type": "string",
+      "custom": true,
+      "synonyms": ["legal team size", "legal department size", "legal team", "lawyers"]
+    },
+    {
+      "apiName": "Pain_Points_Identified__c",
+      "label": "Pain Points Identified",
+      "type": "string",
+      "custom": true,
+      "synonyms": ["pain points", "pain point", "challenges", "issues"]
+    },
+    {
+      "apiName": "Target_LOI_Sign_Date__c",
+      "label": "Target LOI Sign Date",
+      "type": "date",
+      "custom": true,
+      "synonyms": ["target loi date", "loi sign date", "target sign date"]
+    },
+    {
+      "apiName": "Use_Cases_Interested__c",
+      "label": "Use Cases Interested",
+      "type": "string",
+      "custom": true,
+      "synonyms": ["use cases", "use case", "interested in"]
+    },
+    {
+      "apiName": "Use_Cases_Discussed__c",
+      "label": "Use Cases Discussed",
+      "type": "string",
+      "custom": true,
+      "synonyms": ["use cases discussed", "discussed"]
+    },
+    {
+      "apiName": "Competitive_Landscape__c",
+      "label": "Competitive Landscape",
+      "type": "string",
+      "custom": true,
+      "synonyms": ["competitive landscape", "competitors", "competition"]
+    }
+  ]
+}

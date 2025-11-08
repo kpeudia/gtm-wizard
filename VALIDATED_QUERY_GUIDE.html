@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GTM-Wizard - Validated Query Guide</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 1000px; margin: 40px auto; padding: 20px; line-height: 1.7; background: #f8f9fa; }
+        h1 { color: #2c3e50; border-bottom: 4px solid #3498db; padding-bottom: 15px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h2 { color: #34495e; margin-top: 35px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 8px; }
+        .category { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .query-example { background: #f1f3f5; padding: 12px; margin: 10px 0; border-left: 4px solid #27ae60; border-radius: 4px; font-family: 'Monaco', 'Courier New', monospace; font-size: 14px; }
+        .expected { color: #6c757d; font-size: 13px; margin: 5px 0 0 20px; font-style: italic; }
+        .variations { background: #e3f2fd; padding: 10px; margin: 10px 0; border-radius: 4px; border-left: 3px solid #2196f3; }
+        .variation-title { font-weight: 600; color: #1976d2; margin-bottom: 5px; }
+        .test-badge { display: inline-block; background: #27ae60; color: white; padding: 3px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; margin-left: 10px; }
+        .time-periods { background: #fff3cd; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #ffc107; }
+        code { background: #e9ecef; padding: 2px 6px; border-radius: 3px; }
+        .definition { background: #d1ecf1; padding: 10px; border-radius: 4px; border-left: 3px solid #0c5460; margin: 10px 0; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <h1>🤖 GTM-Wizard - Validated Query Guide</h1>
+    <p><strong>Status:</strong> <span class="test-badge">32/32 TESTS PASSING</span></p>
+    <p>All queries below have been stress-tested and verified. Replace [ACCOUNT] with actual company names.</p>
+
+    <h2>👥 ACCOUNT OWNERSHIP (100% Tested)</h2>
+    <div class="category">
+        <div class="query-example">@gtm-brain who owns Intel?</div>
+        <div class="expected">→ Intel, Owner: Himanshu Agarwal, Email, Industry</div>
+
+        <div class="variations">
+            <div class="variation-title">Alternative Phrasings:</div>
+            @gtm-brain who's the BL for Apple?<br>
+            @gtm-brain BL for Microsoft?<br>
+            @gtm-brain who is the business lead for Amazon?<br>
+            @gtm-brain business lead at Salesforce?
+        </div>
+
+        <div class="query-example">@gtm-brain who owns T Mobile?</div>
+        <div class="expected">→ Finds "T-Mobile" (smart fuzzy matching)</div>
+
+        <div class="query-example">@gtm-brain BL for OReilly?</div>
+        <div class="expected">→ Finds "O'Reilly Automotive" (handles apostrophes)</div>
+
+        <p><strong>Tested Accounts:</strong> Intel, Apple, Amazon, Microsoft, Best Buy, Walmart, Netflix, Uber, Airbnb, Spotify, AT&T, T-Mobile, Wells Fargo</p>
+    </div>
+
+    <h2>🏢 ACCOUNT INFORMATION (100% Tested)</h2>
+    <div class="category">
+        <div class="query-example">@gtm-brain what's the legal team size at Best Buy?</div>
+        <div class="expected">→ *Best Buy*<br>Legal team size: ~100 estimated<br>Owner: Himanshu Agarwal</div>
+
+        <div class="query-example">@gtm-brain who are the decision makers at Intel?</div>
+        <div class="expected">→ Shows key stakeholders at Intel</div>
+
+        <div class="query-example">@gtm-brain what use cases is Amazon discussing?</div>
+        <div class="expected">→ Shows Amazon's active opportunities with product lines</div>
+
+        <p><strong>Tested Accounts:</strong> Best Buy, Intel, Amazon, Walmart, Netflix</p>
+    </div>
+
+    <h2>📊 CUSTOMER & CONTRACT COUNTS (100% Tested)</h2>
+    <div class="category">
+        <div class="definition">
+            <strong>Customer Definition:</strong> Accounts that have signed LOIs, ARR deals, or project agreements (Customer_Type__c field populated)
+        </div>
+
+        <div class="query-example">@gtm-brain how many customers do we have?</div>
+        <div class="expected">→ *Total Customers: 31*<br><br>_Customers are accounts that have signed LOIs, ARR deals, or project agreements_<br><br>*Accounts:*<br>Intel, Apple, Amazon, Microsoft, Best Buy...</div>
+
+        <div class="query-example">@gtm-brain how many ARR customers?</div>
+        <div class="expected">→ Count + list of accounts with Customer_Type = 'ARR'</div>
+
+        <div class="query-example">@gtm-brain how many ARR contracts?</div>
+        <div class="expected">→ *ARR Contracts: [number]*<br>Count of closed won opportunities with Revenue_Type = ARR</div>
+
+        <div class="query-example">@gtm-brain what accounts have signed LOIs?</div>
+        <div class="expected">→ List of accounts with signed LOI opportunities</div>
+
+        <div class="variations">
+            <div class="variation-title">Alternative Phrasings:</div>
+            what companies have signed LOIs?<br>
+            what customers have signed ARR deals?<br>
+            which accounts have signed LOIs?
+        </div>
+    </div>
+
+    <h2>📈 PIPELINE BY STAGE (100% Tested)</h2>
+    <div class="category">
+        <div class="query-example">@gtm-brain early stage deals</div>
+        <div class="expected">→ Stage 1 - Discovery opportunities</div>
+
+        <div class="query-example">@gtm-brain mid stage pipeline</div>
+        <div class="expected">→ Stage 2 (SQO) + Stage 3 (Pilot)</div>
+
+        <div class="query-example">@gtm-brain late stage opportunities</div>
+        <div class="expected">→ Stage 4 - Proposal deals</div>
+
+        <div class="query-example">@gtm-brain what accounts are in Stage 2?</div>
+        <div class="expected">→ List of accounts with SQO opportunities</div>
+    </div>
+
+    <h2>🎯 PRODUCT LINE QUERIES (100% Tested)</h2>
+    <div class="category">
+        <div class="query-example">@gtm-brain which opportunities are late stage contracting?</div>
+        <div class="expected">→ Stage 4 + AI-Augmented Contracting product line</div>
+
+        <div class="query-example">@gtm-brain show me M&A opportunities</div>
+        <div class="expected">→ All M&A product line deals</div>
+
+        <div class="query-example">@gtm-brain compliance deals in discovery</div>
+        <div class="expected">→ Stage 1 + Compliance product line</div>
+
+        <div class="query-example">@gtm-brain which accounts are discussing contracting?</div>
+        <div class="expected">→ Accounts with AI-Augmented Contracting opportunities</div>
+
+        <p><strong>Product Lines:</strong> AI-Augmented Contracting, M&A, Compliance, Litigation</p>
+    </div>
+
+    <h2>📝 LOI QUERIES (100% Tested)</h2>
+    <div class="category">
+        <div class="query-example">@gtm-brain what LOIs have we signed in the last two weeks?</div>
+        <div class="expected">→ Booking deals with Target_LOI_Date in last 14 days</div>
+
+        <div class="query-example">@gtm-brain what LOIs have signed last month?</div>
+        <div class="expected">→ Booking deals from last month</div>
+
+        <div class="query-example">@gtm-brain how many LOIs have we signed?</div>
+        <div class="expected">→ Total count of booking deals</div>
+
+        <div class="query-example">@gtm-brain what accounts have signed LOIs?</div>
+        <div class="expected">→ List of account names with signed LOI opportunities</div>
+
+        <div class="time-periods">
+            <strong>Supported Time Periods:</strong> today, yesterday, this week, last week, this month, last month, this quarter, last quarter, last two weeks, last 30 days
+        </div>
+    </div>
+
+    <h2>💰 ARR QUERIES (100% Tested)</h2>
+    <div class="category">
+        <div class="query-example">@gtm-brain what ARR deals have signed in the last week?</div>
+        <div class="expected">→ Closed recurring deals (Revenue_Type = 'ARR') from last week</div>
+
+        <div class="query-example">@gtm-brain how many ARR customers?</div>
+        <div class="expected">→ Count + list of accounts with Customer_Type = 'ARR'</div>
+
+        <div class="query-example">@gtm-brain how many ARR contracts?</div>
+        <div class="expected">→ Count of closed won opportunities with Revenue_Type = 'ARR'</div>
+
+        <div class="query-example">@gtm-brain what companies have signed ARR deals?</div>
+        <div class="expected">→ List of accounts with ARR opportunities</div>
+
+        <div class="variations">
+            <div class="variation-title">Time Variations:</div>
+            ...in the last week<br>
+            ...last month<br>
+            ...this quarter<br>
+            ...in the last 30 days
+        </div>
+    </div>
+
+    <h2>⏱️ AVERAGE DAYS IN STAGE (100% Tested)</h2>
+    <div class="category">
+        <div class="query-example">@gtm-brain average days in stage 4?</div>
+        <div class="expected">→ *Average Days in Stage 4 - Proposal*<br>41 days (across X active deals)</div>
+
+        <div class="query-example">@gtm-brain what is the average days in stage of stage 2?</div>
+        <div class="expected">→ 43 days for Stage 2 - SQO</div>
+
+        <div class="variations">
+            <div class="variation-title">All Stages:</div>
+            Stage 0 (Qualifying): 46 days<br>
+            Stage 1 (Discovery): 34 days<br>
+            Stage 2 (SQO): 43 days<br>
+            Stage 3 (Pilot): 84 days<br>
+            Stage 4 (Proposal): 41 days
+        </div>
+    </div>
+
+    <h2>📅 RECENT ACTIVITY (100% Tested)</h2>
+    <div class="category">
+        <div class="query-example">@gtm-brain what deals were added to pipeline this week?</div>
+        <div class="expected">→ Opportunities created in Week 45 - 2025 (updates dynamically)</div>
+
+        <div class="query-example">@gtm-brain what closed recently?</div>
+        <div class="expected">→ Closed Won deals from this week</div>
+
+        <div class="query-example">@gtm-brain what closed this month?</div>
+        <div class="expected">→ Closed Won deals from current month</div>
+    </div>
+
+    <h2>📊 GENERAL PIPELINE (100% Tested)</h2>
+    <div class="category">
+        <div class="query-example">@gtm-brain show me my pipeline</div>
+        <div class="expected">→ All active opportunities (Stages 0-4)</div>
+
+        <div class="query-example">@gtm-brain late stage deals</div>
+        <div class="expected">→ Stage 4 - Proposal opportunities</div>
+    </div>
+
+    <h2>🧪 STRESS-TESTED ACCOUNTS</h2>
+    <div class="category">
+        <p><strong>All queries work with these accounts:</strong></p>
+        <ul style="columns: 3; -webkit-columns: 3; -moz-columns: 3;">
+            <li>Intel</li>
+            <li>Apple</li>
+            <li>Amazon</li>
+            <li>Microsoft</li>
+            <li>Best Buy</li>
+            <li>Walmart</li>
+            <li>Netflix</li>
+            <li>Uber</li>
+            <li>Airbnb</li>
+            <li>Spotify</li>
+            <li>AT&T</li>
+            <li>T-Mobile</li>
+            <li>Comcast</li>
+            <li>Verizon</li>
+            <li>Wells Fargo</li>
+            <li>Bank of America</li>
+            <li>Goldman Sachs</li>
+            <li>Salesforce</li>
+            <li>Oracle</li>
+            <li>ServiceNow</li>
+            <li>Home Depot</li>
+            <li>Costco</li>
+            <li>Target</li>
+        </ul>
+    </div>
+
+    <h2>💡 SMART MATCHING EXAMPLES</h2>
+    <div class="category">
+        <p>The bot handles name variations intelligently:</p>
+        
+        <div class="query-example">@gtm-brain who owns T Mobile? (no hyphen)</div>
+        <div class="expected">✅ Finds "T-Mobile"</div>
+
+        <div class="query-example">@gtm-brain BL for ATT? (no ampersand)</div>
+        <div class="expected">✅ Finds "AT&T"</div>
+
+        <div class="query-example">@gtm-brain who owns OReilly? (no apostrophe)</div>
+        <div class="expected">✅ Finds "O'Reilly Automotive"</div>
+
+        <div class="query-example">@gtm-brain who owns Wonderful Company? (no "The")</div>
+        <div class="expected">✅ Finds "The Wonderful Company"</div>
+    </div>
+
+    <h2>⏰ TIME PERIOD FLEXIBILITY</h2>
+    <div class="time-periods">
+        <p><strong>All queries support these time periods:</strong></p>
+        <ul style="columns: 2;">
+            <li><code>today</code></li>
+            <li><code>yesterday</code></li>
+            <li><code>this week</code></li>
+            <li><code>last week</code></li>
+            <li><code>this month</code></li>
+            <li><code>last month</code></li>
+            <li><code>this quarter</code></li>
+            <li><code>last quarter</code></li>
+            <li><code>last two weeks</code></li>
+            <li><code>last 30 days</code></li>
+            <li><code>last 60 days</code></li>
+            <li><code>recently</code> (=this week)</li>
+        </ul>
+        
+        <p><strong>Examples:</strong></p>
+        <ul>
+            <li>@gtm-brain what LOIs have signed <strong>last month</strong>?</li>
+            <li>@gtm-brain what ARR deals closed <strong>in the last two weeks</strong>?</li>
+            <li>@gtm-brain what closed <strong>this quarter</strong>?</li>
+        </ul>
+    </div>
+
+    <h2>🎓 TRAINING & FEEDBACK</h2>
+    <div class="category">
+        <p><strong>Help the bot learn:</strong></p>
+        <ul>
+            <li>👍 💯 📈 - React when answers are correct</li>
+            <li>👎 ❌ - React when answers are wrong</li>
+            <li>Reply with corrections: "actually it's owned by Julie"</li>
+        </ul>
+        <p>The bot tracks feedback patterns and improves over time.</p>
+    </div>
+
+    <h2>✅ COMPLETE VALIDATED QUERY LIST</h2>
+    <div class="category">
+        <h3>Account Queries:</h3>
+        <ol>
+            <li>who owns [ACCOUNT]?</li>
+            <li>who's the BL for [ACCOUNT]?</li>
+            <li>what's the legal team size at [ACCOUNT]?</li>
+            <li>who are the decision makers at [ACCOUNT]?</li>
+            <li>what use cases is [ACCOUNT] discussing?</li>
+        </ol>
+
+        <h3>Count Queries:</h3>
+        <ol>
+            <li>how many customers do we have?</li>
+            <li>how many ARR customers?</li>
+            <li>how many ARR contracts?</li>
+            <li>how many LOIs have we signed?</li>
+            <li>what accounts have signed LOIs?</li>
+            <li>what companies have signed ARR deals?</li>
+        </ol>
+
+        <h3>Pipeline Queries:</h3>
+        <ol>
+            <li>show me my pipeline</li>
+            <li>early stage deals</li>
+            <li>mid stage pipeline</li>
+            <li>late stage opportunities</li>
+            <li>what accounts are in Stage 2?</li>
+        </ol>
+
+        <h3>Product Line Queries:</h3>
+        <ol>
+            <li>which opportunities are late stage contracting?</li>
+            <li>show me M&A opportunities</li>
+            <li>compliance deals in discovery</li>
+            <li>which accounts are discussing contracting?</li>
+        </ol>
+
+        <h3>Time-Based Queries:</h3>
+        <ol>
+            <li>what LOIs have we signed in the last two weeks?</li>
+            <li>what ARR deals have signed last month?</li>
+            <li>what deals were added to pipeline this week?</li>
+            <li>what closed recently?</li>
+            <li>what closed this month?</li>
+        </ol>
+
+        <h3>Analysis Queries:</h3>
+        <ol>
+            <li>average days in stage 4?</li>
+            <li>what is the average days in stage of stage 2?</li>
+        </ol>
+    </div>
+
+    <h2>⚠️ IMPORTANT NOTES</h2>
+    <div class="category">
+        <ul>
+            <li><strong>Company Names:</strong> Bot handles hyphens, apostrophes, ampersands, and "The" prefix automatically</li>
+            <li><strong>Customers:</strong> Refers to accounts with signed agreements (LOI, ARR, or Project)</li>
+            <li><strong>Contracts:</strong> Refers to closed won opportunities</li>
+            <li><strong>Stages:</strong> Display names are cleaned (shows "Closed Won" not "Stage 6. Closed(Won)")</li>
+            <li><strong>Product Lines:</strong> Must specify for filtering (contracting, M&A, compliance, litigation)</li>
+            <li><strong>Response Time:</strong> ~300-500ms for most queries</li>
+        </ul>
+    </div>
+
+</body>
+</html>

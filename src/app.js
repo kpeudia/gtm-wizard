@@ -1,0 +1,219 @@
+require('dotenv').config();
+const { App } = require('@slack/bolt');
+const express = require('express');
+const helmet = require('helmet');
+const cors = require('cors');
+const logger = require('./utils/logger');
+const { initializeRedis } = require('./utils/cache');
+const { initializeSalesforce } = require('./salesforce/connection');
+
+// Import handlers
+const { registerSlashCommands } = require('./slack/commands');
+const { registerEventHandlers } = require('./slack/events');
+const { registerInteractiveHandlers } = require('./slack/interactive');
+const { startScheduledJobs } = require('./slack/scheduled');
+
+class GTMBrainApp {
+  constructor() {
+    this.app = null;
+    this.expressApp = null;
+    this.isInitialized = false;
+  }
+
+  async initialize() {
+    try {
+      logger.info('🚀 Initializing GTM Brain Slack Bot...');
+
+      // Validate environment variables
+      this.validateEnvironment();
+
+      // Initialize Slack Bolt app
+      this.app = new App({
+        token: process.env.SLACK_BOT_TOKEN,
+        signingSecret: process.env.SLACK_SIGNING_SECRET,
+        appToken: process.env.SLACK_APP_TOKEN,
+        socketMode: true, // Enable Socket Mode for development
+        logLevel: process.env.LOG_LEVEL || 'info'
+      });
+
+      // Initialize external services
+      await this.initializeServices();
+
+      // Register handlers
+      await this.registerHandlers();
+
+      // Setup Express server for health checks
+      this.setupExpressServer();
+
+      this.isInitialized = true;
+      logger.info('✅ GTM Brain initialized successfully');
+
+    } catch (error) {
+      logger.error('❌ Failed to initialize GTM Brain:', error);
+      process.exit(1);
+    }
+  }
+
+  validateEnvironment() {
+    const required = [
+      'SLACK_BOT_TOKEN',
+      'SLACK_SIGNING_SECRET', 
+      'SLACK_APP_TOKEN',
+      'SF_CLIENT_ID',
+      'SF_CLIENT_SECRET',
+      'SF_INSTANCE_URL',
+      'SF_USERNAME',
+      'SF_PASSWORD',
+      'SF_SECURITY_TOKEN',
+      'OPENAI_API_KEY'
+    ];
+
+    const missing = required.filter(key => !process.env[key]);
+    if (missing.length > 0) {
+      throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+    }
+
+    logger.info('✅ Environment variables validated');
+  }
+
+  async initializeServices() {
+    try {
+      // Initialize Redis for caching and conversation state
+      await initializeRedis();
+      logger.info('✅ Redis connection established');
+
+      // Initialize Salesforce connection
+      await initializeSalesforce();
+      logger.info('✅ Salesforce connection established');
+
+    } catch (error) {
+      logger.error('Failed to initialize external services:', error);
+      throw error;
+    }
+  }
+
+  async registerHandlers() {
+    try {
+      // Register slash commands (/pipeline, /forecast, etc.)
+      registerSlashCommands(this.app);
+      logger.info('✅ Slash commands registered');
+
+      // Register event handlers (mentions, DMs)
+      registerEventHandlers(this.app);
+      logger.info('✅ Event handlers registered');
+
+      // Register interactive handlers (buttons, modals)
+      registerInteractiveHandlers(this.app);
+      logger.info('✅ Interactive handlers registered');
+
+      // Global error handler
+      this.app.error(async (error) => {
+        logger.error('Slack app error:', error);
+      });
+
+    } catch (error) {
+      logger.error('Failed to register handlers:', error);
+      throw error;
+    }
+  }
+
+  setupExpressServer() {
+    this.expressApp = express();
+    
+    // Security middleware
+    this.expressApp.use(helmet());
+    this.expressApp.use(cors());
+    this.expressApp.use(express.json());
+
+    // Health check endpoint
+    this.expressApp.get('/health', (req, res) => {
+      res.json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        version: process.env.npm_package_version || '1.0.0'
+      });
+    });
+
+    // Metrics endpoint
+    this.expressApp.get('/metrics', (req, res) => {
+      res.json({
+        memory: process.memoryUsage(),
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString()
+      });
+    });
+
+    logger.info('✅ Express server configured');
+  }
+
+  async start() {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+
+    try {
+      // Start Slack Bolt app
+      await this.app.start();
+      logger.info('⚡️ GTM Brain Slack Bot is running!');
+
+      // Start Express server
+      const port = process.env.PORT || 3000;
+      this.expressServer = this.expressApp.listen(port, () => {
+        logger.info(`🌐 Express server running on port ${port}`);
+      });
+
+      // Start scheduled jobs
+      startScheduledJobs(this.app);
+      logger.info('📅 Scheduled jobs started');
+
+      // Setup graceful shutdown
+      this.setupGracefulShutdown();
+
+    } catch (error) {
+      logger.error('Failed to start GTM Brain:', error);
+      process.exit(1);
+    }
+  }
+
+  setupGracefulShutdown() {
+    const shutdown = async (signal) => {
+      logger.info(`${signal} received, shutting down gracefully...`);
+      
+      try {
+        // Stop Slack app
+        if (this.app) {
+          await this.app.stop();
+          logger.info('✅ Slack app stopped');
+        }
+
+        // Close Express server
+        if (this.expressServer) {
+          this.expressServer.close();
+          logger.info('✅ Express server stopped');
+        }
+
+        logger.info('👋 GTM Brain shut down successfully');
+        process.exit(0);
+
+      } catch (error) {
+        logger.error('Error during shutdown:', error);
+        process.exit(1);
+      }
+    };
+
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
+  }
+}
+
+// Start the application
+if (require.main === module) {
+  const gtmBrain = new GTMBrainApp();
+  gtmBrain.start().catch((error) => {
+    logger.error('Failed to start application:', error);
+    process.exit(1);
+  });
+}
+
+module.exports = GTMBrainApp;

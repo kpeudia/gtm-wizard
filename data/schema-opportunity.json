@@ -1,0 +1,221 @@
+{
+  "objectName": "Opportunity",
+  "labelSynonyms": {
+    "deal": "Opportunity",
+    "opp": "Opportunity",
+    "opportunity": "Opportunity",
+    "pipeline": "Opportunity",
+    "deals": "Opportunity"
+  },
+  "fields": [
+    {
+      "apiName": "Id",
+      "label": "Opportunity ID",
+      "type": "id",
+      "synonyms": ["id", "opp id", "opportunity id", "deal id"]
+    },
+    {
+      "apiName": "Name",
+      "label": "Opportunity Name",
+      "type": "string",
+      "synonyms": ["deal name", "opp name", "opportunity name", "name"]
+    },
+    {
+      "apiName": "AccountId",
+      "label": "Account ID",
+      "type": "reference"
+    },
+    {
+      "apiName": "Account.Name",
+      "label": "Account Name",
+      "type": "string",
+      "relationship": "Account",
+      "synonyms": ["company", "customer", "account", "client", "account name"]
+    },
+    {
+      "apiName": "Account.Industry",
+      "label": "Account Industry",
+      "type": "picklist",
+      "relationship": "Account",
+      "synonyms": ["industry", "vertical", "sector"],
+      "values": ["Healthcare & Pharmaceuticals", "Technology", "Financial Services", "Manufacturing"]
+    },
+    {
+      "apiName": "Account.Website",
+      "label": "Account Website",
+      "type": "url",
+      "relationship": "Account",
+      "synonyms": ["website", "domain", "url"]
+    },
+    {
+      "apiName": "Account.Domain",
+      "label": "Account Domain",
+      "type": "string",
+      "relationship": "Account",
+      "custom": true,
+      "synonyms": ["domain", "company domain"]
+    },
+    {
+      "apiName": "Amount",
+      "label": "Amount",
+      "type": "currency",
+      "synonyms": ["deal size", "revenue", "value", "dollar amount", "deal value", "amount"]
+    },
+    {
+      "apiName": "Finance_Weighted_ACV__c",
+      "label": "Finance Weighted ACV",
+      "type": "currency",
+      "custom": true,
+      "synonyms": ["weighted acv", "finance weighted", "weighted amount"]
+    },
+    {
+      "apiName": "StageName",
+      "label": "Stage",
+      "type": "picklist",
+      "synonyms": ["stage", "phase", "status", "deal stage"],
+      "values": [
+        "Stage 0 - Qualifying",
+        "Stage 1 - Discovery", 
+        "Stage 2 - SOO",
+        "Stage 3 - Pilot",
+        "Stage 4 - Proposal",
+        "Closed Won",
+        "Closed Lost"
+      ]
+    },
+    {
+      "apiName": "CloseDate",
+      "label": "Close Date",
+      "type": "date",
+      "synonyms": ["close", "closing date", "expected close", "close date"]
+    },
+    {
+      "apiName": "Target_LOI_Date__c",
+      "label": "Target LOI Date",
+      "type": "date",
+      "custom": true,
+      "synonyms": ["target loi", "loi date", "target sign date", "signing date"]
+    },
+    {
+      "apiName": "ACV__c",
+      "label": "Annual Contract Value",
+      "type": "currency",
+      "custom": true,
+      "synonyms": ["acv", "annual contract value", "annual value"]
+    },
+    {
+      "apiName": "Revenue_Type__c",
+      "label": "Recurring, Project, or Booking",
+      "type": "picklist",
+      "custom": true,
+      "synonyms": ["revenue type", "booking type", "deal category", "recurring project booking"],
+      "values": ["Booking", "ARR", "Project"]
+    },
+    {
+      "apiName": "Type",
+      "label": "Type",
+      "type": "picklist",
+      "values": ["New Business", "Existing Business", "Upsell", "Renewal"],
+      "synonyms": ["deal type", "opp type", "opportunity type"]
+    },
+    {
+      "apiName": "LeadSource",
+      "label": "Lead Source",
+      "type": "picklist",
+      "synonyms": ["source", "origin", "lead source"]
+    },
+    {
+      "apiName": "IsClosed",
+      "label": "Is Closed",
+      "type": "boolean"
+    },
+    {
+      "apiName": "IsWon",
+      "label": "Is Won",
+      "type": "boolean"
+    },
+    {
+      "apiName": "Probability",
+      "label": "Probability",
+      "type": "percent",
+      "synonyms": ["likelihood", "chance", "probability"]
+    },
+    {
+      "apiName": "ForecastCategory",
+      "label": "Forecast Category",
+      "type": "picklist",
+      "values": ["Pipeline", "Best Case", "Commit", "Omitted", "Closed"],
+      "synonyms": ["forecast", "forecast category"]
+    },
+    {
+      "apiName": "OwnerId",
+      "label": "Owner ID",
+      "type": "reference"
+    },
+    {
+      "apiName": "Owner.Name",
+      "label": "Owner Name",
+      "type": "string",
+      "relationship": "User",
+      "synonyms": ["rep", "ae", "owner", "assigned to", "rep name", "account executive"]
+    },
+    {
+      "apiName": "Owner.Email",
+      "label": "Owner Email",
+      "type": "email",
+      "relationship": "User"
+    },
+    {
+      "apiName": "CreatedDate",
+      "label": "Created Date",
+      "type": "datetime",
+      "synonyms": ["created", "opened", "created date"]
+    },
+    {
+      "apiName": "LastModifiedDate",
+      "label": "Last Modified Date",
+      "type": "datetime",
+      "synonyms": ["updated", "last changed", "modified"]
+    },
+    {
+      "apiName": "LastActivityDate",
+      "label": "Last Activity",
+      "type": "date",
+      "synonyms": ["last touched", "last activity", "activity date"]
+    },
+    {
+      "apiName": "Days_in_Stage__c",
+      "label": "Days in Stage",
+      "type": "number",
+      "custom": true,
+      "synonyms": ["days in stage", "stage duration", "time in stage"]
+    },
+    {
+      "apiName": "Product_Line__c",
+      "label": "Product Line",
+      "type": "picklist",
+      "custom": true,
+      "synonyms": ["product line", "product", "solution"],
+      "values": ["AI-Augmented Contracting", "M&A", "Compliance", "Litigation", "Undetermined"]
+    },
+    {
+      "apiName": "Week_Created__c",
+      "label": "Week Created",
+      "type": "string",
+      "custom": true,
+      "synonyms": ["week created", "creation week"]
+    },
+    {
+      "apiName": "AccountId",
+      "label": "Account ID",
+      "type": "reference",
+      "synonyms": ["account id"]
+    },
+    {
+      "apiName": "NextStep",
+      "label": "Next Step",
+      "type": "string",
+      "synonyms": ["next steps", "action items", "next step"]
+    }
+  ]
+}

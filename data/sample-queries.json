@@ -1,0 +1,238 @@
+{
+  "training_examples": [
+    {
+      "query": "what closed today?",
+      "intent": "deal_lookup",
+      "entities": {
+        "timeframe": "today",
+        "isClosed": true,
+        "isWon": true
+      },
+      "description": "Find all deals that closed successfully today"
+    },
+    {
+      "query": "show me deals over $100k in proposal",
+      "intent": "pipeline_summary",
+      "entities": {
+        "amountThreshold": {"min": 100000},
+        "stages": ["Stage 4 - Proposal"]
+      },
+      "description": "Enterprise deals in final proposal stage"
+    },
+    {
+      "query": "what's stuck in discovery?",
+      "intent": "activity_check",
+      "entities": {
+        "stages": ["Stage 1 - Discovery"],
+        "staleDays": 60
+      },
+      "description": "Deals in discovery stage for extended period"
+    },
+    {
+      "query": "show me Julie's pipeline",
+      "intent": "pipeline_summary", 
+      "entities": {
+        "owners": ["Julie Stefanich"],
+        "isClosed": false
+      },
+      "description": "All open deals owned by Julie Stefanich"
+    },
+    {
+      "query": "break down wins by stage this quarter",
+      "intent": "trend_analysis",
+      "entities": {
+        "isWon": true,
+        "groupBy": ["StageName"],
+        "timeframe": "this_quarter"
+      },
+      "description": "Won deal analysis by original stage"
+    },
+    {
+      "query": "what's slipping out of this month?",
+      "intent": "deal_lookup",
+      "entities": {
+        "closeDateChanged": true,
+        "originalDate": "this_month",
+        "isClosed": false
+      },
+      "description": "Deals that had close dates moved from current month"
+    },
+    {
+      "query": "show me healthcare deals closing next 30 days",
+      "intent": "deal_lookup",
+      "entities": {
+        "industry": "Healthcare & Pharmaceuticals",
+        "timeframe": "next_30_days",
+        "isClosed": false
+      },
+      "description": "Healthcare industry deals closing soon"
+    },
+    {
+      "query": "what's our weighted pipeline by owner?",
+      "intent": "pipeline_summary",
+      "entities": {
+        "metric": "Finance_Weighted_ACV__c",
+        "groupBy": ["Owner.Name"],
+        "isClosed": false
+      },
+      "description": "Weighted pipeline value grouped by sales rep"
+    },
+    {
+      "query": "show me deals that haven't been touched in 2 weeks",
+      "intent": "activity_check",
+      "entities": {
+        "staleDays": 14,
+        "isClosed": false
+      },
+      "description": "Open deals with no recent activity"
+    },
+    {
+      "query": "compare this quarter vs last quarter wins",
+      "intent": "comparison",
+      "entities": {
+        "metric": "won_deals",
+        "periods": ["this_quarter", "last_quarter"]
+      },
+      "description": "Quarter over quarter won deal comparison"
+    },
+    {
+      "query": "what's our average deal size by stage?",
+      "intent": "trend_analysis",
+      "entities": {
+        "metric": "average_amount",
+        "groupBy": ["StageName"],
+        "isClosed": false
+      },
+      "description": "Average deal value analysis by pipeline stage"
+    },
+    {
+      "query": "show me all SOO stage deals",
+      "intent": "pipeline_summary",
+      "entities": {
+        "stages": ["Stage 2 - SOO"],
+        "isClosed": false
+      },
+      "description": "All deals currently in SOO stage"
+    },
+    {
+      "query": "what's been in pilot for over 90 days?",
+      "intent": "activity_check",
+      "entities": {
+        "stages": ["Stage 3 - Pilot"],
+        "daysInStage": 90,
+        "isClosed": false
+      },
+      "description": "Pilot stage deals that are taking too long"
+    },
+    {
+      "query": "show me target sign dates this week",
+      "intent": "deal_lookup",
+      "entities": {
+        "targetSignDate": "this_week",
+        "isClosed": false
+      },
+      "description": "Deals with target sign dates in current week"
+    },
+    {
+      "query": "what's our conversion rate from discovery to SOO?",
+      "intent": "trend_analysis",
+      "entities": {
+        "metric": "conversion_rate",
+        "fromStage": "Stage 1 - Discovery",
+        "toStage": "Stage 2 - SOO"
+      },
+      "description": "Stage progression conversion analysis"
+    },
+    {
+      "query": "show me new logos closing this quarter",
+      "intent": "deal_lookup",
+      "entities": {
+        "isNewLogo": true,
+        "timeframe": "this_quarter",
+        "isClosed": false
+      },
+      "description": "New customer acquisition deals"
+    },
+    {
+      "query": "what's Mike's forecast looking like?",
+      "intent": "forecasting",
+      "entities": {
+        "owners": ["Mike Masiello"],
+        "forecastCategory": ["Best Case", "Commit"]
+      },
+      "description": "Forecast analysis for specific rep"
+    },
+    {
+      "query": "show me deals over $500k",
+      "intent": "pipeline_summary",
+      "entities": {
+        "amountThreshold": {"min": 500000},
+        "isClosed": false
+      },
+      "description": "Large enterprise deals"
+    },
+    {
+      "query": "what closed last week?",
+      "intent": "deal_lookup",
+      "entities": {
+        "timeframe": "last_week",
+        "isClosed": true
+      },
+      "description": "All deals that closed in previous week"
+    },
+    {
+      "query": "show me qualifying stage pipeline",
+      "intent": "pipeline_summary",
+      "entities": {
+        "stages": ["Stage 0 - Qualifying"],
+        "isClosed": false
+      },
+      "description": "Early stage qualification pipeline"
+    }
+  ],
+  "intent_patterns": {
+    "deal_lookup": [
+      "what closed",
+      "show me deals",
+      "pull deals",
+      "find opportunities",
+      "list deals"
+    ],
+    "pipeline_summary": [
+      "pipeline",
+      "show me my",
+      "breakdown",
+      "summary",
+      "overview"
+    ],
+    "activity_check": [
+      "stale",
+      "stuck",
+      "haven't been touched",
+      "no activity",
+      "sitting in"
+    ],
+    "forecasting": [
+      "forecast",
+      "commit",
+      "best case",
+      "what am I forecasting",
+      "quota"
+    ],
+    "comparison": [
+      "compare",
+      "vs",
+      "versus",
+      "this quarter vs",
+      "year over year"
+    ],
+    "trend_analysis": [
+      "conversion rate",
+      "win rate",
+      "average",
+      "trend",
+      "velocity"
+    ]
+  }
+}
+

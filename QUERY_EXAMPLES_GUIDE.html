@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GTM-Wizard Query Guide</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; line-height: 1.6; }
+        h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        h2 { color: #34495e; margin-top: 30px; background: #ecf0f1; padding: 10px; border-left: 4px solid #3498db; }
+        .query-category { background: #f8f9fa; padding: 15px; margin: 15px 0; border-radius: 8px; border: 1px solid #dee2e6; }
+        .example { background: white; padding: 10px; margin: 8px 0; border-left: 3px solid #27ae60; font-family: 'Courier New', monospace; font-size: 14px; }
+        .expected { color: #7f8c8d; font-size: 13px; margin-left: 20px; }
+        code { background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-family: 'Courier New', monospace; }
+        .test-accounts { background: #fff3cd; padding: 10px; border-radius: 5px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🤖 GTM-Wizard Query Examples</h1>
+    <p>Use these exact phrasings for best results. Replace account names with your own to test.</p>
+
+    <h2>📊 ACCOUNT OWNERSHIP</h2>
+    <div class="query-category">
+        <div class="example">@gtm-brain who owns Intel?</div>
+        <div class="expected">→ Shows owner (Himanshu Agarwal), email, industry</div>
+        
+        <div class="example">@gtm-brain who's the BL for Apple?</div>
+        <div class="expected">→ Business lead lookup (Julie Stefanich)</div>
+        
+        <div class="example">@gtm-brain BL for Microsoft?</div>
+        <div class="expected">→ Short form works too (Asad Hussain)</div>
+    </div>
+
+    <h2>🏢 ACCOUNT INFORMATION</h2>
+    <div class="query-category">
+        <div class="example">@gtm-brain what's the legal team size at Best Buy?</div>
+        <div class="expected">→ Shows legal department size (~100 estimated)</div>
+        
+        <div class="example">@gtm-brain who are the decision makers at Intel?</div>
+        <div class="expected">→ Shows key stakeholders</div>
+        
+        <div class="example">@gtm-brain what use cases is Amazon discussing?</div>
+        <div class="expected">→ Shows Amazon's product lines from opportunities</div>
+    </div>
+
+    <h2>📈 PIPELINE BY STAGE</h2>
+    <div class="query-category">
+        <div class="example">@gtm-brain early stage deals</div>
+        <div class="expected">→ Stage 1 - Discovery opportunities</div>
+        
+        <div class="example">@gtm-brain mid stage pipeline</div>
+        <div class="expected">→ Stage 2 (SQO) + Stage 3 (Pilot)</div>
+        
+        <div class="example">@gtm-brain late stage opportunities</div>
+        <div class="expected">→ Stage 4 - Proposal deals</div>
+        
+        <div class="example">@gtm-brain what accounts are in Stage 2?</div>
+        <div class="expected">→ List of accounts with SQO opportunities</div>
+    </div>
+
+    <h2>🎯 PRODUCT LINE QUERIES</h2>
+    <div class="query-category">
+        <div class="example">@gtm-brain which opportunities are late stage contracting?</div>
+        <div class="expected">→ Stage 4 + AI-Augmented Contracting product line</div>
+        
+        <div class="example">@gtm-brain show me M&A deals</div>
+        <div class="expected">→ All M&A product line opportunities</div>
+        
+        <div class="example">@gtm-brain compliance opportunities in discovery</div>
+        <div class="expected">→ Stage 1 + Compliance product line</div>
+        
+        <div class="example">@gtm-brain which accounts are discussing contracting?</div>
+        <div class="expected">→ Comma-separated list of accounts with contracting opps</div>
+    </div>
+
+    <h2>📝 LOIs & BOOKINGS</h2>
+    <div class="query-category">
+        <div class="example">@gtm-brain what LOIs have we signed in the last two weeks?</div>
+        <div class="expected">→ Booking deals with Target_LOI_Date in last 14 days</div>
+        
+        <div class="example">@gtm-brain what LOIs have signed last month?</div>
+        <div class="expected">→ Booking deals from last month</div>
+        
+        <div class="example">@gtm-brain how many LOIs have we signed?</div>
+        <div class="expected">→ Total count of booking deals</div>
+        
+        <div class="example">@gtm-brain how many bookings this month?</div>
+        <div class="expected">→ Count of booking deals this month</div>
+    </div>
+
+    <h2>💰 ARR QUERIES</h2>
+    <div class="query-category">
+        <div class="example">@gtm-brain what ARR deals have signed in the last week?</div>
+        <div class="expected">→ Closed recurring deals from last week</div>
+        
+        <div class="example">@gtm-brain how many ARR customers do we have?</div>
+        <div class="expected">→ Count of accounts with Customer_Type = ARR</div>
+        
+        <div class="example">@gtm-brain how many ARR contracts?</div>
+        <div class="expected">→ Count of closed won opps with Revenue_Type = ARR</div>
+        
+        <div class="example">@gtm-brain show me ARR deals</div>
+        <div class="expected">→ All ARR opportunities</div>
+    </div>
+
+    <h2>📅 CUSTOMER & CONTRACT COUNTS</h2>
+    <div class="query-category">
+        <div class="example">@gtm-brain how many customers do we have?</div>
+        <div class="expected">→ Total accounts with Customer_Type populated</div>
+        
+        <div class="example">@gtm-brain how many ARR customers?</div>
+        <div class="expected">→ Accounts tagged as ARR customers</div>
+        
+        <div class="example">@gtm-brain how many ARR contracts?</div>
+        <div class="expected">→ Closed won opportunities with Revenue_Type = ARR</div>
+    </div>
+
+    <h2>⏱️ AVERAGE DAYS IN STAGE</h2>
+    <div class="query-category">
+        <div class="example">@gtm-brain what is the average days in stage of stage 4?</div>
+        <div class="expected">→ Average days for Stage 4 - Proposal (e.g., "42 days across 14 deals")</div>
+        
+        <div class="example">@gtm-brain average days in stage 2</div>
+        <div class="expected">→ Average days for Stage 2 - SQO</div>
+        
+        <div class="example">@gtm-brain avg days in discovery?</div>
+        <div class="expected">→ Average days for Stage 1 - Discovery</div>
+    </div>
+
+    <h2>🕐 RECENT ACTIVITY</h2>
+    <div class="query-category">
+        <div class="example">@gtm-brain what deals were added to pipeline this week?</div>
+        <div class="expected">→ Opportunities created in current week (Week 45 - 2025)</div>
+        
+        <div class="example">@gtm-brain what closed recently?</div>
+        <div class="expected">→ Closed won deals from this week</div>
+        
+        <div class="example">@gtm-brain what closed this month?</div>
+        <div class="expected">→ Closed won deals from current month</div>
+    </div>
+
+    <h2>🎯 GENERAL PIPELINE</h2>
+    <div class="query-category">
+        <div class="example">@gtm-brain show me my pipeline</div>
+        <div class="expected">→ All active opportunities (Stages 0-4)</div>
+        
+        <div class="example">@gtm-brain late stage deals</div>
+        <div class="expected">→ Stage 4 - Proposal opportunities</div>
+    </div>
+
+    <h2>🧪 TEST ACCOUNTS</h2>
+    <div class="test-accounts">
+        <p><strong>Use these accounts to test:</strong></p>
+        <ul>
+            <li><strong>Intel</strong> - Himanshu Agarwal (Business Lead)</li>
+            <li><strong>Apple</strong> - Julie Stefanich (Business Lead)</li>
+            <li><strong>Amazon</strong> - Asad Hussain (Business Lead)</li>
+            <li><strong>Microsoft</strong> - Asad Hussain (Business Lead)</li>
+            <li><strong>Best Buy</strong> - Himanshu Agarwal (Business Lead)</li>
+            <li><strong>StubHub</strong> - Keigan Pesenti (Prior Owner: Jon Cobb)</li>
+        </ul>
+    </div>
+
+    <h2>💡 TIPS FOR ACCURACY</h2>
+    <ul>
+        <li><strong>Be specific:</strong> "late stage contracting" not just "contracting"</li>
+        <li><strong>Use time periods:</strong> "last week", "this month", "last two weeks"</li>
+        <li><strong>Exact account names:</strong> "Best Buy" not "best buy co"</li>
+        <li><strong>Product lines:</strong> contracting, M&A, compliance, litigation</li>
+        <li><strong>Customer vs Contracts:</strong> "customers" = accounts, "contracts" = opportunities</li>
+    </ul>
+
+    <h2>🎓 TRAINING THE BOT</h2>
+    <p>React to responses with:</p>
+    <ul>
+        <li>👍 💯 📈 - When answers are correct</li>
+        <li>👎 ❌ - When answers are wrong</li>
+        <li>Reply with corrections and the bot learns</li>
+    </ul>
+
+</body>
+</html>
+
