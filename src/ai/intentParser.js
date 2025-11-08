@@ -663,18 +663,35 @@ Business Context:
       };
     }
     
-    // Advanced account field queries
-    else if (message.includes('legal team size') || message.includes('legal department size')) {
+    // Advanced account field queries - Legal team/members
+    else if (message.includes('legal team') || message.includes('legal department') ||
+             message.includes('legal members') || message.includes('number of legal')) {
       intent = 'account_field_lookup';
       entities.fieldType = 'legal_team_size';
       entities.includeAccount = true;
       
       // Extract company name if specified
-      const companyMatch = message.match(/legal.*?size.*?at (.+?)(?:\?|$)/i) ||
-                          message.match(/(.+?).*?legal.*?size/i);
+      const companyMatch = message.match(/legal.*?(?:at|for) (.+?)(?:\?|$)/i) ||
+                          message.match(/(?:at|for) (.+?)(?:\?|$)/i) ||
+                          message.match(/legal.*?members.*?at (.+?)(?:\?|$)/i);
+      
       if (companyMatch && companyMatch[1]) {
-        entities.accounts = [companyMatch[1].trim()];
+        const extracted = companyMatch[1].trim();
+        // Filter out noise words
+        if (!extracted.includes('how many') && !extracted.includes('number')) {
+          entities.accounts = [extracted];
+        }
       }
+      
+      return {
+        intent: 'account_field_lookup',
+        entities,
+        followUp: false,
+        confidence: 0.95,
+        explanation: 'Legal team size query',
+        originalMessage: userMessage,
+        timestamp: Date.now()
+      };
     }
     
     // Harvey/competitor mentions
