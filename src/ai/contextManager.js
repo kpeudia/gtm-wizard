@@ -263,17 +263,33 @@ class ContextManager {
     // Suggest common refinements
     if (currentIntent === 'pipeline_summary') {
       suggestions.push(
-        '• "show me just enterprise" - Filter to $100k+ deals',
-        '• "break down by owner" - See individual rep performance',
-        '• "what needs attention?" - Find stalled deals'
+        '• "what accounts are in Stage 2?" - See accounts by stage',
+        '• "which opportunities are late stage contracting?" - Filter by product line',
+        '• "what deals were added to pipeline this week?" - Recent activity'
+      );
+    }
+
+    if (currentIntent === 'account_lookup') {
+      suggestions.push(
+        '• "what use cases is [account] discussing?" - See their product interests',
+        '• "what\'s the legal team size at [account]?" - Legal department info',
+        '• "who are the decision makers at [account]?" - Key stakeholders'
       );
     }
 
     if (currentIntent === 'deal_lookup') {
       suggestions.push(
-        '• "group by stage" - See distribution across pipeline',
-        '• "sort by close date" - See what\'s closing soon',
-        '• "show me the details" - Get full deal information'
+        '• "what closed this month?" - See monthly results',
+        '• "how many LOIs have we signed?" - Get booking count',
+        '• "what ARR deals have signed last week?" - Recent ARR activity'
+      );
+    }
+
+    if (currentIntent === 'count_query') {
+      suggestions.push(
+        '• "what accounts have signed LOIs?" - See customer list',
+        '• "how many ARR contracts?" - Contract count',
+        '• "average days in Stage 4?" - Pipeline metrics'
       );
     }
 
@@ -282,11 +298,7 @@ class ContextManager {
       suggestions.push('• "this quarter" - Focus on current quarter');
     }
 
-    if (patterns && patterns.commonIntents.activity_check) {
-      suggestions.push('• "what\'s stale?" - Check for inactive deals');
-    }
-
-    return suggestions.slice(0, 4); // Limit to 4 suggestions
+    return suggestions.slice(0, 3); // Limit to 3 suggestions
   }
 
   /**
@@ -295,28 +307,29 @@ class ContextManager {
   getDefaultSuggestions(intent) {
     const suggestions = {
       pipeline_summary: [
-        '• "show me just enterprise" - Filter to $100k+ deals',
-        '• "break down by stage" - See pipeline distribution',
-        '• "group by owner" - See rep performance',
-        '• "what\'s closing this month?" - Focus on near-term deals'
+        '• "what accounts are in Stage 2?" - See accounts by stage',
+        '• "which opportunities are late stage contracting?" - Filter by product',
+        '• "what deals were added to pipeline this week?" - Recent additions'
+      ],
+      account_lookup: [
+        '• "what use cases is [this account] discussing?" - Product interests',
+        '• "what\'s the legal team size at [this account]?" - Team info',
+        '• "who are the decision makers?" - Key stakeholders'
       ],
       deal_lookup: [
-        '• "sort by amount" - See largest deals first',
-        '• "this quarter only" - Focus on current quarter',
-        '• "group by stage" - See stage distribution',
-        '• "show account details" - Include company information'
+        '• "what closed this month?" - Monthly results',
+        '• "how many LOIs have we signed?" - Booking count',
+        '• "what ARR deals have signed last week?" - ARR activity'
+      ],
+      count_query: [
+        '• "what accounts have signed LOIs?" - Customer list',
+        '• "how many ARR contracts?" - Contract count',
+        '• "average days in Stage 4?" - Stage metrics'
       ],
       activity_check: [
-        '• "over $100k only" - Focus on large deals',
-        '• "in discovery stage" - Specific stage filter',
-        '• "by rep" - See which reps need help',
-        '• "last 60 days" - Extend the time window'
-      ],
-      forecasting: [
-        '• "best case vs commit" - See forecast categories',
-        '• "by quarter" - Quarterly forecast view',
-        '• "pipeline coverage" - Coverage ratio analysis',
-        '• "what\'s at risk?" - Identify risky deals'
+        '• "what deals were added to pipeline this week?" - New deals',
+        '• "what closed this month?" - Recent wins',
+        '• "average days in Stage 2?" - Stage duration'
       ]
     };
 
