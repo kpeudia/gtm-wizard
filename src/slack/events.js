@@ -947,9 +947,11 @@ function buildContractQuery(entities) {
     whereConditions.push(`Status = 'Activated'`);
   }
   
-  // LOI filter - "Customer Advisory Board" in contract name
+  // LOI filter - Multiple patterns
   if (entities.contractType === 'LOI') {
-    whereConditions.push(`Contract_Name_Campfire__c LIKE '%Customer Advisory Board%'`);
+    whereConditions.push(`(Contract_Name_Campfire__c LIKE '%Customer Advisory Board%' 
+                           OR Contract_Name_Campfire__c LIKE '%LOI%'
+                           OR Contract_Name_Campfire__c LIKE '%CAB%')`);
   }
   
   const whereClause = whereConditions.join(' AND ');
@@ -1179,8 +1181,10 @@ function formatContractResults(queryResult, parsedIntent) {
     const contractName = contract.Contract_Name_Campfire__c || contract.ContractNumber || contract.Id;
     const accountNameDisplay = contract.Account?.Name || accountName;
     
-    // Detect if it's an LOI (Customer Advisory Board in name)
-    const isLOI = contractName && contractName.includes('Customer Advisory Board');
+    // Detect if it's an LOI (Customer Advisory Board, LOI, or CAB in name)
+    const isLOI = contractName && (contractName.includes('Customer Advisory Board') || 
+                                   contractName.includes('LOI') || 
+                                   contractName.includes('CAB'));
     const typeLabel = isLOI ? ' [LOI]' : '';
     
     if (isCompactMode) {
