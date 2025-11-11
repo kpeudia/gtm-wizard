@@ -378,6 +378,25 @@ Business Context:
 
     // Handle comprehensive pipeline and deal queries
     
+    // Customer Brain note capture (HIGHEST PRIORITY - Keigan only)
+    if (message.includes('add to customer') || message.includes('save note') || 
+        message.includes('log note') || message.includes('customer history')) {
+      intent = 'save_customer_note';
+      
+      // The note is the original message (we'll extract it later)
+      entities.noteCapture = true;
+      
+      return {
+        intent: 'save_customer_note',
+        entities,
+        followUp: false,
+        confidence: 0.95,
+        explanation: 'Save note to Customer_Brain',
+        originalMessage: userMessage,
+        timestamp: Date.now()
+      };
+    }
+    
     // Contract/PDF queries (HIGHEST PRIORITY)
     if ((message.includes('contracts') || message.includes('pdfs') || 
          message.includes('loi contract') || message.includes('loi agreement') ||
