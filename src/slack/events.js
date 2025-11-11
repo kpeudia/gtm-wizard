@@ -215,6 +215,18 @@ Ask me anything about your pipeline, accounts, or deals!`;
       return;
     }
 
+    // Check for non-existent product line before building query
+    if (parsedIntent.entities.productLine === 'LITIGATION_NOT_EXIST') {
+      const stageName = parsedIntent.entities.stages?.[0] || 'the pipeline';
+      await client.chat.postMessage({
+        channel: channelId,
+        text: `No Litigation deals currently in ${stageName}.`,
+        thread_ts: threadTs,
+        replace_original: true
+      });
+      return;
+    }
+
     // Build initial query
     let soql = null;
     if (parsedIntent.intent === 'account_lookup') {
