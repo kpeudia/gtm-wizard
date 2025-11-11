@@ -423,9 +423,10 @@ Ask me anything about your pipeline, accounts, or deals!`;
       responseText += '_';
     }
 
-    // Send final response - handle multi-message for long contract lists
-    if (parsedIntent.intent === 'contract_query' && queryResult && queryResult.records && queryResult.records.length > 20) {
-      // Split into multiple messages for contracts
+    // Send final response - handle multi-message for contract lists
+    if (parsedIntent.intent === 'contract_query' && queryResult && queryResult.records && 
+        (queryResult.records.length > 10 || !parsedIntent.entities.accounts)) {
+      // Use multi-message for: >10 contracts OR any "all contracts" query
       await sendContractMessages(client, channelId, threadTs, queryResult, parsedIntent);
     } else {
       // Single message response
