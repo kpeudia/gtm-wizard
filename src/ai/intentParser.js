@@ -379,9 +379,16 @@ Business Context:
     // Handle comprehensive pipeline and deal queries
     
     // Contract/PDF queries (HIGHEST PRIORITY)
-    if ((message.includes('contracts') || message.includes('pdfs') || message.includes('loi contract')) &&
+    if ((message.includes('contracts') || message.includes('pdfs') || 
+         message.includes('loi contract') || message.includes('loi agreement') ||
+         message.includes('signed loi detail')) &&
         !message.includes('how many') && !message.includes('arr contracts')) {
       intent = 'contract_query';
+      
+      // Check if specifically asking for LOIs
+      if (message.includes('loi')) {
+        entities.contractType = 'LOI'; // Filter to Customer Advisory Board contracts
+      }
       
       // Extract account name
       const accountMatch = message.match(/contracts for (.+?)(?:\?|$)/i) ||

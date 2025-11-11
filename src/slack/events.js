@@ -311,8 +311,41 @@ Ask me anything about your pipeline, accounts, or deals!`;
       // Handle weighted pipeline summary
       soql = buildWeightedSummaryQuery(parsedIntent.entities);
     } else if (parsedIntent.intent === 'contract_query') {
-      // Handle contract/PDF queries
+      // Handle contract/PDF queries - need to get PDFs separately
       soql = buildContractQuery(parsedIntent.entities);
+      
+      // After getting contracts, fetch PDF links
+      const contractResult = await query(soql, true);
+      
+      // Get PDF URLs for all contracts
+      if (contractResult && contractResult.records && contractResult.records.length > 0) {
+        const contractIds = contractResult.records.map(r => r.Id);
+        const pdfQuery = buildPDFQuery(contractIds);
+        const pdfResult = await query(pdfQuery, true);
+        
+        // Map PDFs to contracts
+        const pdfMap = new Map();
+        if (pdfResult && pdfResult.records) {
+          pdfResult.records.forEach(pdf => {
+            const contractId = pdf.LinkedEntityId;
+            if (!pdfMap.has(contractId)) {
+              pdfMap.set(contractId, []);
+            }
+            pdfMap.get(contractId).push({
+              title: pdf.ContentDocument.Title,
+              versionId: pdf.ContentDocument.LatestPublishedVersionId
+            });
+          });
+        }
+        
+        // Attach PDF info to contracts
+        contractResult.records.forEach(contract => {
+          contract._pdfs = pdfMap.get(contract.Id) || [];
+        });
+      }
+      
+      queryResult = contractResult;
+      soql = null; // Already executed
     } else if (parsedIntent.intent === 'pipeline_summary' || parsedIntent.intent === 'deal_lookup') {
       soql = queryBuilder.buildOpportunityQuery(parsedIntent.entities);
     } else if (parsedIntent.intent === 'activity_check') {
@@ -887,27 +920,47 @@ function buildCountQuery(entities) {
 }
 
 /**
+ * Build PDF files query for contracts
+ */
+function buildPDFQuery(contractIds) {
+  const idList = contractIds.map(id => `'${id}'`).join(',');
+  return `SELECT LinkedEntityId,
+                 ContentDocument.Id,
+                 ContentDocument.Title,
+                 ContentDocument.LatestPublishedVersionId
+          FROM ContentDocumentLink
+          WHERE LinkedEntityId IN (${idList})
+          ORDER BY ContentDocument.Title`;
+}
+
+/**
  * Build contract query
  */
 function buildContractQuery(entities) {
+  let whereConditions = [];
+  
+  // Account filter
   if (entities.accounts && entities.accounts.length > 0) {
-    // Specific account contracts (use standard Contract object)
     const accountName = entities.accounts[0];
-    return `SELECT Id, ContractNumber, Account.Name, StartDate, EndDate, 
-                   Status, ContractTerm, Contract_Name_Campfire__c
-            FROM Contract
-            WHERE Account.Name LIKE '%${accountName}%'
-            ORDER BY StartDate DESC
-            LIMIT 10`;
+    whereConditions.push(`Account.Name LIKE '%${accountName}%'`);
   } else {
-    // All contracts
-    return `SELECT Id, ContractNumber, Account.Name, StartDate, EndDate,
-                   Status, Contract_Name_Campfire__c
-            FROM Contract
-            WHERE Status = 'Activated'
-            ORDER BY StartDate DESC
-            LIMIT 20`;
+    whereConditions.push(`Status = 'Activated'`);
   }
+  
+  // LOI filter - "Customer Advisory Board" in contract name
+  if (entities.contractType === 'LOI') {
+    whereConditions.push(`Contract_Name_Campfire__c LIKE '%Customer Advisory Board%'`);
+  }
+  
+  const whereClause = whereConditions.join(' AND ');
+  const limit = entities.accounts ? 10 : 50; // More for "all contracts"
+  
+  return `SELECT Id, ContractNumber, Account.Name, StartDate, EndDate, 
+                 Status, ContractTerm, Contract_Name_Campfire__c
+          FROM Contract
+          WHERE ${whereClause}
+          ORDER BY StartDate DESC
+          LIMIT ${limit}`;
 }
 
 /**
@@ -1123,7 +1176,11 @@ function formatContractResults(queryResult, parsedIntent) {
     const contractName = contract.Contract_Name_Campfire__c || contract.ContractNumber || contract.Id;
     const accountNameDisplay = contract.Account?.Name || accountName;
     
-    response += `${i + 1}. *${contractName}*\n`;
+    // Detect if it's an LOI (Customer Advisory Board in name)
+    const isLOI = contractName && contractName.includes('Customer Advisory Board');
+    const typeLabel = isLOI ? ' [LOI]' : '';
+    
+    response += `${i + 1}. *${contractName}*${typeLabel}\n`;
     
     if (accountNameDisplay && !accountName) {
       response += `   Account: ${accountNameDisplay}\n`;
@@ -1145,10 +1202,20 @@ function formatContractResults(queryResult, parsedIntent) {
       response += `   Status: ${contract.Status}\n`;
     }
     
-    // Link to Salesforce contract (will show attached PDF)
-    const sfBaseUrl = process.env.SF_INSTANCE_URL || 'https://eudia.my.salesforce.com';
-    const contractUrl = `${sfBaseUrl}/lightning/r/Contract/${contract.Id}/view`;
-    response += `   <${contractUrl}|View Contract & PDF>\n`;
+    // Add PDF download links
+    if (contract._pdfs && contract._pdfs.length > 0) {
+      const sfBaseUrl = process.env.SF_INSTANCE_URL || 'https://eudia.my.salesforce.com';
+      contract._pdfs.forEach(pdf => {
+        const downloadUrl = `${sfBaseUrl}/sfc/servlet.shepherd/version/download/${pdf.versionId}`;
+        const fileName = pdf.title.length > 40 ? pdf.title.substring(0, 37) + '...' : pdf.title;
+        response += `   <${downloadUrl}|Download: ${fileName}>\n`;
+      });
+    } else {
+      // Fallback to Salesforce link
+      const sfBaseUrl = process.env.SF_INSTANCE_URL || 'https://eudia.my.salesforce.com';
+      const contractUrl = `${sfBaseUrl}/lightning/r/Contract/${contract.Id}/view`;
+      response += `   <${contractUrl}|View in Salesforce>\n`;
+    }
     
     response += '\n';
   });
