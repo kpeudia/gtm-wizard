@@ -884,9 +884,19 @@ function buildCountQuery(entities) {
  * Build weighted pipeline summary query
  */
 function buildWeightedSummaryQuery(entities) {
-  let whereClause = 'WHERE IsClosed = false';
+  // Only include active stages (0-4)
+  const activeStages = [
+    'Stage 0 - Qualifying',
+    'Stage 1 - Discovery',
+    'Stage 2 - SQO',
+    'Stage 3 - Pilot',
+    'Stage 4 - Proposal'
+  ];
   
-  // Add timeframe if specified
+  const stageFilter = activeStages.map(s => `'${s}'`).join(',');
+  let whereClause = `WHERE IsClosed = false AND StageName IN (${stageFilter})`;
+  
+  // Add timeframe if specified (filter by Target_LOI_Date__c)
   if (entities.timeframe) {
     const timeMap = {
       'this_month': 'Target_LOI_Date__c = THIS_MONTH',
@@ -899,14 +909,15 @@ function buildWeightedSummaryQuery(entities) {
     }
   }
   
+  // Use correct fields: ACV__c for gross, Finance_Weighted_ACV__c for weighted
   return `SELECT StageName,
-                 SUM(Amount) GrossAmount,
+                 SUM(ACV__c) GrossAmount,
                  SUM(Finance_Weighted_ACV__c) WeightedAmount,
                  COUNT(Id) DealCount
           FROM Opportunity
           ${whereClause}
           GROUP BY StageName
-          ORDER BY SUM(Amount) DESC`;
+          ORDER BY SUM(ACV__c) DESC`;
 }
 
 /**
