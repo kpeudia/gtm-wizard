@@ -1031,22 +1031,28 @@ function buildContractQuery(entities) {
     whereConditions.push(`Status = 'Activated'`);
   }
   
-  // LOI filter - Multiple patterns
+  // LOI filter - Multiple patterns (very flexible)
   if (entities.contractType === 'LOI') {
     whereConditions.push(`(Contract_Name_Campfire__c LIKE '%Customer Advisory Board%' 
-                           OR Contract_Name_Campfire__c LIKE '%LOI%'
-                           OR Contract_Name_Campfire__c LIKE '%CAB%')`);
+                           OR Contract_Name_Campfire__c LIKE '% LOI%'
+                           OR Contract_Name_Campfire__c LIKE '%LOI %'
+                           OR Contract_Name_Campfire__c LIKE '%-LOI%'
+                           OR Contract_Name_Campfire__c LIKE '%LOI-%'
+                           OR Contract_Name_Campfire__c LIKE '% CAB%'
+                           OR Contract_Name_Campfire__c LIKE '%CAB %'
+                           OR Contract_Name_Campfire__c LIKE '%signed%')`);
   }
   
   const whereClause = whereConditions.join(' AND ');
-  const limit = entities.accounts ? 20 : 200; // Show ALL contracts when requested
+  // Remove LIMIT entirely for "all contracts" - get everything
+  const limitClause = entities.accounts ? 'LIMIT 50' : ''; // No limit for all contracts
   
   return `SELECT Id, ContractNumber, Account.Name, StartDate, EndDate, 
                  Status, ContractTerm, Contract_Name_Campfire__c
           FROM Contract
           WHERE ${whereClause}
           ORDER BY StartDate DESC
-          LIMIT ${limit}`;
+          ${limitClause}`;
 }
 
 /**
