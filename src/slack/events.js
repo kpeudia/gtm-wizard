@@ -891,23 +891,21 @@ function buildCountQuery(entities) {
  */
 function buildContractQuery(entities) {
   if (entities.accounts && entities.accounts.length > 0) {
-    // Specific account contracts
+    // Specific account contracts (use standard Contract object)
     const accountName = entities.accounts[0];
-    return `SELECT Id, Name, Contract_URL__c, Contract_Sign_Date_Campfire__c,
-                   Product_Amount_Campfire__c, Product_Name_Campfire__c,
-                   Duration__c, Customer_Name_Payee__c
-            FROM Contract_Line_Item__c
-            WHERE Customer_Name_Payee__c LIKE '%${accountName}%'
-            ORDER BY Contract_Sign_Date_Campfire__c DESC
+    return `SELECT Id, ContractNumber, Account.Name, StartDate, EndDate, 
+                   Status, ContractTerm, OwnerExpiration, Contract_Name_Campfire__c
+            FROM Contract
+            WHERE Account.Name LIKE '%${accountName}%'
+            ORDER BY StartDate DESC
             LIMIT 10`;
   } else {
     // All contracts
-    return `SELECT Id, Name, Contract_URL__c, Contract_Sign_Date_Campfire__c,
-                   Product_Amount_Campfire__c, Customer_Name_Payee__c,
-                   Product_Name_Campfire__c
-            FROM Contract_Line_Item__c
-            WHERE Contract_URL__c != null
-            ORDER BY Contract_Sign_Date_Campfire__c DESC
+    return `SELECT Id, ContractNumber, Account.Name, StartDate, EndDate,
+                   Status, Contract_Name_Campfire__c
+            FROM Contract
+            WHERE Status = 'Activated'
+            ORDER BY StartDate DESC
             LIMIT 20`;
   }
 }
@@ -1122,29 +1120,42 @@ function formatContractResults(queryResult, parsedIntent) {
     : `*All Contracts* (${records.length} total)\n\n`;
 
   records.forEach((contract, i) => {
-    response += `${i + 1}. *${contract.Product_Name_Campfire__c || contract.Name}*\n`;
-    if (contract.Contract_Sign_Date_Campfire__c) {
-      response += `   Signed: ${formatDate(contract.Contract_Sign_Date_Campfire__c)}\n`;
+    const contractName = contract.Contract_Name_Campfire__c || contract.ContractNumber || contract.Id;
+    const accountNameDisplay = contract.Account?.Name || accountName;
+    
+    response += `${i + 1}. *${contractName}*\n`;
+    
+    if (accountNameDisplay && !accountName) {
+      response += `   Account: ${accountNameDisplay}\n`;
     }
-    if (contract.Product_Amount_Campfire__c) {
-      response += `   Amount: ${formatCurrency(contract.Product_Amount_Campfire__c)}\n`;
+    
+    if (contract.StartDate) {
+      response += `   Start: ${formatDate(contract.StartDate)}`;
+      if (contract.EndDate) {
+        response += ` → End: ${formatDate(contract.EndDate)}`;
+      }
+      response += '\n';
     }
-    if (contract.Duration__c) {
-      response += `   Duration: ${contract.Duration__c} months\n`;
+    
+    if (contract.ContractTerm) {
+      response += `   Term: ${contract.ContractTerm} months\n`;
     }
-    if (contract.Customer_Name_Payee__c && !accountName) {
-      response += `   Customer: ${contract.Customer_Name_Payee__c}\n`;
+    
+    if (contract.Status) {
+      response += `   Status: ${contract.Status}\n`;
     }
-    if (contract.Contract_URL__c) {
-      response += `   📎 <${contract.Contract_URL__c}|View PDF>\n`;
-    }
+    
+    // Link to Salesforce contract (will show attached PDF)
+    const sfBaseUrl = process.env.SF_INSTANCE_URL || 'https://eudia.my.salesforce.com';
+    const contractUrl = `${sfBaseUrl}/lightning/r/Contract/${contract.Id}/view`;
+    response += `   📄 <${contractUrl}|View Contract & PDF>\n`;
+    
     response += '\n';
   });
 
-  // Calculate total
-  const totalAmount = records.reduce((sum, r) => sum + (r.Product_Amount_Campfire__c || 0), 0);
-  if (totalAmount > 0) {
-    response += `*Total: ${records.length} contracts, ${formatCurrency(totalAmount)}*`;
+  response += `\n*Total: ${records.length} contract${records.length !== 1 ? 's' : ''}*`;
+  if (accountName) {
+    response += ` for ${accountName}`;
   }
 
   return response;
