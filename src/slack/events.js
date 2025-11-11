@@ -313,6 +313,10 @@ Ask me anything about your pipeline, accounts, or deals!`;
     } else if (parsedIntent.intent === 'contract_query') {
       // Handle contract/PDF queries
       soql = buildContractQuery(parsedIntent.entities);
+    } else if (parsedIntent.intent === 'save_customer_note') {
+      // Handle Customer_Brain note saving
+      await handleCustomerBrainNote(text, userId, channelId, client, threadTs, conversationContext);
+      return; // Exit early - note saved
     } else if (parsedIntent.intent === 'pipeline_summary' || parsedIntent.intent === 'deal_lookup') {
       soql = queryBuilder.buildOpportunityQuery(parsedIntent.entities);
     } else if (parsedIntent.intent === 'activity_check') {
@@ -576,6 +580,149 @@ async function handleReactionFeedback(event, client) {
     logger.info('👎 Negative feedback received', {
       userId: event.user,
       messageTs: event.item.ts
+    });
+  }
+}
+
+/**
+ * Handle Customer_Brain note saving
+ */
+async function handleCustomerBrainNote(message, userId, channelId, client, threadTs, context) {
+  // Security: Only Keigan can save notes
+  const KEIGAN_USER_ID = 'U094AQE9V7D';
+  
+  if (userId !== KEIGAN_USER_ID) {
+    await client.chat.postMessage({
+      channel: channelId,
+      text: 'Note saving is restricted to Keigan. Contact him for access.',
+      thread_ts: threadTs
+    });
+    return;
+  }
+
+  try {
+    // Get the parent message if this is a reply
+    let noteContent = message;
+    let parentMessage = null;
+    
+    if (threadTs) {
+      try {
+        const conversationsHistory = await client.conversations.history({
+          channel: channelId,
+          latest: threadTs,
+          limit: 1,
+          inclusive: true
+        });
+        
+        if (conversationsHistory.messages && conversationsHistory.messages[0]) {
+          parentMessage = conversationsHistory.messages[0].text;
+          // Use parent message as the note if current message is just the trigger
+          if (message.toLowerCase().replace(/@gtm-brain/gi, '').trim().length < 50) {
+            noteContent = parentMessage;
+          }
+        }
+      } catch (err) {
+        logger.error('Failed to get parent message:', err);
+      }
+    }
+
+    // Extract account name from note content
+    const accountPatterns = [
+      /^([A-Z][A-Za-z\s&'-]+?)\s*-\s/m, // "Nielsen - Discussion"
+      /(?:from|with|at)\s+([A-Z][A-Za-z\s&'-]+?)(?:\s|\.|\n)/,
+      /([A-Z][A-Za-z\s&'-]{3,}?)(?:\s+discussion|\s+meeting)/i
+    ];
+    
+    let accountName = null;
+    for (const pattern of accountPatterns) {
+      const match = noteContent.match(pattern);
+      if (match && match[1] && match[1].length > 2) {
+        accountName = match[1].trim();
+        break;
+      }
+    }
+    
+    if (!accountName) {
+      await client.chat.postMessage({
+        channel: channelId,
+        text: 'Could not detect account name. Please mention the company name clearly (e.g., "Nielsen - Discussion..." or "Meeting with Best Buy").',
+        thread_ts: threadTs
+      });
+      return;
+    }
+
+    // Query and validate account using existing fuzzy matching
+    const accountQuery = `SELECT Id, Name, Owner.Name, Customer_Brain__c
+                          FROM Account
+                          WHERE Name LIKE '%${accountName}%'
+                          LIMIT 5`;
+    
+    const accountResult = await query(accountQuery);
+    
+    if (!accountResult || accountResult.totalSize === 0) {
+      await client.chat.postMessage({
+        channel: channelId,
+        text: `Account "${accountName}" not found. Please check spelling or try: "contracts for ${accountName}" to see if it exists.`,
+        thread_ts: threadTs
+      });
+      return;
+    }
+
+    // Find best match (prefer business lead)
+    const businessLeads = ['Julie Stefanich', 'Himanshu Agarwal', 'Asad Hussain', 'Ananth Cherukupally', 'David Van Ryk', 'John Cobb', 'Jon Cobb', 'Olivia Jung'];
+    const blMatch = accountResult.records.find(r => businessLeads.includes(r.Owner?.Name));
+    const account = blMatch || accountResult.records[0];
+
+    // Clean the note content
+    const cleanNote = noteContent
+      .replace(/@gtm-brain/gi, '')
+      .replace(/add to customer history:?/gi, '')
+      .replace(/save note:?/gi, '')
+      .replace(/log note:?/gi, '')
+      .trim();
+
+    // Format the note with date and user
+    const date = new Date();
+    const dateShort = `${date.getMonth() + 1}/${date.getDate()}`;
+    const formattedNote = `${dateShort} - Keigan: ${cleanNote}`;
+
+    // Get existing notes
+    const existingNotes = account.Customer_Brain__c || '';
+
+    // Prepend new note
+    const updatedNotes = formattedNote + (existingNotes ? '\n\n' + existingNotes : '');
+
+    // Update Salesforce
+    const { sfConnection } = require('../salesforce/connection');
+    const conn = sfConnection.getConnection();
+    
+    await conn.sobject('Account').update({
+      Id: account.Id,
+      Customer_Brain__c: updatedNotes
+    });
+
+    // Confirm to user
+    const sfBaseUrl = process.env.SF_INSTANCE_URL || 'https://eudia.my.salesforce.com';
+    const accountUrl = `${sfBaseUrl}/lightning/r/Account/${account.Id}/view`;
+    
+    let confirmMessage = `✅ Note saved to ${account.Name}\n\n`;
+    confirmMessage += `*Added to Customer_Brain:*\n${formattedNote}\n\n`;
+    confirmMessage += `*Account Details:*\n`;
+    confirmMessage += `Owner: ${account.Owner?.Name}\n`;
+    confirmMessage += `<${accountUrl}|View Account in Salesforce>\n`;
+
+    await client.chat.postMessage({
+      channel: channelId,
+      text: confirmMessage,
+      thread_ts: threadTs
+    });
+
+  } catch (error) {
+    logger.error('Failed to save Customer_Brain note:', error);
+    await client.chat.postMessage({
+      channel: channelId,
+      text: `Error saving note: ${error.message}\n\nPlease try again or contact support.`,
+      thread_ts: threadTs
     });
   }
 }
