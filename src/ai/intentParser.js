@@ -390,16 +390,19 @@ Business Context:
         entities.contractType = 'LOI'; // Filter to Customer Advisory Board contracts
       }
       
-      // Extract account name
-      const accountMatch = message.match(/contracts for (.+?)(?:\?|$)/i) ||
-                          message.match(/pdfs for (.+?)(?:\?|$)/i) ||
-                          message.match(/loi.*?for (.+?)(?:\?|$)/i) ||
-                          message.match(/(.+?).*?contracts/i);
-      
-      if (accountMatch && accountMatch[1]) {
-        const extracted = accountMatch[1].trim();
-        if (!extracted.includes('all') && !extracted.includes('show')) {
-          entities.accounts = [extracted];
+      // Extract account name (but NOT for "all contracts" or "show me contracts")
+      if (!message.includes('all contracts') && !message.includes('show me all')) {
+        const accountMatch = message.match(/contracts for (.+?)(?:\?|$)/i) ||
+                            message.match(/pdfs for (.+?)(?:\?|$)/i) ||
+                            message.match(/loi.*?for (.+?)(?:\?|$)/i);
+        
+        if (accountMatch && accountMatch[1]) {
+          const extracted = accountMatch[1].trim();
+          // Filter out generic words
+          if (!extracted.includes('all') && !extracted.includes('show') && 
+              !extracted.includes('me') && extracted.length > 2) {
+            entities.accounts = [extracted];
+          }
         }
       }
       
