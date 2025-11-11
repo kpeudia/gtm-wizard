@@ -473,7 +473,8 @@ Business Context:
     
     // Product line + stage queries (HIGHEST PRIORITY - check before general stage queries)
     if (message.includes('contracting') || message.includes('m&a') || 
-        message.includes('compliance') || message.includes('litigation')) {
+        message.includes('compliance') || message.includes('sigma') || 
+        message.includes('cortex') || message.includes('litigation')) {
       intent = 'pipeline_summary';
       entities.isClosed = false;
       
@@ -490,8 +491,9 @@ Business Context:
         entities.productLine = 'Cortex';
       } else if (message.includes('multiple')) {
         entities.productLine = 'Multiple';
+      } else if (message.includes('litigation')) {
+        entities.productLine = 'LITIGATION_NOT_EXIST'; // Flag for no results message
       }
-      // Note: "Litigation" doesn't exist as a product line
       
       // Map stage if specified
       if (message.includes('late stage') || message.includes('late-stage') || message.includes('stage 4')) {

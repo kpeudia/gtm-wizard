@@ -262,7 +262,11 @@ class QueryBuilder {
 
     // Product line filter
     if (entities.productLine) {
-      if (Array.isArray(entities.productLine)) {
+      // Check if it's a non-existent product line
+      if (entities.productLine === 'LITIGATION_NOT_EXIST') {
+        // Force no results by adding impossible condition
+        conditions.push("Id = 'NONEXISTENT'");
+      } else if (Array.isArray(entities.productLine)) {
         const plList = entities.productLine.map(pl => `'${pl}'`).join(',');
         conditions.push(`Product_Line__c IN (${plList})`);
       } else {

@@ -240,8 +240,13 @@ class ResponseFormatter {
    * Format no results message
    */
   formatNoResults(parsedIntent) {
+    // Check if it's a non-existent product line
+    if (parsedIntent.entities.productLine === 'LITIGATION_NOT_EXIST') {
+      return `No Litigation product line exists in the system.\n\n*Available product lines:*\n• AI-Augmented Contracting\n• Augmented-M&A\n• Compliance\n• sigma\n• Cortex\n• Multiple`;
+    }
+    
     const filters = this.buildSearchContext(parsedIntent.entities);
-    let message = `🔍 No results found`;
+    let message = `No results found`;
     
     if (filters) {
       message += ` for: ${filters}`;
