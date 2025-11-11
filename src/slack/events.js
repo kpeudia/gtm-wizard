@@ -894,7 +894,7 @@ function buildContractQuery(entities) {
     // Specific account contracts (use standard Contract object)
     const accountName = entities.accounts[0];
     return `SELECT Id, ContractNumber, Account.Name, StartDate, EndDate, 
-                   Status, ContractTerm, OwnerExpiration, Contract_Name_Campfire__c
+                   Status, ContractTerm, Contract_Name_Campfire__c
             FROM Contract
             WHERE Account.Name LIKE '%${accountName}%'
             ORDER BY StartDate DESC
@@ -1148,7 +1148,7 @@ function formatContractResults(queryResult, parsedIntent) {
     // Link to Salesforce contract (will show attached PDF)
     const sfBaseUrl = process.env.SF_INSTANCE_URL || 'https://eudia.my.salesforce.com';
     const contractUrl = `${sfBaseUrl}/lightning/r/Contract/${contract.Id}/view`;
-    response += `   📄 <${contractUrl}|View Contract & PDF>\n`;
+    response += `   <${contractUrl}|View Contract & PDF>\n`;
     
     response += '\n';
   });
