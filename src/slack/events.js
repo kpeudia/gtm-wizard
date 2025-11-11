@@ -654,8 +654,8 @@ async function sendContractMessages(client, channelId, threadTs, queryResult, pa
     fullResponse += '\n';
   });
 
-  // If response is too long (>3500 chars), split it
-  if (fullResponse.length > 3500) {
+  // If more than 10 contracts OR response too long, split it
+  if (contracts.length > 10 || fullResponse.length > 3500) {
     // Send title first (in thread, not replacing)
     const titleMsg = await client.chat.postMessage({
       channel: channelId,
