@@ -378,6 +378,35 @@ Business Context:
 
     // Handle comprehensive pipeline and deal queries
     
+    // Contract/PDF queries (HIGHEST PRIORITY)
+    if ((message.includes('contracts') || message.includes('pdfs') || message.includes('loi contract')) &&
+        !message.includes('how many') && !message.includes('arr contracts')) {
+      intent = 'contract_query';
+      
+      // Extract account name
+      const accountMatch = message.match(/contracts for (.+?)(?:\?|$)/i) ||
+                          message.match(/pdfs for (.+?)(?:\?|$)/i) ||
+                          message.match(/loi.*?for (.+?)(?:\?|$)/i) ||
+                          message.match(/(.+?).*?contracts/i);
+      
+      if (accountMatch && accountMatch[1]) {
+        const extracted = accountMatch[1].trim();
+        if (!extracted.includes('all') && !extracted.includes('show')) {
+          entities.accounts = [extracted];
+        }
+      }
+      
+      return {
+        intent: 'contract_query',
+        entities,
+        followUp: false,
+        confidence: 0.95,
+        explanation: 'Contract/PDF query',
+        originalMessage: userMessage,
+        timestamp: Date.now()
+      };
+    }
+    
     // Weighted pipeline/ACV summary queries (HIGHEST PRIORITY)
     if (message.includes('weighted pipeline') || message.includes('weighted acv') ||
         (message.includes('weighted') && message.includes('pipeline'))) {

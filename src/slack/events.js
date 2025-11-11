@@ -310,6 +310,9 @@ Ask me anything about your pipeline, accounts, or deals!`;
     } else if (parsedIntent.intent === 'weighted_summary') {
       // Handle weighted pipeline summary
       soql = buildWeightedSummaryQuery(parsedIntent.entities);
+    } else if (parsedIntent.intent === 'contract_query') {
+      // Handle contract/PDF queries
+      soql = buildContractQuery(parsedIntent.entities);
     } else if (parsedIntent.intent === 'pipeline_summary' || parsedIntent.intent === 'deal_lookup') {
       soql = queryBuilder.buildOpportunityQuery(parsedIntent.entities);
     } else if (parsedIntent.intent === 'activity_check') {
@@ -364,6 +367,8 @@ Ask me anything about your pipeline, accounts, or deals!`;
       formattedResponse = formatAverageDaysResults(queryResult, parsedIntent);
     } else if (parsedIntent.intent === 'weighted_summary') {
       formattedResponse = formatWeightedSummary(queryResult, parsedIntent);
+    } else if (parsedIntent.intent === 'contract_query') {
+      formattedResponse = formatContractResults(queryResult, parsedIntent);
     } else {
       formattedResponse = formatResponse(queryResult, parsedIntent, conversationContext);
     }
@@ -394,13 +399,14 @@ Ask me anything about your pipeline, accounts, or deals!`;
       replace_original: true
     };
 
-    // Only add blocks for pipeline/opportunity queries, NOT account/count/average/summary queries
+    // Only add blocks for pipeline/opportunity queries, NOT account/count/average/summary/contract queries
     if (parsedIntent.intent !== 'account_lookup' && 
         parsedIntent.intent !== 'account_field_lookup' &&
         parsedIntent.intent !== 'account_stage_lookup' &&
         parsedIntent.intent !== 'count_query' &&
         parsedIntent.intent !== 'average_days_query' &&
         parsedIntent.intent !== 'weighted_summary' &&
+        parsedIntent.intent !== 'contract_query' &&
         parsedIntent.intent !== 'greeting') {
       messageOptions.blocks = buildResponseBlocks(queryResult, parsedIntent);
     }
@@ -881,6 +887,32 @@ function buildCountQuery(entities) {
 }
 
 /**
+ * Build contract query
+ */
+function buildContractQuery(entities) {
+  if (entities.accounts && entities.accounts.length > 0) {
+    // Specific account contracts
+    const accountName = entities.accounts[0];
+    return `SELECT Id, Name, Contract_URL__c, Contract_Sign_Date_Campfire__c,
+                   Product_Amount_Campfire__c, Product_Name_Campfire__c,
+                   Duration__c, Customer_Name_Payee__c
+            FROM Contract_Line_Item__c
+            WHERE Customer_Name_Payee__c LIKE '%${accountName}%'
+            ORDER BY Contract_Sign_Date_Campfire__c DESC
+            LIMIT 10`;
+  } else {
+    // All contracts
+    return `SELECT Id, Name, Contract_URL__c, Contract_Sign_Date_Campfire__c,
+                   Product_Amount_Campfire__c, Customer_Name_Payee__c,
+                   Product_Name_Campfire__c
+            FROM Contract_Line_Item__c
+            WHERE Contract_URL__c != null
+            ORDER BY Contract_Sign_Date_Campfire__c DESC
+            LIMIT 20`;
+  }
+}
+
+/**
  * Build weighted pipeline summary query
  */
 function buildWeightedSummaryQuery(entities) {
@@ -1072,6 +1104,53 @@ function formatAccountFieldResults(queryResult, parsedIntent) {
 }
 
 /**
+ * Format contract query results
+ */
+function formatContractResults(queryResult, parsedIntent) {
+  if (!queryResult || !queryResult.records || queryResult.totalSize === 0) {
+    const accountName = parsedIntent.entities.accounts?.[0];
+    return accountName 
+      ? `No contracts found for ${accountName}.`
+      : `No contracts found in the system.`;
+  }
+
+  const records = queryResult.records;
+  const accountName = parsedIntent.entities.accounts?.[0];
+  
+  let response = accountName 
+    ? `*Contracts for ${accountName}*\n\n`
+    : `*All Contracts* (${records.length} total)\n\n`;
+
+  records.forEach((contract, i) => {
+    response += `${i + 1}. *${contract.Product_Name_Campfire__c || contract.Name}*\n`;
+    if (contract.Contract_Sign_Date_Campfire__c) {
+      response += `   Signed: ${formatDate(contract.Contract_Sign_Date_Campfire__c)}\n`;
+    }
+    if (contract.Product_Amount_Campfire__c) {
+      response += `   Amount: ${formatCurrency(contract.Product_Amount_Campfire__c)}\n`;
+    }
+    if (contract.Duration__c) {
+      response += `   Duration: ${contract.Duration__c} months\n`;
+    }
+    if (contract.Customer_Name_Payee__c && !accountName) {
+      response += `   Customer: ${contract.Customer_Name_Payee__c}\n`;
+    }
+    if (contract.Contract_URL__c) {
+      response += `   📎 <${contract.Contract_URL__c}|View PDF>\n`;
+    }
+    response += '\n';
+  });
+
+  // Calculate total
+  const totalAmount = records.reduce((sum, r) => sum + (r.Product_Amount_Campfire__c || 0), 0);
+  if (totalAmount > 0) {
+    response += `*Total: ${records.length} contracts, ${formatCurrency(totalAmount)}*`;
+  }
+
+  return response;
+}
+
+/**
  * Format count query results
  */
 function formatCountResults(queryResult, parsedIntent) {
@@ -1139,7 +1218,10 @@ function formatWeightedSummary(queryResult, parsedIntent) {
 
   const avgDealSize = totalDeals > 0 ? totalGross / totalDeals : 0;
 
-  let response = `*Weighted Pipeline Summary*\n\n`;
+  const timeframe = parsedIntent.entities.timeframe;
+  const title = timeframe ? `Weighted Pipeline (${timeframe.replace('_', ' ')})` : 'Weighted Pipeline Summary';
+
+  let response = `*${title}*\n\n`;
   response += `Total Active Opportunities: ${totalDeals} deals\n`;
   response += `Gross Pipeline: ${formatCurrency(totalGross)}\n`;
   response += `Weighted Pipeline: ${formatCurrency(totalWeighted)}\n`;
@@ -1147,10 +1229,18 @@ function formatWeightedSummary(queryResult, parsedIntent) {
 
   response += `*By Stage:*\n`;
   
-  // Filter to active stages only and sort by amount
+  // Filter to active stages only and sort by stage order (4→3→2→1→0)
+  const stageOrder = {
+    'Stage 4 - Proposal': 1,
+    'Stage 3 - Pilot': 2,
+    'Stage 2 - SQO': 3,
+    'Stage 1 - Discovery': 4,
+    'Stage 0 - Qualifying': 5
+  };
+  
   const activeStages = records
     .filter(r => !r.StageName.includes('Closed'))
-    .sort((a, b) => (b.GrossAmount || 0) - (a.GrossAmount || 0));
+    .sort((a, b) => (stageOrder[a.StageName] || 999) - (stageOrder[b.StageName] || 999));
 
   activeStages.forEach(stage => {
     const stageName = cleanStageName(stage.StageName);
