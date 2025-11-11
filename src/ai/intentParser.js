@@ -378,6 +378,32 @@ Business Context:
 
     // Handle comprehensive pipeline and deal queries
     
+    // Weighted pipeline/ACV summary queries (HIGHEST PRIORITY)
+    if (message.includes('weighted pipeline') || message.includes('weighted acv') ||
+        (message.includes('weighted') && message.includes('pipeline'))) {
+      intent = 'weighted_summary';
+      entities.isClosed = false;
+      
+      // Handle timeframe
+      if (message.includes('this month')) {
+        entities.timeframe = 'this_month';
+      } else if (message.includes('this quarter')) {
+        entities.timeframe = 'this_quarter';
+      } else if (message.includes('this year')) {
+        entities.timeframe = 'this_year';
+      }
+      
+      return {
+        intent: 'weighted_summary',
+        entities,
+        followUp: false,
+        confidence: 0.95,
+        explanation: 'Weighted pipeline summary query',
+        originalMessage: userMessage,
+        timestamp: Date.now()
+      };
+    }
+    
     // "What accounts/companies/customers have signed" queries
     if ((message.includes('what accounts') || message.includes('what companies') || message.includes('what customers') || message.includes('which accounts') || message.includes('which companies')) &&
         (message.includes('signed') || message.includes('have signed'))) {

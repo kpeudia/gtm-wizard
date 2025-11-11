@@ -307,6 +307,9 @@ Ask me anything about your pipeline, accounts, or deals!`;
     } else if (parsedIntent.intent === 'average_days_query') {
       // Handle average days in stage
       soql = buildAverageDaysQuery(parsedIntent.entities);
+    } else if (parsedIntent.intent === 'weighted_summary') {
+      // Handle weighted pipeline summary
+      soql = buildWeightedSummaryQuery(parsedIntent.entities);
     } else if (parsedIntent.intent === 'pipeline_summary' || parsedIntent.intent === 'deal_lookup') {
       soql = queryBuilder.buildOpportunityQuery(parsedIntent.entities);
     } else if (parsedIntent.intent === 'activity_check') {
@@ -359,6 +362,8 @@ Ask me anything about your pipeline, accounts, or deals!`;
       formattedResponse = formatCountResults(queryResult, parsedIntent);
     } else if (parsedIntent.intent === 'average_days_query') {
       formattedResponse = formatAverageDaysResults(queryResult, parsedIntent);
+    } else if (parsedIntent.intent === 'weighted_summary') {
+      formattedResponse = formatWeightedSummary(queryResult, parsedIntent);
     } else {
       formattedResponse = formatResponse(queryResult, parsedIntent, conversationContext);
     }
@@ -389,12 +394,13 @@ Ask me anything about your pipeline, accounts, or deals!`;
       replace_original: true
     };
 
-    // Only add blocks for pipeline/opportunity queries, NOT account/count/average queries
+    // Only add blocks for pipeline/opportunity queries, NOT account/count/average/summary queries
     if (parsedIntent.intent !== 'account_lookup' && 
         parsedIntent.intent !== 'account_field_lookup' &&
         parsedIntent.intent !== 'account_stage_lookup' &&
         parsedIntent.intent !== 'count_query' &&
         parsedIntent.intent !== 'average_days_query' &&
+        parsedIntent.intent !== 'weighted_summary' &&
         parsedIntent.intent !== 'greeting') {
       messageOptions.blocks = buildResponseBlocks(queryResult, parsedIntent);
     }
@@ -875,6 +881,35 @@ function buildCountQuery(entities) {
 }
 
 /**
+ * Build weighted pipeline summary query
+ */
+function buildWeightedSummaryQuery(entities) {
+  let whereClause = 'WHERE IsClosed = false';
+  
+  // Add timeframe if specified
+  if (entities.timeframe) {
+    const timeMap = {
+      'this_month': 'Target_LOI_Date__c = THIS_MONTH',
+      'this_quarter': 'Target_LOI_Date__c = THIS_QUARTER',
+      'this_year': 'Target_LOI_Date__c = THIS_YEAR'
+    };
+    
+    if (timeMap[entities.timeframe]) {
+      whereClause += ' AND ' + timeMap[entities.timeframe];
+    }
+  }
+  
+  return `SELECT StageName,
+                 SUM(Amount) GrossAmount,
+                 SUM(Finance_Weighted_ACV__c) WeightedAmount,
+                 COUNT(Id) DealCount
+          FROM Opportunity
+          ${whereClause}
+          GROUP BY StageName
+          ORDER BY SUM(Amount) DESC`;
+}
+
+/**
  * Build average days in stage query
  */
 function buildAverageDaysQuery(entities) {
@@ -1068,6 +1103,54 @@ function formatCountResults(queryResult, parsedIntent) {
     default:
       return `Count: ${records[0].Total || records[0].expr0 || 0}`;
   }
+}
+
+/**
+ * Format weighted pipeline summary
+ */
+function formatWeightedSummary(queryResult, parsedIntent) {
+  if (!queryResult || !queryResult.records || queryResult.records.length === 0) {
+    return `No pipeline data available.`;
+  }
+
+  const records = queryResult.records;
+  
+  // Calculate totals
+  let totalGross = 0;
+  let totalWeighted = 0;
+  let totalDeals = 0;
+  
+  records.forEach(r => {
+    totalGross += r.GrossAmount || 0;
+    totalWeighted += r.WeightedAmount || 0;
+    totalDeals += r.DealCount || 0;
+  });
+
+  const avgDealSize = totalDeals > 0 ? totalGross / totalDeals : 0;
+
+  let response = `*Weighted Pipeline Summary*\n\n`;
+  response += `Total Active Opportunities: ${totalDeals} deals\n`;
+  response += `Gross Pipeline: ${formatCurrency(totalGross)}\n`;
+  response += `Weighted Pipeline: ${formatCurrency(totalWeighted)}\n`;
+  response += `Average Deal Size: ${formatCurrency(avgDealSize)}\n\n`;
+
+  response += `*By Stage:*\n`;
+  
+  // Filter to active stages only and sort by amount
+  const activeStages = records
+    .filter(r => !r.StageName.includes('Closed'))
+    .sort((a, b) => (b.GrossAmount || 0) - (a.GrossAmount || 0));
+
+  activeStages.forEach(stage => {
+    const stageName = cleanStageName(stage.StageName);
+    const gross = stage.GrossAmount || 0;
+    const weighted = stage.WeightedAmount || 0;
+    const count = stage.DealCount || 0;
+    
+    response += `${stageName}: ${formatCurrency(weighted)} weighted (${formatCurrency(gross)} gross, ${count} deals)\n`;
+  });
+
+  return response;
 }
 
 /**
