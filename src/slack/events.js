@@ -423,27 +423,33 @@ Ask me anything about your pipeline, accounts, or deals!`;
       responseText += '_';
     }
 
-    // Send final response
-    const messageOptions = {
-      channel: channelId,
-      text: responseText,
-      thread_ts: threadTs,
-      replace_original: true
-    };
+    // Send final response - handle multi-message for long contract lists
+    if (parsedIntent.intent === 'contract_query' && queryResult && queryResult.records && queryResult.records.length > 20) {
+      // Split into multiple messages for contracts
+      await sendContractMessages(client, channelId, threadTs, queryResult, parsedIntent);
+    } else {
+      // Single message response
+      const messageOptions = {
+        channel: channelId,
+        text: responseText,
+        thread_ts: threadTs,
+        replace_original: true
+      };
 
-    // Only add blocks for pipeline/opportunity queries, NOT account/count/average/summary/contract queries
-    if (parsedIntent.intent !== 'account_lookup' && 
-        parsedIntent.intent !== 'account_field_lookup' &&
-        parsedIntent.intent !== 'account_stage_lookup' &&
-        parsedIntent.intent !== 'count_query' &&
-        parsedIntent.intent !== 'average_days_query' &&
-        parsedIntent.intent !== 'weighted_summary' &&
-        parsedIntent.intent !== 'contract_query' &&
-        parsedIntent.intent !== 'greeting') {
-      messageOptions.blocks = buildResponseBlocks(queryResult, parsedIntent);
+      // Only add blocks for pipeline/opportunity queries, NOT account/count/average/summary/contract queries
+      if (parsedIntent.intent !== 'account_lookup' && 
+          parsedIntent.intent !== 'account_field_lookup' &&
+          parsedIntent.intent !== 'account_stage_lookup' &&
+          parsedIntent.intent !== 'count_query' &&
+          parsedIntent.intent !== 'average_days_query' &&
+          parsedIntent.intent !== 'weighted_summary' &&
+          parsedIntent.intent !== 'contract_query' &&
+          parsedIntent.intent !== 'greeting') {
+        messageOptions.blocks = buildResponseBlocks(queryResult, parsedIntent);
+      }
+
+      await client.chat.postMessage(messageOptions);
     }
-
-    await client.chat.postMessage(messageOptions);
 
     // Log successful query
     logger.info('✅ Query processed successfully', {
@@ -599,6 +605,84 @@ async function generateConversationalResponse(message, context) {
     logger.error('Conversational response failed:', error);
     return `I'm here to help with your sales data! Ask me about pipeline, deals, account ownership, or forecasting. What would you like to know?`;
   }
+}
+
+/**
+ * Send contract messages (split into multiple if needed)
+ */
+async function sendContractMessages(client, channelId, threadTs, queryResult, parsedIntent) {
+  const contracts = queryResult.records;
+  const accountName = parsedIntent.entities.accounts?.[0];
+  const contractType = parsedIntent.entities.contractType;
+  
+  // Send summary first
+  const title = contractType === 'LOI' 
+    ? `*All LOI Contracts* (${contracts.length} total)`
+    : accountName
+      ? `*Contracts for ${accountName}* (${contracts.length} total)`
+      : `*All Contracts* (${contracts.length} total)`;
+  
+  await client.chat.postMessage({
+    channel: channelId,
+    text: title,
+    thread_ts: threadTs,
+    replace_original: true
+  });
+
+  // Split into chunks of 15 contracts per message
+  const chunkSize = 15;
+  for (let i = 0; i < contracts.length; i += chunkSize) {
+    const chunk = contracts.slice(i, i + chunkSize);
+    let chunkResponse = '';
+    
+    chunk.forEach((contract, idx) => {
+      const globalIndex = i + idx + 1;
+      const contractName = contract.Contract_Name_Campfire__c || contract.ContractNumber;
+      const accountNameDisplay = contract.Account?.Name;
+      
+      // Detect LOI
+      const isLOI = contractName && (contractName.includes('Customer Advisory Board') || 
+                                     contractName.includes('LOI') || 
+                                     contractName.includes('CAB'));
+      const typeLabel = isLOI ? ' [LOI]' : '';
+      
+      chunkResponse += `${globalIndex}. ${accountNameDisplay}${typeLabel}\n`;
+      
+      // Add PDF link
+      if (contract._pdfs && contract._pdfs.length > 0) {
+        const sfBaseUrl = process.env.SF_INSTANCE_URL || 'https://eudia.my.salesforce.com';
+        const downloadUrl = `${sfBaseUrl}/sfc/servlet.shepherd/version/download/${contract._pdfs[0].versionId}`;
+        chunkResponse += `   <${downloadUrl}|Download PDF>\n`;
+      }
+      
+      if (contract.StartDate) {
+        chunkResponse += `   ${formatDate(contract.StartDate)}`;
+        if (contract.EndDate) {
+          chunkResponse += ` → ${formatDate(contract.EndDate)}`;
+        }
+        chunkResponse += '\n';
+      }
+      
+      chunkResponse += '\n';
+    });
+    
+    // Send chunk
+    await client.chat.postMessage({
+      channel: channelId,
+      text: chunkResponse,
+      thread_ts: threadTs
+    });
+    
+    // Small delay to avoid rate limits
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  
+  // Send final summary
+  await client.chat.postMessage({
+    channel: channelId,
+    text: `*Total: ${contracts.length} contracts displayed*`,
+    thread_ts: threadTs
+  });
 }
 
 /**
