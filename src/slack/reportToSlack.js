@@ -97,20 +97,20 @@ async function generateJohnsonHanaExcel() {
  */
 async function sendPipelineReportToSlack(client, channelId, userId) {
   try {
-    logger.info('📊 Generating pipeline report for Slack...');
+    logger.info('Generating pipeline report for Slack...');
 
     const { buffer, recordCount } = await generateJohnsonHanaExcel();
     
     const date = new Date().toISOString().split('T')[0];
-    const filename = `Eudia_Weekly_Pipeline_${date}.xlsx`;
+    const filename = `Jons_Weekly_Pipeline_${date}.xlsx`;
 
     // Upload to Slack
     const result = await client.files.uploadV2({
       channel_id: channelId,
       file: buffer,
       filename: filename,
-      title: 'Weekly Pipeline Report - Johnson Hana',
-      initial_comment: `📊 *Weekly Pipeline Report*\n\nStages 2, 3, 4 | Product Lines: Contracting, Multiple, sigma\n\nTotal: ${recordCount} opportunities\n\nGenerated: ${date}`
+      title: "Jon's Weekly Pipeline Report",
+      initial_comment: `*Jon's Weekly Pipeline Report*\n\nTotal: ${recordCount} opportunities\n\nReport filtered to Stage 2+ opportunities. Only including AI-Augmented Contracting and sigma solutions.\n\nCan be adjusted as needed going forward.\n\nGenerated: ${date}`
     });
 
     logger.info('✅ Pipeline report uploaded to Slack');

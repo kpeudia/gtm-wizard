@@ -127,3 +127,6 @@ coverage/
 # ESLint cache
 .eslintcache
 
+# Setup docs with credentials (keep local only)
+MICROSOFT_GRAPH_SETUP.md
+
