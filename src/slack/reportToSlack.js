@@ -99,18 +99,28 @@ async function sendPipelineReportToSlack(client, channelId, userId) {
   try {
     logger.info('Generating pipeline report for Slack...');
 
-    const { buffer, recordCount } = await generateJohnsonHanaExcel();
+    const { buffer, recordCount, stage4Count, stage3Count, stage2Count, thisMonthCount } = await generateJohnsonHanaExcel();
     
     const date = new Date().toISOString().split('T')[0];
-    const filename = `Jons_Weekly_Pipeline_${date}.xlsx`;
+    const filename = `Johnson_Hana_Weekly_Pipeline_${date}.xlsx`;
+
+    // Format message
+    let message = `*Johnson Hana - Weekly Pipeline Report*\n\n`;
+    message += `Total Opps: ${recordCount}\n`;
+    message += `Stage 4 - Proposal: ${stage4Count}\n`;
+    message += `Stage 3 - Pilot: ${stage3Count}\n`;
+    message += `Stage 2 - SQO: ${stage2Count}\n`;
+    message += `Targeting Signature this Month: ${thisMonthCount}\n\n`;
+    message += `Report filters: Contracting or sigma/insights tagged opportunities that are stage 2+.\n\n`;
+    message += `If you would like Gov excluded, or any other adjustments let me know.`;
 
     // Upload to Slack
     const result = await client.files.uploadV2({
       channel_id: channelId,
       file: buffer,
       filename: filename,
-      title: "Jon's Weekly Pipeline Report",
-      initial_comment: `*Jon's Weekly Pipeline Report*\n\nTotal: ${recordCount} opportunities\n\nReport filtered to Stage 2+ opportunities. Only including AI-Augmented Contracting and sigma solutions.\n\nCan be adjusted as needed going forward.\n\nGenerated: ${date}`
+      title: "Johnson Hana - Weekly Pipeline Report",
+      initial_comment: message
     });
 
     logger.info('✅ Pipeline report uploaded to Slack');
