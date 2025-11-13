@@ -6,7 +6,8 @@ const logger = require('../utils/logger');
  * Generate Johnson Hana Weekly Pipeline Excel Report
  */
 async function generateJohnsonHanaExcel() {
-  // Query: Stages 2+ + Product lines: AI-Augmented Contracting, sigma, Insights
+  // Query to match Salesforce Report 00OWj000004DLNhMAO exactly (41 opps)
+  // Product lines: AI-Augmented Contracting, Multiple, sigma / Insights (with space/slash!)
   const reportQuery = `SELECT Name,
                               Product_Line__c,
                               StageName,
@@ -17,8 +18,8 @@ async function generateJohnsonHanaExcel() {
                               OR StageName = 'Stage 3 - Pilot'
                               OR StageName = 'Stage 4 - Proposal')
                          AND (Product_Line__c = 'AI-Augmented Contracting'
-                              OR Product_Line__c = 'sigma'
-                              OR Product_Line__c = 'Insights')
+                              OR Product_Line__c = 'Multiple'
+                              OR Product_Line__c = 'sigma / Insights')
                        ORDER BY StageName, Name`;
 
   const data = await query(reportQuery, false);
