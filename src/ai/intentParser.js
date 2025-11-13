@@ -397,6 +397,23 @@ Business Context:
       };
     }
     
+    // Send Pipeline Report in Excel (Keigan only)
+    if ((message.includes('send') || message.includes('generate') || message.includes('create')) &&
+        (message.includes('pipeline') || message.includes('report')) &&
+        (message.includes('excel') || message.includes('spreadsheet') || message.includes('xlsx'))) {
+      intent = 'send_excel_report';
+      
+      return {
+        intent: 'send_excel_report',
+        entities: { reportType: 'pipeline' },
+        followUp: false,
+        confidence: 0.95,
+        explanation: 'Generate and send pipeline Excel report',
+        originalMessage: userMessage,
+        timestamp: Date.now()
+      };
+    }
+    
     // Account Management - Move to Nurture (Keigan only)
     if (message.includes('move') && message.includes('nurture') ||
         message.includes('mark') && message.includes('nurture') ||

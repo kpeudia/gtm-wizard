@@ -317,6 +317,10 @@ Ask me anything about your pipeline, accounts, or deals!`;
       // Handle Customer_Brain note saving - pass full event context
       await handleCustomerBrainNote(text, userId, channelId, client, threadTs, conversationContext);
       return; // Exit early
+    } else if (parsedIntent.intent === 'send_excel_report') {
+      // Handle Excel report generation and upload to Slack
+      await handleExcelReport(userId, channelId, client, threadTs);
+      return; // Exit early
     } else if (parsedIntent.intent === 'move_to_nurture') {
       // Handle move to nurture (Keigan only)
       await handleMoveToNurture(parsedIntent.entities, userId, channelId, client, threadTs);
@@ -1716,6 +1720,48 @@ function formatDate(dateString) {
     day: 'numeric',
     year: 'numeric'
   });
+}
+
+/**
+ * Handle Excel Report Generation (Keigan only)
+ */
+async function handleExcelReport(userId, channelId, client, threadTs) {
+  const KEIGAN_USER_ID = 'U094AQE9V7D';
+  
+  try {
+    // Security check - Keigan only
+    if (userId !== KEIGAN_USER_ID) {
+      await client.chat.postMessage({
+        channel: channelId,
+        text: '🔒 Excel report generation is restricted to Keigan. Contact him for reports.',
+        thread_ts: threadTs
+      });
+      return;
+    }
+    
+    // Show loading message
+    await client.chat.postMessage({
+      channel: channelId,
+      text: '📊 Generating Excel report... This will take a moment.',
+      thread_ts: threadTs
+    });
+    
+    // Import the report module
+    const { sendPipelineReportToSlack } = require('./reportToSlack');
+    
+    // Generate and upload Excel
+    await sendPipelineReportToSlack(client, channelId, userId);
+    
+    logger.info(`✅ Excel report sent to Slack by ${userId}`);
+    
+  } catch (error) {
+    logger.error('Failed to send Excel report:', error);
+    await client.chat.postMessage({
+      channel: channelId,
+      text: `❌ Error generating Excel report: ${error.message}\n\nPlease try again or contact support.`,
+      thread_ts: threadTs
+    });
+  }
 }
 
 /**
