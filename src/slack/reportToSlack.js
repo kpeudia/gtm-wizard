@@ -7,7 +7,7 @@ const logger = require('../utils/logger');
  */
 async function generateJohnsonHanaExcel() {
   // Query to match Salesforce Report 00OWj000004DLNhMAO exactly (41 opps)
-  // Using LIKE to catch any variations in product line values
+  // EXACT matching for the 3 product line values from the filter
   const reportQuery = `SELECT Name,
                               Product_Line__c,
                               StageName,
@@ -18,9 +18,8 @@ async function generateJohnsonHanaExcel() {
                               OR StageName = 'Stage 3 - Pilot'
                               OR StageName = 'Stage 4 - Proposal')
                          AND (Product_Line__c = 'AI-Augmented Contracting'
-                              OR Product_Line__c = 'Multiple'
-                              OR Product_Line__c LIKE 'sigma%'
-                              OR Product_Line__c LIKE '%Insights%')
+                              OR Product_Line__c = 'sigma / Insights'
+                              OR Product_Line__c = 'Multiple')
                        ORDER BY StageName, Name`;
 
   const data = await query(reportQuery, false);
