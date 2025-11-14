@@ -7,7 +7,8 @@ const logger = require('../utils/logger');
  */
 async function generateJohnsonHanaExcel() {
   // Query to match Salesforce Report 00OWj000004DLNhMAO exactly (41 opps)
-  // TESTING: Remove product line filter to see ALL Stage 2-4 opportunities
+  // Product lines from filter: AI-Augmented Contracting, sigma / Insights, Multiple
+  // CRITICAL: Some opps have lowercase 'sigma', some have 'sigma / Insights'
   const reportQuery = `SELECT Name,
                               Product_Line__c,
                               StageName,
@@ -17,6 +18,10 @@ async function generateJohnsonHanaExcel() {
                          AND (StageName = 'Stage 2 - SQO'
                               OR StageName = 'Stage 3 - Pilot'
                               OR StageName = 'Stage 4 - Proposal')
+                         AND (Product_Line__c = 'AI-Augmented Contracting'
+                              OR Product_Line__c = 'sigma / Insights'
+                              OR Product_Line__c = 'sigma'
+                              OR Product_Line__c = 'Multiple')
                        ORDER BY StageName, Name`;
 
   const data = await query(reportQuery, false);
