@@ -1792,113 +1792,11 @@ async function handleFullPipelineExcelReport(userId, channelId, client, threadTs
       thread_ts: threadTs
     });
     
-    // Query full active pipeline (Stages 0-4, all products)
-    const fullPipelineQuery = `SELECT Name,
-                                      Product_Line__c,
-                                      StageName,
-                                      Target_LOI_Date__c,
-                                      ACV__c,
-                                      Owner.Name
-                               FROM Opportunity
-                               WHERE IsClosed = false
-                                 AND (StageName = 'Stage 0 - Qualifying'
-                                      OR StageName = 'Stage 1 - Discovery'
-                                      OR StageName = 'Stage 2 - SQO'
-                                      OR StageName = 'Stage 3 - Pilot'
-                                      OR StageName = 'Stage 4 - Proposal')
-                               ORDER BY StageName, Name`;
+    // Import the full pipeline report module
+    const { sendFullPipelineToSlack } = require('./fullPipelineReport');
     
-    const data = await query(fullPipelineQuery, false);
-    
-    if (!data || !data.records || data.records.length === 0) {
-      await client.chat.postMessage({
-        channel: channelId,
-        text: '❌ No active pipeline data found.',
-        thread_ts: threadTs
-      });
-      return;
-    }
-    
-    // Create Excel for full pipeline
-    const ExcelJS = require('exceljs');
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Active Pipeline');
-    
-    // Define columns for full pipeline
-    worksheet.columns = [
-      { header: 'Opportunity Name', key: 'oppName', width: 40 },
-      { header: 'Product Line', key: 'productLine', width: 30 },
-      { header: 'Stage', key: 'stage', width: 20 },
-      { header: 'Target Sign Date', key: 'targetDate', width: 18 },
-      { header: 'ACV', key: 'acv', width: 15 },
-      { header: 'Owner', key: 'owner', width: 20 }
-    ];
-    
-    // Header styling - BLACK background with WHITE bold text
-    const headerRow = worksheet.getRow(1);
-    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    headerRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FF000000' }
-    };
-    headerRow.height = 22;
-    
-    // Add data
-    data.records.forEach(record => {
-      worksheet.addRow({
-        oppName: record.Name || '',
-        productLine: record.Product_Line__c || '',
-        stage: record.StageName || '',
-        targetDate: record.Target_LOI_Date__c || '',
-        acv: record.ACV__c || 0,
-        owner: record.Owner?.Name || ''
-      });
-    });
-    
-    // Format currency
-    worksheet.getColumn('acv').numFmt = '$#,##0';
-    
-    // Add borders
-    worksheet.eachRow((row) => {
-      row.eachCell((cell) => {
-        cell.border = {
-          top: { style: 'thin' },
-          left: { style: 'thin' },
-          bottom: { style: 'thin' },
-          right: { style: 'thin' }
-        };
-      });
-    });
-    
-    const buffer = await workbook.xlsx.writeBuffer();
-    
-    // Upload to Slack
-    const date = new Date().toISOString().split('T')[0];
-    const filename = `Full_Active_Pipeline_${date}.xlsx`;
-    
-    const stage0 = data.records.filter(r => r.StageName === 'Stage 0 - Qualifying').length;
-    const stage1 = data.records.filter(r => r.StageName === 'Stage 1 - Discovery').length;
-    const stage2 = data.records.filter(r => r.StageName === 'Stage 2 - SQO').length;
-    const stage3 = data.records.filter(r => r.StageName === 'Stage 3 - Pilot').length;
-    const stage4 = data.records.filter(r => r.StageName === 'Stage 4 - Proposal').length;
-    
-    let message = `*Full Active Pipeline Report*\n\n`;
-    message += `Total Opportunities: ${data.totalSize}\n\n`;
-    message += `Stage 0 - Qualifying: ${stage0}\n`;
-    message += `Stage 1 - Discovery: ${stage1}\n`;
-    message += `Stage 2 - SQO: ${stage2}\n`;
-    message += `Stage 3 - Pilot: ${stage3}\n`;
-    message += `Stage 4 - Proposal: ${stage4}\n\n`;
-    message += `All active opportunities (Stages 0-4). All product lines included.`;
-    
-    await client.files.uploadV2({
-      channel_id: channelId,
-      file: buffer,
-      filename: filename,
-      title: "Full Active Pipeline Report",
-      initial_comment: message
-    });
+    // Generate and upload full pipeline Excel
+    await sendFullPipelineToSlack(client, channelId, userId);
     
     logger.info(`✅ Full pipeline Excel report sent to Slack by ${userId}`);
     

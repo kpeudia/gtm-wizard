@@ -17,9 +17,7 @@ async function generateJohnsonHanaExcel() {
                          AND (StageName = 'Stage 2 - SQO'
                               OR StageName = 'Stage 3 - Pilot'
                               OR StageName = 'Stage 4 - Proposal')
-                         AND (Product_Line__c = 'AI-Augmented Contracting'
-                              OR Product_Line__c = 'sigma / Insights'
-                              OR Product_Line__c = 'Multiple')
+                         AND Product_Line__c IN ('AI-Augmented Contracting', 'sigma / Insights', 'Multiple')
                        ORDER BY StageName, Name`;
 
   const data = await query(reportQuery, false);
