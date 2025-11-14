@@ -1727,22 +1727,12 @@ function formatDate(dateString) {
 }
 
 /**
- * Handle Johnson Hana Excel Report Generation (Keigan only)
+ * Handle Johnson Hana Excel Report Generation
+ * Available to: Everyone (read-only operation, no Salesforce writes)
+ * Allows: Users, workflows, scheduled messages
  */
 async function handleJohnsonHanaExcelReport(userId, channelId, client, threadTs) {
-  const KEIGAN_USER_ID = 'U094AQE9V7D';
-  
   try {
-    // Security check - Keigan only
-    if (userId !== KEIGAN_USER_ID) {
-      await client.chat.postMessage({
-        channel: channelId,
-        text: '🔒 Excel report generation is restricted to Keigan. Contact him for reports.',
-        thread_ts: threadTs
-      });
-      return;
-    }
-    
     // Show loading message
     await client.chat.postMessage({
       channel: channelId,
@@ -1769,22 +1759,12 @@ async function handleJohnsonHanaExcelReport(userId, channelId, client, threadTs)
 }
 
 /**
- * Handle Full Pipeline Excel Report Generation (Keigan only)
+ * Handle Full Pipeline Excel Report Generation
+ * Available to: Everyone (read-only operation, no Salesforce writes)
+ * Allows: Users, workflows, scheduled messages
  */
 async function handleFullPipelineExcelReport(userId, channelId, client, threadTs) {
-  const KEIGAN_USER_ID = 'U094AQE9V7D';
-  
   try {
-    // Security check - Keigan only
-    if (userId !== KEIGAN_USER_ID) {
-      await client.chat.postMessage({
-        channel: channelId,
-        text: '🔒 Excel report generation is restricted to Keigan. Contact him for reports.',
-        thread_ts: threadTs
-      });
-      return;
-    }
-    
     // Show loading message
     await client.chat.postMessage({
       channel: channelId,
