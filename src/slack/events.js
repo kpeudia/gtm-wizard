@@ -2143,7 +2143,7 @@ async function handleAccountPlanSave(message, userId, channelId, client, threadT
     
     const account = accountResult.records[0];
     
-    // Format the account plan
+    // Format the account plan (plain text for Salesforce - no markdown)
     const date = new Date();
     const dateFormatted = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
     
@@ -2156,14 +2156,25 @@ async function handleAccountPlanSave(message, userId, channelId, client, threadT
       logger.warn('Could not fetch user info for account plan');
     }
     
-    let formattedPlan = `*Account Plan - Last Updated: ${dateFormatted} by ${userName}*\n\n`;
-    if (planData.clo) formattedPlan += `**CLO Engagement:** ${planData.clo}\n`;
-    if (planData.budget) formattedPlan += `**Budget Holder:** ${planData.budget}\n`;
-    if (planData.champions) formattedPlan += `**Champion(s):** ${planData.champions}\n`;
-    if (planData.useCases) formattedPlan += `**Use Case(s):** ${planData.useCases}\n`;
-    if (planData.whyEudia) formattedPlan += `**Why Eudia:** ${planData.whyEudia}\n`;
-    if (planData.whyNow) formattedPlan += `**Why Now:** ${planData.whyNow}\n`;
-    if (planData.whyAtAll) formattedPlan += `**Why at All:** ${planData.whyAtAll}\n`;
+    // Clean function to remove trailing underscores and extra whitespace
+    const cleanText = (text) => {
+      return text
+        .replace(/_+$/gm, '')  // Remove trailing underscores
+        .replace(/\s+_/g, '')   // Remove space+underscore
+        .trim();
+    };
+    
+    // Plain text formatting (Salesforce doesn't render markdown)
+    let formattedPlan = `ACCOUNT PLAN - Last Updated: ${dateFormatted} by ${userName}\n`;
+    formattedPlan += `${'='.repeat(60)}\n\n`;
+    
+    if (planData.clo) formattedPlan += `CLO ENGAGEMENT:\n${cleanText(planData.clo)}\n\n`;
+    if (planData.budget) formattedPlan += `BUDGET HOLDER:\n${cleanText(planData.budget)}\n\n`;
+    if (planData.champions) formattedPlan += `CHAMPION(S):\n${cleanText(planData.champions)}\n\n`;
+    if (planData.useCases) formattedPlan += `USE CASE(S):\n${cleanText(planData.useCases)}\n\n`;
+    if (planData.whyEudia) formattedPlan += `WHY EUDIA:\n${cleanText(planData.whyEudia)}\n\n`;
+    if (planData.whyNow) formattedPlan += `WHY NOW:\n${cleanText(planData.whyNow)}\n\n`;
+    if (planData.whyAtAll) formattedPlan += `WHY AT ALL:\n${cleanText(planData.whyAtAll)}\n`;
     
     // Update Salesforce
     const { sfConnection } = require('../salesforce/connection');
@@ -2174,17 +2185,26 @@ async function handleAccountPlanSave(message, userId, channelId, client, threadT
       Account_Plan_s__c: formattedPlan
     });
     
-    // Confirm to user
+    // Confirm to user (use Slack markdown for display, but Salesforce gets plain text)
     const sfBaseUrl = process.env.SF_INSTANCE_URL || 'https://eudia.my.salesforce.com';
     const accountUrl = `${sfBaseUrl}/lightning/r/Account/${account.Id}/view`;
     
-    let confirmMessage = `✅ *Account Plan saved for ${account.Name}*\n\n`;
-    confirmMessage += formattedPlan;
-    confirmMessage += `\n<${accountUrl}|View in Salesforce>`;
+    // Build Slack-formatted preview (with markdown for Slack display)
+    let slackPreview = `✅ *Account Plan saved for ${account.Name}*\n\n`;
+    slackPreview += `*ACCOUNT PLAN - Last Updated: ${dateFormatted} by ${userName}*\n`;
+    slackPreview += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    if (planData.clo) slackPreview += `*CLO ENGAGEMENT:*\n${cleanText(planData.clo)}\n\n`;
+    if (planData.budget) slackPreview += `*BUDGET HOLDER:*\n${cleanText(planData.budget)}\n\n`;
+    if (planData.champions) slackPreview += `*CHAMPION(S):*\n${cleanText(planData.champions)}\n\n`;
+    if (planData.useCases) slackPreview += `*USE CASE(S):*\n${cleanText(planData.useCases)}\n\n`;
+    if (planData.whyEudia) slackPreview += `*WHY EUDIA:*\n${cleanText(planData.whyEudia)}\n\n`;
+    if (planData.whyNow) slackPreview += `*WHY NOW:*\n${cleanText(planData.whyNow)}\n\n`;
+    if (planData.whyAtAll) slackPreview += `*WHY AT ALL:*\n${cleanText(planData.whyAtAll)}\n`;
+    slackPreview += `\n<${accountUrl}|View in Salesforce>`;
     
     await client.chat.postMessage({
       channel: channelId,
-      text: confirmMessage,
+      text: slackPreview,
       thread_ts: threadTs
     });
     
@@ -2246,12 +2266,21 @@ async function handleAccountPlanQuery(entities, userId, channelId, client, threa
       return;
     }
     
-    // Return the account plan
+    // Return the account plan (format for Slack display)
     const sfBaseUrl = process.env.SF_INSTANCE_URL || 'https://eudia.my.salesforce.com';
     const accountUrl = `${sfBaseUrl}/lightning/r/Account/${account.Id}/view`;
     
+    // Convert plain text formatting to Slack markdown for better display
+    let planText = account.Account_Plan_s__c;
+    
+    // Convert UPPERCASE HEADERS to *Slack Bold Headers*
+    planText = planText
+      .replace(/^(CLO ENGAGEMENT|BUDGET HOLDER|CHAMPION\(S\)|USE CASE\(S\)|WHY EUDIA|WHY NOW|WHY AT ALL):/gm, '*$1:*')
+      .replace(/^(ACCOUNT PLAN - .*?)$/m, '*$1*')
+      .replace(/^={60}$/m, '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    
     let response = `*Account Plan: ${account.Name}*\n\n`;
-    response += account.Account_Plan_s__c;
+    response += planText;
     response += `\n\n*Account Owner:* ${account.Owner?.Name}`;
     response += `\n<${accountUrl}|View in Salesforce>`;
     
