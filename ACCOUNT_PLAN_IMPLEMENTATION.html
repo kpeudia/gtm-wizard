@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Plan Implementation - GTM-Wizard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #1a1a1a;
+            border-bottom: 3px solid #4A90E2;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        h2 {
+            color: #2c3e50;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            border-left: 4px solid #4A90E2;
+            padding-left: 15px;
+        }
+        
+        h3 {
+            color: #34495e;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+        
+        p {
+            margin-bottom: 15px;
+            line-height: 1.8;
+        }
+        
+        ul, ol {
+            margin-left: 30px;
+            margin-bottom: 20px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        
+        pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+        }
+        
+        strong {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        em {
+            color: #555;
+        }
+        
+        hr {
+            border: none;
+            border-top: 2px solid #e0e0e0;
+            margin: 40px 0;
+        }
+        
+        a {
+            color: #4A90E2;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        td, th {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #4A90E2;
+            color: white;
+            font-weight: 600;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .toc {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+        
+        .toc h2 {
+            margin-top: 0;
+            font-size: 1.3em;
+        }
+        
+        .highlight {
+            background: #fff3cd;
+            padding: 15px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+        }
+        
+        .success {
+            background: #d4edda;
+            padding: 15px;
+            border-left: 4px solid #28a745;
+            margin: 20px 0;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            padding: 15px;
+            border-left: 4px solid #17a2b8;
+            margin: 20px 0;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            padding: 15px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Account Plan Feature - Implementation Summary</h1>
+<p><strong>Date:</strong> November 19, 2025  
+<strong>Status:</strong> ✅ Implemented - Ready for Testing  
+<strong>Developer Notes:</strong> Complete implementation with enhanced unknown query handling</p>
+<hr>
+<h2>🎯 What Was Built</h2>
+<h3>1. Account Plan Save Feature</h3>
+<ul>
+<li><strong>Files Modified:</strong> <code>src/ai/intentParser.js</code>, <code>src/slack/events.js</code></li>
+<li><strong>Intent:</strong> <code>save_account_plan</code></li>
+<li><strong>Access:</strong> All users (no restrictions)</li>
+<li><strong>Salesforce Field:</strong> <code>Account.Account_Plan_s__c</code></li>
+</ul>
+<p><strong>Structured Template:</strong>
+<pre><code>
+add account plan for [Company]:
+CLO engagement: [text]
+Budget holder: [text]
+Champion(s): [text]
+Use case(s): [text]
+Why Eudia: [text]
+Why now: [text]
+Why at all: [text]
+</code></pre></p>
+<p><strong>Features:</strong>
+<ul>
+<li>✅ Flexible trigger phrases (add/save/update account plan)</li>
+<li>✅ Structured field parsing with validation</li>
+<li>✅ Minimum 3 fields required</li>
+<li>✅ Automatic timestamp and user attribution</li>
+<li>✅ Fuzzy account name matching</li>
+<li>✅ Formatted storage in Salesforce</li>
+<li>✅ Confirmation with Salesforce link</li>
+</ul></p>
+<h3>2. Account Plan Query Feature</h3>
+<ul>
+<li><strong>Intent:</strong> <code>query_account_plan</code></li>
+<li><strong>Access:</strong> All users</li>
+</ul>
+<p><strong>Natural Language Queries:</strong>
+<ul>
+<li>"What's the account plan for [Company]?"</li>
+<li>"Show me [Company]'s account plan"</li>
+<li>"Get account plan for [Company]"</li>
+<li>"[Company] account plan"</li>
+<li>"Tell me about the account plan for [Company]"</li>
+</ul></p>
+<p><strong>Features:</strong>
+<ul>
+<li>✅ Flexible natural language parsing</li>
+<li>✅ Account name extraction from multiple phrasings</li>
+<li>✅ Clean formatted display</li>
+<li>✅ Shows account owner</li>
+<li>✅ Helpful prompt if no plan exists</li>
+<li>✅ Salesforce link included</li>
+</ul></p>
+<h3>3. Enhanced Unknown Query Handling</h3>
+<ul>
+<li><strong>Intent:</strong> <code>unknown_query</code></li>
+<li><strong>Purpose:</strong> Graceful fallback for unrecognized queries</li>
+</ul>
+<p><strong>Intelligence:</strong>
+<ul>
+<li>✅ Detects queries without known keywords</li>
+<li>✅ Extracts key words from query</li>
+<li>✅ Provides smart suggestions based on context</li>
+<li>✅ Offers relevant examples</li>
+<li>✅ No more random pipeline reports for unknown queries</li>
+</ul></p>
+<p><strong>Smart Keyword Matching:</strong>
+<tr><td>Keywords</td><td>Suggestion Category</td></tr>
+<tr><td>----------</td><td>-------------------</td></tr>
+<tr><td>company, customer, client</td><td>Account lookups</td></tr>
+<tr><td>sales, revenue, money</td><td>Pipeline data</td></tr>
+<tr><td>report, summary, stats</td><td>Excel reports</td></tr>
+<tr><td>document, agreement</td><td>Contract queries</td></tr></p>
+<hr>
+<h2>📁 Files Modified</h2>
+<h3>1. <code>/src/ai/intentParser.js</code></h3>
+<p><strong>Lines 400-447:</strong> Added Account Plan intent detection
+<pre><code>javascript
+// Account Plan save (ALL USERS can save)
+if ((message.includes('add account plan') <tr><td>message.includes('save account plan')</td></tr> 
+     message.includes('update account plan') || message.includes('account plan for')) &&
+    (message.includes('clo engagement') <tr><td>message.includes('budget holder')</td></tr> 
+     message.includes('champion') <tr><td>message.includes('use case')</td></tr> 
+     message.includes('why eudia') <tr><td>message.includes('why now')</td></tr> message.includes('why at all'))) {
+  intent = 'save_account_plan';
+  // ... returns intent with 0.95 confidence
+}</p>
+<p>// Account Plan query (GET account plan)
+if ((message.includes('account plan') <tr><td>message.includes('strategic plan')</td></tr> 
+     message.includes('account strategy')) &&
+    (message.includes('what') <tr><td>message.includes('show')</td><td>message.includes('get')</td></tr> 
+     message.includes('what\'s') <tr><td>message.includes('whats')</td></tr> message.includes('tell me'))) {
+  intent = 'query_account_plan';
+  // ... extracts account name with multiple regex patterns
+}
+</code></pre></p>
+<p><strong>Lines 1073-1104:</strong> Added unknown query detection
+<pre><code>javascript
+// IMPROVED: Detect truly unknown queries
+const pipelineKeywords = ['pipeline', 'deals', 'opportunities', ...];
+const accountKeywords = ['account', 'company', 'owner', ...];
+const contractKeywords = ['contract', 'pdf', 'loi', ...];</p>
+<p>if (intent === 'pipeline_summary' && hasQuestionWord && !hasKnownKeyword && Object.keys(entities).length <= 1) {
+  return {
+    intent: 'unknown_query',
+    entities: { 
+      extractedWords: words.slice(0, 5),
+      originalIntent: intent
+    },
+    confidence: 0.3,
+    explanation: 'Query not understood - needs clarification'
+  };
+}
+</code></pre></p>
+<h3>2. <code>/src/slack/events.js</code></h3>
+<p><strong>Lines 320-331:</strong> Added intent routing
+<pre><code>javascript
+} else if (parsedIntent.intent === 'save_account_plan') {
+  await handleAccountPlanSave(text, userId, channelId, client, threadTs);
+  return;
+} else if (parsedIntent.intent === 'query_account_plan') {
+  await handleAccountPlanQuery(parsedIntent.entities, userId, channelId, client, threadTs);
+  return;
+} else if (parsedIntent.intent === 'unknown_query') {
+  await handleUnknownQuery(parsedIntent, userId, channelId, client, threadTs);
+  return;
+}
+</code></pre></p>
+<p><strong>Lines 2053-2201:</strong> Added handleAccountPlanSave function
+<ul>
+<li>Parses structured template</li>
+<li>Validates minimum fields</li>
+<li>Queries Salesforce for account</li>
+<li>Formats plan with timestamp and attribution</li>
+<li>Updates <code>Account_Plan_s__c</code> field</li>
+<li>Returns confirmation</li>
+</ul></p>
+<p><strong>Lines 2203-2274:</strong> Added handleAccountPlanQuery function
+<ul>
+<li>Extracts account name from entities</li>
+<li>Queries Salesforce</li>
+<li>Returns formatted plan or helpful prompt</li>
+<li>Includes account owner and Salesforce link</li>
+</ul></p>
+<p><strong>Lines 2276-2349:</strong> Added handleUnknownQuery function
+<ul>
+<li>Extracts key words from query</li>
+<li>Analyzes context</li>
+<li>Provides smart suggestions</li>
+<li>Offers relevant examples</li>
+<li>Logs unknown queries for improvement</li>
+</ul></p>
+<hr>
+<h2>🔧 Technical Details</h2>
+<h3>Intent Detection Priority</h3>
+Account plan intents are detected EARLY in the fallback chain (right after Customer_Brain) to ensure reliable capture before fallthrough to general pipeline queries.
+<h3>Field Parsing Logic</h3>
+<pre><code>javascript
+const planData = {};
+lines.slice(1).forEach(line => {
+  if (line.toLowerCase().includes('clo engagement:')) {
+    planData.clo = line.split(':').slice(1).join(':').trim();
+  }
+  // ... similar for each field
+});
+</code></pre>
+<p>Splits on first colon, preserves remaining colons in content.</p>
+<h3>Validation</h3>
+<pre><code>javascript
+const fieldCount = Object.keys(planData).length;
+if (fieldCount < 3) {
+  // Return error - incomplete plan
+}
+</code></pre>
+<p>Minimum 3 fields required to prevent incomplete plans.</p>
+<h3>Storage Format</h3>
+<pre><code>
+<em>Account Plan - Last Updated: 11/19/2025 by John Smith</em>
+<p><strong>CLO Engagement:</strong> [content]
+<strong>Budget Holder:</strong> [content]
+...
+</code></pre></p>
+<p>Markdown-formatted for readability in both Slack and Salesforce.</p>
+<h3>Unknown Query Detection</h3>
+<pre><code>javascript
+const hasKnownKeyword = allKnownKeywords.some(keyword => message.includes(keyword));
+const hasQuestionWord = /what<tr><td>who</td><td>when</td><td>where</td><td>how</td><td>show</td><td>tell</td><td>get</td><td>give</td></tr>find/i.test(message);
+<p>if (intent === 'pipeline_summary' && hasQuestionWord && !hasKnownKeyword && Object.keys(entities).length <= 1) {
+  // Mark as unknown
+}
+</code></pre></p>
+<p>Triggers only when:
+<ul>
+<li>Intent is still default (pipeline_summary)</li>
+<li>Message has question words</li>
+<li>No known domain keywords found</li>
+<li>No entities extracted</li>
+</ul></p>
+<hr>
+<h2>🧪 Testing</h2>
+<h3>Test File Created</h3>
+<code>test-account-plan.js</code> - Comprehensive intent detection tests
+<p><strong>Tests:</strong>
+<ul>
+<li>Save account plan (3 variations)</li>
+<li>Query account plan (7 variations)</li>
+<li>Unknown query detection (5 test cases)</li>
+</ul></p>
+<p><strong>Run Tests:</strong>
+<pre><code>bash
+node test-account-plan.js
+</code></pre></p>
+<p><strong>Expected Output:</strong>
+<pre><code>
+✅ All tests passed!
+Account Plan feature is ready for testing in Slack!
+</code></pre></p>
+<hr>
+<h2>📋 Deployment Checklist</h2>
+<h3>Pre-Deploy Testing</h3>
+<ul>
+<li>[x] Intent detection tests pass</li>
+<li>[x] No linting errors</li>
+<li>[x] Code reviewed for edge cases</li>
+<li>[x] Documentation complete</li>
+</ul>
+<h3>Salesforce Prerequisites</h3>
+<ul>
+<li>[ ] Verify <code>Account_Plan_s__c</code> field exists</li>
+<li>[ ] Confirm field is Long Text Area (131,072 chars)</li>
+<li>[ ] Check field permissions (all users need write)</li>
+<li>[ ] Test field accessibility via API</li>
+</ul>
+<h3>Slack Testing (Post-Deploy)</h3>
+<ul>
+<li>[ ] Create test account plan</li>
+<li>[ ] Query test account plan</li>
+<li>[ ] Update existing plan</li>
+<li>[ ] Test validation errors</li>
+<li>[ ] Test account not found</li>
+<li>[ ] Test unknown query handling</li>
+<li>[ ] Verify Salesforce link works</li>
+<li>[ ] Confirm formatting displays correctly</li>
+</ul>
+<h3>Team Rollout</h3>
+<ul>
+<li>[ ] Send onboarding message to team</li>
+<li>[ ] Demo in team meeting</li>
+<li>[ ] Share ACCOUNT_PLAN_GUIDE.md</li>
+<li>[ ] Monitor adoption and feedback</li>
+<li>[ ] Iterate based on usage patterns</li>
+</ul>
+<hr>
+<h2>⚠️ Important Notes</h2>
+<h3>Security</h3>
+<ul>
+<li><strong>ALL users</strong> can create/update account plans</li>
+<li>This is intentional - collaborative feature</li>
+<li>Different from Customer_Brain (Keigan-only)</li>
+<li>Audit trail via timestamp + attribution</li>
+</ul>
+<h3>Field Flexibility</h3>
+Account name extraction handles:
+<ul>
+<li>Multiple phrasings</li>
+<li>Fuzzy matching (same as account lookups)</li>
+<li>Finds "Intel" when user says "Intel Corporation"</li>
+<li>Case insensitive</li>
+</ul>
+<h3>Error Handling</h3>
+All errors include:
+<ul>
+<li>Clear error message</li>
+<li>Suggested next steps</li>
+<li>Examples of correct usage</li>
+<li>Salesforce verification commands</li>
+</ul>
+<h3>Performance</h3>
+<ul>
+<li>Single Salesforce query per operation</li>
+<li>Fuzzy account matching uses LIKE</li>
+<li>Limited to 5 account matches</li>
+<li>Takes first match (best match)</li>
+</ul>
+<hr>
+<h2>🔮 Future Considerations</h2>
+<h3>Potential Enhancements</h3>
+<ul>
+<li><strong>Plan Versioning:</strong> Store history of changes</li>
+<li><strong>Plan Templates:</strong> Pre-fill based on industry/segment</li>
+<li><strong>AI Suggestions:</strong> Recommend plan improvements</li>
+<li><strong>Plan Scoring:</strong> Completeness/quality metrics</li>
+<li><strong>Notifications:</strong> Alert when plans are stale</li>
+<li><strong>Bulk Operations:</strong> Update multiple plans at once</li>
+<li><strong>Plan Comparison:</strong> Compare plans across accounts</li>
+</ul>
+<h3>Data Migration</h3>
+If needed to migrate existing account strategies:
+<ul>
+<li>Export existing data from wherever it lives</li>
+<li>Format as account plans</li>
+<li>Bulk update via Salesforce Data Loader</li>
+<li>Or use Slack bot to create plans</li>
+</ul>
+<h3>Integration Opportunities</h3>
+<ul>
+<li>Opportunity stage changes → Prompt plan update</li>
+<li>Account assignment → Send plan to new owner</li>
+<li>Deal won → Update plan with post-sale info</li>
+<li>QBR prep → Auto-retrieve relevant plans</li>
+</ul>
+<hr>
+<h2>📊 Monitoring</h2>
+<h3>What to Track</h3>
+<ul>
+<li><strong>Usage:</strong> How many plans created/updated/queried</li>
+<li><strong>Users:</strong> Who's actively using the feature</li>
+<li><strong>Errors:</strong> Common failure patterns</li>
+<li><strong>Unknown Queries:</strong> What are users trying to ask</li>
+<li><strong>Plan Completeness:</strong> Average fields per plan</li>
+</ul>
+<h3>Logs to Watch</h3>
+``<code>javascript
+logger.info(</code>✅ Account plan saved for ${account.Name} by ${userName}<code>);
+logger.info(</code>✅ Account plan retrieved for ${account.Name} by user ${userId}<code>);
+logger.info(</code>❓ Unknown query from ${userId}: "${originalMessage}"<code>);
+</code>``
+<h3>Success Metrics</h3>
+<ul>
+<li>80%+ of strategic accounts have plans within 30 days</li>
+<li>Plans updated at least monthly</li>
+<li>All team members using feature</li>
+<li>Zero "account not found" errors</li>
+<li>Unknown queries < 5% of total</li>
+</ul>
+<hr>
+<h2>🐛 Known Limitations</h2>
+<h3>Current Constraints</h3>
+<ul>
+<li><strong>Single Account:</strong> One plan per request (no bulk)</li>
+<li><strong>No History:</strong> Overwrites previous plan (no diff view)</li>
+<li><strong>No Validation:</strong> Doesn't validate field content quality</li>
+<li><strong>No Templates:</strong> Users must know structure</li>
+<li><strong>English Only:</strong> No multi-language support</li>
+</ul>
+<h3>Workarounds</h3>
+<ul>
+<li>Create separate test for bulk needs</li>
+<li>Copy to Customer_Brain for history if needed</li>
+<li>Train team on good vs bad content</li>
+<li>Provide template in docs (users can copy/paste)</li>
+<li>English is primary language</li>
+</ul>
+<hr>
+<h2>✅ Completion Checklist</h2>
+<p><strong>Code:</strong>
+<ul>
+<li>[x] Intent detection implemented</li>
+<li>[x] Save handler implemented</li>
+<li>[x] Query handler implemented</li>
+<li>[x] Unknown query handler implemented</li>
+<li>[x] Error handling complete</li>
+<li>[x] Validation logic in place</li>
+<li>[x] No linting errors</li>
+</ul></p>
+<p><strong>Testing:</strong>
+<ul>
+<li>[x] Test file created</li>
+<li>[x] Intent detection tests</li>
+<li>[x] Unknown query tests</li>
+<li>[ ] End-to-end Slack tests (post-deploy)</li>
+<li>[ ] Salesforce field tests</li>
+</ul></p>
+<p><strong>Documentation:</strong>
+<ul>
+<li>[x] Complete user guide</li>
+<li>[x] Implementation summary</li>
+<li>[x] Testing instructions</li>
+<li>[x] Troubleshooting guide</li>
+<li>[x] Team training materials</li>
+</ul></p>
+<p><strong>Deployment:</strong>
+<ul>
+<li>[ ] Merge to main branch</li>
+<li>[ ] Auto-deploy to Render</li>
+<li>[ ] Verify deployment</li>
+<li>[ ] Run post-deploy tests</li>
+<li>[ ] Monitor logs</li>
+<li>[ ] Team announcement</li>
+</ul></p>
+<hr>
+<p><strong>Status:</strong> ✅ Ready for deployment and testing  
+<strong>Next Step:</strong> Deploy to Render and test in Slack  
+<strong>Owner:</strong> Keigan Pesenti  
+<strong>ETA:</strong> Can deploy immediately</p>
+<hr>
+<p><strong>Questions or concerns before deploying? All code is production-ready and follows existing patterns.</strong></p>
+<p></p>
+    </div>
+</body>
+</html>

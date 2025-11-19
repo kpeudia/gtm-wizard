@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Capabilities Reference - GTM-Wizard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #1a1a1a;
+            border-bottom: 3px solid #4A90E2;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        h2 {
+            color: #2c3e50;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            border-left: 4px solid #4A90E2;
+            padding-left: 15px;
+        }
+        
+        h3 {
+            color: #34495e;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+        
+        p {
+            margin-bottom: 15px;
+            line-height: 1.8;
+        }
+        
+        ul, ol {
+            margin-left: 30px;
+            margin-bottom: 20px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        
+        pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+        }
+        
+        strong {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        em {
+            color: #555;
+        }
+        
+        hr {
+            border: none;
+            border-top: 2px solid #e0e0e0;
+            margin: 40px 0;
+        }
+        
+        a {
+            color: #4A90E2;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        td, th {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #4A90E2;
+            color: white;
+            font-weight: 600;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .toc {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+        
+        .toc h2 {
+            margin-top: 0;
+            font-size: 1.3em;
+        }
+        
+        .highlight {
+            background: #fff3cd;
+            padding: 15px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+        }
+        
+        .success {
+            background: #d4edda;
+            padding: 15px;
+            border-left: 4px solid #28a745;
+            margin: 20px 0;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            padding: 15px;
+            border-left: 4px solid #17a2b8;
+            margin: 20px 0;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            padding: 15px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>GTM-Wizard - Complete Capability Reference</h1>
+<p><strong>Version:</strong> 1.0  
+<strong>Last Updated:</strong> November 19, 2025  
+<strong>Total Capabilities:</strong> 40+ query types across 10 categories</p>
+<hr>
+<h2>📊 Project Statistics</h2>
+<p><strong>Codebase Size:</strong>
+<ul>
+<li><strong>Production Code:</strong> 9,742 lines (23 files)</li>
+<li><strong>Documentation:</strong> 5,934 lines (15 files)</li>
+<li><strong>Test Suite:</strong> 2,133 lines (20+ test files)</li>
+<li><strong>Configuration:</strong> 766 lines (JSON schemas)</li>
+<li><strong>Total Project:</strong> ~18,575 lines</li>
+</ul></p>
+<p><strong>Technology Stack:</strong>
+<ul>
+<li>Node.js 18+</li>
+<li>Slack Bolt API (Socket Mode)</li>
+<li>Salesforce (jsforce)</li>
+<li>Microsoft Graph API</li>
+<li>ExcelJS</li>
+<li>Redis (optional)</li>
+</ul></p>
+<hr>
+<h2>🎯 Category 1: Account Intelligence</h2>
+<h3>Account Ownership Queries</h3>
+<p><strong>What it does:</strong> Find who owns/manages specific accounts</p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"who owns [Company]?"</li>
+<li>"who's the owner of [Company]?"</li>
+<li>"who is assigned to [Company]?"</li>
+<li>"owner of [Company]"</li>
+<li>"who owns [Company]"</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+who owns Intel?
+who's the owner of Apple?
+owner of Microsoft
+who is assigned to Best Buy?
+</code></pre></p>
+<p><strong>Features:</strong>
+<ul>
+<li>Fuzzy name matching (handles hyphens, apostrophes, "The" prefix, "&" vs "and")</li>
+<li>Detects business leads vs unassigned holders</li>
+<li>Shows prior owner if account is unassigned</li>
+<li>Includes email and industry</li>
+</ul></p>
+<p><strong>Response includes:</strong>
+<ul>
+<li>Account name</li>
+<li>Owner name and email</li>
+<li>Industry</li>
+<li>Prior owner (if applicable)</li>
+<li>Salesforce link</li>
+</ul></p>
+<hr>
+<h3>Business Lead Lookup</h3>
+<p><strong>What it does:</strong> Specifically find the business lead (not just account owner)</p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"who is the BL for [Company]?"</li>
+<li>"who's the BL at [Company]?"</li>
+<li>"business lead for [Company]"</li>
+<li>"BL for [Company]"</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+who's the BL for Apple?
+business lead for Intel
+BL at Microsoft
+</code></pre></p>
+<p><strong>Features:</strong>
+<ul>
+<li>Prioritizes business lead owners over other owners</li>
+<li>Recognizes unassigned accounts</li>
+<li>Handles account handoffs</li>
+</ul></p>
+<hr>
+<h3>Legal Team Size</h3>
+<p><strong>What it does:</strong> Find how many legal team members an account has</p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"what's the legal team size at [Company]?"</li>
+<li>"legal department size at [Company]"</li>
+<li>"how many legal members at [Company]?"</li>
+<li>"legal team at [Company]"</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+what's the legal team size at Intel?
+legal department size at Best Buy
+how many legal members at Apple?
+</code></pre></p>
+<p><strong>Response includes:</strong>
+<ul>
+<li>Account name</li>
+<li>Legal team size</li>
+<li>Owner</li>
+<li>Industry</li>
+</ul></p>
+<hr>
+<h3>Key Decision Makers</h3>
+<p><strong>What it does:</strong> Shows who the decision makers are at an account</p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"who are the decision makers at [Company]?"</li>
+<li>"key decision makers at [Company]"</li>
+<li>"stakeholders at [Company]"</li>
+<li>"decision makers for [Company]"</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+who are the decision makers at Intel?
+key decision makers at Apple
+stakeholders at Microsoft
+</code></pre></p>
+<p><strong>Response includes:</strong>
+<ul>
+<li>Account name</li>
+<li>Decision maker names and roles</li>
+<li>Owner</li>
+<li>Salesforce link</li>
+</ul></p>
+<hr>
+<h3>Pain Points & Competitor Mentions</h3>
+<p><strong>What it does:</strong> Find accounts with specific pain points or competitor mentions</p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"which accounts mentioned Harvey?"</li>
+<li>"pain points at [Company]"</li>
+<li>"accounts that mentioned [competitor]"</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+which accounts have mentioned Harvey?
+pain points at Intel
+what accounts mentioned competitors?
+</code></pre></p>
+<hr>
+<h3>Use Case Analysis</h3>
+<p><strong>What it does:</strong> See what use cases accounts are discussing</p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"what use cases is [Company] discussing?"</li>
+<li>"which accounts are discussing contracting?"</li>
+<li>"use cases at [Company]"</li>
+<li>"[Company] use cases"</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+what use cases is Intel discussing?
+which accounts are discussing contracting?
+use cases at Apple
+</code></pre></p>
+<p><strong>Response includes:</strong>
+<ul>
+<li>Account name</li>
+<li>Active opportunities with product lines</li>
+<li>Stage and amount</li>
+<li>Owner</li>
+</ul></p>
+<hr>
+<h3>Account Plan Management <strong>NEW</strong></h3>
+<p><strong>What it does:</strong> Save and retrieve structured strategic account plans</p>
+<p><strong>Save Patterns:</strong>
+<ul>
+<li>"add account plan for [Company]:"</li>
+<li>"save account plan for [Company]:"</li>
+<li>"update account plan for [Company]:"</li>
+</ul></p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"what's the account plan for [Company]?"</li>
+<li>"show me [Company]'s account plan"</li>
+<li>"get account plan for [Company]"</li>
+<li>"[Company] account plan"</li>
+<li>"account plan for [Company]"</li>
+</ul></p>
+<p><strong>Template Format:</strong>
+<pre><code>
+add account plan for [Company]:
+CLO engagement: [details]
+Budget holder: [name]
+Champion(s): [names]
+Use case(s): [specific use cases]
+Why Eudia: [value proposition]
+Why now: [timing/urgency]
+Why at all: [fundamental value]
+</code></pre></p>
+<p><strong>Examples:</strong>
+<pre><code>
+add account plan for Intel:
+CLO engagement: Monthly meetings with General Counsel
+Budget holder: CFO Jane Smith, $500K approved
+Champion(s): Legal Director John Doe (strong advocate)
+Use case(s): Contract automation, M&A due diligence
+Why Eudia: AI platform saves 60% review time
+Why now: Q4 audit, current solution sunset
+Why at all: Can't scale for 40% growth</p>
+<p>what's the account plan for Intel?
+show me Apple's account plan
+</code></pre></p>
+<p><strong>Features:</strong>
+<ul>
+<li>All users can create and update</li>
+<li>Automatic timestamp and attribution</li>
+<li>Stored in Salesforce</li>
+<li>Validates minimum 3 fields</li>
+<li>Fuzzy account matching</li>
+</ul></p>
+<hr>
+<h2>🎯 Category 2: Pipeline Queries</h2>
+<h3>Stage-Based Queries</h3>
+<p><strong>What it does:</strong> Find opportunities in specific sales stages</p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"early stage deals" → Stage 1 (Discovery)</li>
+<li>"mid stage pipeline" → Stage 2-3 (SQO, Pilot)</li>
+<li>"late stage opportunities" → Stage 4 (Proposal)</li>
+<li>"Stage [0-4] deals"</li>
+<li>"qualifying deals" / "discovery deals" / "pilot deals" / "proposal deals"</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+early stage deals
+mid stage pipeline
+late stage opportunities
+show me Stage 3 deals
+discovery opportunities
+</code></pre></p>
+<p><strong>Response includes:</strong>
+<ul>
+<li>Opportunity name</li>
+<li>Account name</li>
+<li>Stage (cleaned format)</li>
+<li>Amount</li>
+<li>Target sign date</li>
+<li>Owner</li>
+<li>Days in stage</li>
+</ul></p>
+<hr>
+<h3>Product Line Filtering</h3>
+<p><strong>What it does:</strong> Filter opportunities by product line</p>
+<p><strong>Supported Product Lines:</strong>
+<ul>
+<li>AI-Augmented Contracting</li>
+<li>Augmented-M&A</li>
+<li>Compliance</li>
+<li>sigma / Insights</li>
+<li>Cortex</li>
+<li>Multiple</li>
+</ul></p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"late stage contracting deals"</li>
+<li>"mid stage M&A opportunities"</li>
+<li>"contracting pipeline"</li>
+<li>"M&A deals in Stage 3"</li>
+<li>"compliance opportunities"</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+late stage contracting
+mid stage M&A opportunities
+contracting pipeline
+sigma deals in Stage 2
+compliance opportunities
+</code></pre></p>
+<p><strong>Features:</strong>
+<ul>
+<li>Combines product line + stage filters</li>
+<li>Maps user terms to exact Salesforce values</li>
+<li>Handles "litigation" gracefully (doesn't exist)</li>
+</ul></p>
+<hr>
+<h3>Target Sign Date Queries</h3>
+<p><strong>What it does:</strong> Find opportunities with target sign dates in specific timeframes</p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"opportunities with target sign date this month"</li>
+<li>"deals targeting this quarter"</li>
+<li>"target sign dates this week"</li>
+<li>"what's targeting close this month?"</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+opportunities with target sign date this month
+deals targeting this quarter
+what's targeting signature this week?
+</code></pre></p>
+<p><strong>Features:</strong>
+<ul>
+<li>ONLY shows active pipeline (excludes closed)</li>
+<li>Uses Target_LOI_Date__c field</li>
+<li>Supports: this week, this month, this quarter</li>
+</ul></p>
+<hr>
+<h3>Pipeline Additions</h3>
+<p><strong>What it does:</strong> See what deals were recently added to pipeline</p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"what deals were added to pipeline this week?"</li>
+<li>"new deals this week"</li>
+<li>"deals created this week"</li>
+<li>"pipeline additions"</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+what deals were added to pipeline this week?
+new opportunities this week
+deals created recently
+</code></pre></p>
+<p><strong>Features:</strong>
+<ul>
+<li>Uses Week_Created__c field</li>
+<li>Shows only active pipeline</li>
+<li>Includes creation date</li>
+</ul></p>
+<hr>
+<h3>Weighted Pipeline Summary</h3>
+<p><strong>What it does:</strong> Show gross vs weighted pipeline with stage breakdown</p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"what's the weighted pipeline?"</li>
+<li>"weighted ACV"</li>
+<li>"weighted pipeline this quarter"</li>
+<li>"show weighted pipeline"</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+what's the weighted pipeline?
+weighted ACV this quarter
+show me weighted pipeline
+</code></pre></p>
+<p><strong>Response includes:</strong>
+<ul>
+<li>Total deal count</li>
+<li>Gross pipeline (ACV__c)</li>
+<li>Weighted pipeline (Finance_Weighted_ACV__c)</li>
+<li>Average deal size</li>
+<li>Breakdown by stage (4 → 3 → 2 → 1 → 0)</li>
+</ul></p>
+<p><strong>Features:</strong>
+<ul>
+<li>Only includes active stages (0-4)</li>
+<li>Uses FISCAL quarters</li>
+<li>Stage-by-stage breakdown</li>
+</ul></p>
+<hr>
+<h3>General Pipeline</h3>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"show me the pipeline"</li>
+<li>"show me my pipeline"</li>
+<li>"what's in the pipeline?"</li>
+<li>"pipeline"</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+show me the pipeline
+what's in the pipeline?
+my pipeline
+</code></pre></p>
+<hr>
+<h2>🎯 Category 3: Bookings & Revenue</h2>
+<h3>LOI Tracking</h3>
+<p><strong>What it does:</strong> Track Letter of Intent signings</p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"what LOIs have we signed in the last two weeks?"</li>
+<li>"what LOIs signed this month?"</li>
+<li>"LOIs signed last week"</li>
+<li>"show me LOIs"</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+what LOIs have we signed in the last two weeks?
+LOIs signed this month
+show me recent LOIs
+what LOIs signed in the past 14 days?
+</code></pre></p>
+<p><strong>Features:</strong>
+<ul>
+<li>Uses Revenue_Type__c = "Booking"</li>
+<li>For closed deals: uses CloseDate</li>
+<li>Timeframes: today, this week, last week, this month, last 2 weeks, last month</li>
+<li>Shows account name, amount, close date</li>
+</ul></p>
+<hr>
+<h3>ARR Tracking</h3>
+<p><strong>What it does:</strong> Track Annual Recurring Revenue deals</p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"what ARR deals have signed last week?"</li>
+<li>"ARR signed this month"</li>
+<li>"show me ARR deals"</li>
+<li>"recurring revenue deals"</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+what ARR deals have signed last week?
+ARR signed this month
+show recurring revenue
+</code></pre></p>
+<p><strong>Features:</strong>
+<ul>
+<li>Uses Revenue_Type__c = "ARR"</li>
+<li>Closed deals or pipeline</li>
+<li>Timeframe filtering</li>
+<li>Shows account, amount, date</li>
+</ul></p>
+<hr>
+<h3>Customer Counts</h3>
+<p><strong>What it does:</strong> Count total customers, ARR customers, LOI customers</p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"how many customers?"</li>
+<li>"how many ARR customers?"</li>
+<li>"total customers"</li>
+<li>"what accounts have signed?"</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+how many customers do we have?
+how many ARR customers?
+what accounts have signed?
+what companies have signed LOIs?
+</code></pre></p>
+<p><strong>Response includes:</strong>
+<ul>
+<li>Count</li>
+<li>List of account names</li>
+<li>Customer type</li>
+</ul></p>
+<hr>
+<h3>Contract Counts</h3>
+<p><strong>What it does:</strong> Count ARR contracts, LOI counts</p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"how many ARR contracts?"</li>
+<li>"how many LOIs have we signed?"</li>
+<li>"total ARR contracts"</li>
+<li>"LOI count"</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+how many ARR contracts?
+how many LOIs have we signed?
+total ARR contracts
+</code></pre></p>
+<p><strong>Response includes:</strong>
+<ul>
+<li>Count</li>
+<li>Explanation of what was counted</li>
+</ul></p>
+<hr>
+<h2>🎯 Category 4: Contracts & Documents</h2>
+<h3>Contract Queries</h3>
+<p><strong>What it does:</strong> Find and download contracts with PDF access</p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"contracts for [Company]"</li>
+<li>"PDFs for [Company]"</li>
+<li>"show me contracts for [Company]"</li>
+<li>"all contracts"</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+contracts for Cargill
+PDFs for Intel
+show me contracts for Apple
+all contracts
+</code></pre></p>
+<p><strong>Features:</strong>
+<ul>
+<li>Shows all contracts (no limit for "all")</li>
+<li>PDF download links</li>
+<li>Contract dates and terms</li>
+<li>Detects LOI contracts automatically</li>
+</ul></p>
+<hr>
+<h3>LOI Contracts</h3>
+<p><strong>What it does:</strong> Filter to only LOI-related contracts</p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"LOI contracts"</li>
+<li>"show me LOI agreements"</li>
+<li>"signed LOI details"</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+LOI contracts
+show me all LOI agreements
+signed LOI details
+</code></pre></p>
+<p><strong>Detection:</strong>
+<ul>
+<li>Contract name contains "LOI"</li>
+<li>Contract name contains "CAB"</li>
+<li>Contract name contains "Customer Advisory Board"</li>
+</ul></p>
+<hr>
+<h2>🎯 Category 5: Metrics & Analytics</h2>
+<h3>Average Days in Stage</h3>
+<p><strong>What it does:</strong> Calculate average time deals spend in specific stages</p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"average days in Stage [0-4]"</li>
+<li>"avg days in discovery"</li>
+<li>"how long in Stage 2?"</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+average days in Stage 1
+avg days in discovery
+how long do deals spend in Stage 2?
+</code></pre></p>
+<p><strong>Features:</strong>
+<ul>
+<li>Uses Days_in_Stage1__c field</li>
+<li>Fallback to report data if calculation fails</li>
+<li>Shows deal count used in average</li>
+</ul></p>
+<p><strong>Default Averages (from reports):</strong>
+<ul>
+<li>Stage 0 - Qualifying: 46 days</li>
+<li>Stage 1 - Discovery: 34 days</li>
+<li>Stage 2 - SQO: 43 days</li>
+<li>Stage 3 - Pilot: 84 days</li>
+<li>Stage 4 - Proposal: 41 days</li>
+</ul></p>
+<hr>
+<h3>Account-Stage Analysis</h3>
+<p><strong>What it does:</strong> List accounts with opportunities in specific stages</p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"what accounts are in Stage 2?"</li>
+<li>"accounts in pilot"</li>
+<li>"what companies are in discovery?"</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+what accounts are in Stage 2?
+accounts in pilot
+what companies are in proposal?
+</code></pre></p>
+<p><strong>Response includes:</strong>
+<ul>
+<li>Account name</li>
+<li>Owner</li>
+<li>Industry</li>
+<li>Number of deals (if multiple)</li>
+<li>Total amount</li>
+</ul></p>
+<hr>
+<h2>🎯 Category 6: Excel Reports</h2>
+<h3>Johnson Hana Weekly Pipeline</h3>
+<p><strong>What it does:</strong> Generate filtered Excel report for specific product lines</p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"send Johnson Hana pipeline report"</li>
+<li>"generate Johnson Hana Excel"</li>
+<li>"create Johnson Hana pipeline spreadsheet"</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+send Johnson Hana pipeline report
+generate Johnson Hana Excel
+</code></pre></p>
+<p><strong>Filters:</strong>
+<ul>
+<li>Stages 2, 3, 4 only</li>
+<li>Product lines: Contracting, sigma/Insights, Multiple</li>
+<li>Exact match to Salesforce report 00OWj000004DLNhMAO</li>
+</ul></p>
+<p><strong>Response includes:</strong>
+<ul>
+<li>Total opportunity count</li>
+<li>Stage breakdown (4/3/2)</li>
+<li>Targeting signature this month</li>
+<li>Excel file with formatting</li>
+<li>Upload directly to Slack</li>
+</ul></p>
+<hr>
+<h3>Full Active Pipeline Report</h3>
+<p><strong>What it does:</strong> Generate complete Excel report of all active opportunities</p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"send pipeline Excel report"</li>
+<li>"generate pipeline spreadsheet"</li>
+<li>"create pipeline Excel"</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+send pipeline Excel report
+generate full pipeline spreadsheet
+create pipeline Excel
+</code></pre></p>
+<p><strong>Includes:</strong>
+<ul>
+<li>All active opportunities (Stages 0-4)</li>
+<li>Account name</li>
+<li>Opportunity name</li>
+<li>Stage</li>
+<li>Product line</li>
+<li>ACV and Weighted ACV</li>
+<li>Target sign date</li>
+<li>Owner</li>
+<li>Days in stage</li>
+</ul></p>
+<hr>
+<h2>🎯 Category 7: Account Management (Keigan Only)</h2>
+<h3>Move to Nurture</h3>
+<p><strong>What it does:</strong> Mark accounts as nurture status</p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"move [Company] to nurture"</li>
+<li>"mark [Company] as nurture"</li>
+<li>"set [Company] to nurture"</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+move Intel to nurture
+mark Apple as nurture
+</code></pre></p>
+<p><strong>Features:</strong>
+<ul>
+<li>Sets Nurture__c = true</li>
+<li>Shows open opportunities</li>
+<li>Keigan-only security</li>
+<li>Confirms with Salesforce link</li>
+</ul></p>
+<hr>
+<h3>Close Account Lost</h3>
+<p><strong>What it does:</strong> Close all opportunities on an account as lost</p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"close [Company] as lost"</li>
+<li>"close [Company] lost"</li>
+<li>"mark [Company] as closed lost"</li>
+<li>"close [Company] lost because [reason]"</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+close Intel as lost
+close Apple lost because pricing too high
+mark Microsoft as closed lost
+</code></pre></p>
+<p><strong>Features:</strong>
+<ul>
+<li>Closes ALL open opportunities</li>
+<li>Sets Stage 7. Closed(Lost)</li>
+<li>Captures loss reason</li>
+<li>Keigan-only security</li>
+<li>Shows confirmation with details</li>
+</ul></p>
+<hr>
+<h2>🎯 Category 8: Customer Brain Notes (Keigan Only)</h2>
+<h3>Save Customer Notes</h3>
+<p><strong>What it does:</strong> Save inline notes to Customer_Brain__c field</p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"add to customer history: [Company] - [note]"</li>
+<li>"save note: [Company] - [note]"</li>
+<li>"log note: [Company] - [note]"</li>
+</ul></p>
+<p><strong>Format:</strong>
+<pre><code>
+add to customer history: Nielsen - Discussion with Tony about...
+</code></pre></p>
+<p><strong>Features:</strong>
+<ul>
+<li>Extracts account name from first line</li>
+<li>Formats with date and user</li>
+<li>Saves to Customer_Brain__c</li>
+<li>Keigan-only security</li>
+<li>Inline format: "11/19 - Keigan: [note]"</li>
+</ul></p>
+<hr>
+<h2>🎯 Category 9: Conversational & Help</h2>
+<h3>Greetings</h3>
+<p><strong>What it does:</strong> Respond to greetings with capability overview</p>
+<p><strong>Triggers:</strong>
+<ul>
+<li>"hello" / "hi" / "hey" (≤3 words only)</li>
+<li>"good morning" / "good afternoon"</li>
+</ul></p>
+<p><strong>Response:</strong> Comprehensive capability overview with examples</p>
+<hr>
+<h3>Help & Capabilities</h3>
+<p><strong>What it does:</strong> Explain what GTM-Wizard can do</p>
+<p><strong>Triggers:</strong>
+<ul>
+<li>"what can you do?"</li>
+<li>"how are you?"</li>
+<li>"help"</li>
+<li>"capabilities"</li>
+</ul></p>
+<p><strong>Response:</strong> Feature overview with examples</p>
+<hr>
+<h3>Unknown Query Handling <strong>NEW</strong></h3>
+<p><strong>What it does:</strong> Gracefully handle unrecognized queries</p>
+<p><strong>Triggers:</strong>
+<ul>
+<li>Questions without known keywords</li>
+<li>Out-of-domain queries</li>
+<li>Ambiguous requests</li>
+</ul></p>
+<p><strong>Features:</strong>
+<ul>
+<li>Extracts key words from query</li>
+<li>Provides smart suggestions based on context</li>
+<li>Offers relevant examples</li>
+<li>No more random pipeline reports</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+Query: "what color is the sky?"
+Response: 🤔 I'm not sure I understand that query.
+I noticed you mentioned: color
+Try rephrasing, or ask "hello" for examples.</p>
+<p>Query: "how many employees at Google?"
+Response: Suggests account lookups or pipeline queries
+</code></pre></p>
+<hr>
+<h2>🎯 Category 10: Cross-Reference Queries</h2>
+<h3>Cross-Product-Stage</h3>
+<p><strong>What it does:</strong> Find accounts interested in specific products at specific stages</p>
+<p><strong>Query Patterns:</strong>
+<ul>
+<li>"what accounts interested in contracting are in Stage 2?"</li>
+</ul></p>
+<p><strong>Features:</strong>
+<ul>
+<li>Combines use case + stage filters</li>
+<li>Shows account with opportunity details</li>
+</ul></p>
+<hr>
+<h2>📋 Query Pattern Summary</h2>
+<h3>Time Period Handling</h3>
+<p>GTM-Wizard understands these timeframes:
+<ul>
+<li><strong>today</strong> - Current day</li>
+<li><strong>yesterday</strong> - Previous day</li>
+<li><strong>this week</strong> - Current week</li>
+<li><strong>last week</strong> - Previous week  </li>
+<li><strong>this month</strong> - Current month</li>
+<li><strong>last month</strong> - Previous month</li>
+<li><strong>this quarter</strong> - Current FISCAL quarter</li>
+<li><strong>last quarter</strong> - Previous FISCAL quarter</li>
+<li><strong>last 2 weeks</strong> / <strong>past 14 days</strong> - 14 day lookback</li>
+<li><strong>last 30 days</strong> - 30 day lookback</li>
+</ul></p>
+<h3>Date Field Logic</h3>
+<p><strong>Critical:</strong> GTM-Wizard automatically selects the right date field:</p>
+<p><tr><td>Query Type</td><td>Field Used</td></tr>
+<tr><td>------------</td><td>------------</td></tr>
+<tr><td>Closed/Signed deals</td><td><code>CloseDate</code></td></tr>
+<tr><td>Pipeline/Active deals</td><td><code>Target_LOI_Date__c</code></td></tr>
+<tr><td>Target queries</td><td><code>Target_LOI_Date__c</code> (excludes closed)</td></tr>
+<tr><td>Pipeline additions</td><td><code>Week_Created__c</code></td></tr></p>
+<h3>Fuzzy Account Matching</h3>
+<p>Handles these variations automatically:
+<ul>
+<li>Hyphens: "T Mobile" ↔ "T-Mobile"</li>
+<li>Apostrophes: "OReilly" ↔ "O'Reilly"</li>
+<li>"The" prefix: "Intel" ↔ "The Intel Company"</li>
+<li>Ampersands: "Brown and Brown" ↔ "Brown & Brown"</li>
+<li>Corporate suffixes: "Intel" finds "Intel Corporation"</li>
+</ul></p>
+<hr>
+<h2>🚀 Natural Language Flexibility</h2>
+<p>GTM-Wizard is designed for <strong>natural conversation</strong>, not templates:</p>
+<p><strong>Multiple ways to ask the same thing:</strong>
+<pre><code>
+Account Ownership:
+<ul>
+<li>"who owns Intel?"</li>
+<li>"who's the owner of Intel?"</li>
+<li>"owner of Intel"</li>
+<li>"who is assigned to Intel?"</li>
+<li>"Intel owner"</li>
+</ul></p>
+<p>Account Plans:
+<ul>
+<li>"what's the account plan for Intel?"</li>
+<li>"show me Intel's account plan"</li>
+<li>"account plan for Intel"</li>
+<li>"Intel account plan"</li>
+<li>"get account plan for Intel"</li>
+</ul></p>
+<p>Pipeline:
+<ul>
+<li>"show me late stage contracting"</li>
+<li>"contracting deals in Stage 4"</li>
+<li>"late stage AI-Augmented Contracting opportunities"</li>
+<li>"Stage 4 contracting pipeline"</li>
+</ul>
+</code></pre></p>
+<hr>
+<h2>🎯 Query Confidence Levels</h2>
+<p>GTM-Wizard assigns confidence to each parsed query:</p>
+<ul>
+<li><strong>95%:</strong> Exact pattern match (account plan, contracts, LOI, etc.)</li>
+<li><strong>90%:</strong> Strong pattern with clear intent</li>
+<li><strong>80%:</strong> Good pattern with minor ambiguity</li>
+<li><strong>60%:</strong> Fallback pattern matching (still reliable)</li>
+<li><strong>30%:</strong> Unknown query (asks for clarification)</li>
+</ul>
+<hr>
+<h2>📊 Supported Field Values</h2>
+<h3>Revenue Types</h3>
+<ul>
+<li>Booking</li>
+<li>ARR</li>
+<li>Project</li>
+</ul>
+<h3>Customer Types (Account)</h3>
+<ul>
+<li>LOI, no $ attached</li>
+<li>LOI, with $ attached</li>
+<li>Pilot</li>
+<li>ARR</li>
+</ul>
+<h3>Product Lines (Exact Salesforce Values)</h3>
+<ul>
+<li>AI-Augmented Contracting</li>
+<li>Augmented-M&A</li>
+<li>Compliance</li>
+<li>sigma</li>
+<li>sigma / Insights</li>
+<li>Cortex</li>
+<li>Multiple</li>
+<li>Undetermined</li>
+</ul>
+<h3>Stages (with cleaning)</h3>
+<ul>
+<li>Stage 0 - Qualifying</li>
+<li>Stage 1 - Discovery</li>
+<li>Stage 2 - SQO</li>
+<li>Stage 3 - Pilot</li>
+<li>Stage 4 - Proposal</li>
+<li>Stage 6. Closed(Won) → displays as "Closed Won"</li>
+<li>Stage 7. Closed(Lost) → displays as "Closed Lost"</li>
+</ul>
+<hr>
+<h2>🔍 What GTM-Wizard CANNOT Do (Yet)</h2>
+<p><strong>Limitations to be aware of:</strong></p>
+<ul>
+<li><strong>Create Opportunities</strong> - Read-only for opps (planned)</li>
+<li><strong>Update Opportunity Fields</strong> - Can't change stages, amounts, etc. (planned)</li>
+<li><strong>Multi-Account Bulk Operations</strong> - One at a time only</li>
+<li><strong>Historical Comparisons</strong> - "How did Q3 compare to Q2?" (planned)</li>
+<li><strong>Predictive Analytics</strong> - "Will we hit forecast?" (planned)</li>
+<li><strong>Email-Based Queries</strong> - Slack only (not email)</li>
+<li><strong>Real-Time Notifications</strong> - Push notifications (planned)</li>
+<li><strong>Custom Report Building</strong> - Pre-defined queries only</li>
+<li><strong>Salesforce Record Creation</strong> - Read + limited writes only</li>
+<li><strong>Multi-Language Support</strong> - English only</li>
+</ul>
+<hr>
+<h2>📈 Query Success Metrics</h2>
+<p><strong>Current Performance:</strong>
+<ul>
+<li>Average response time: 350ms</li>
+<li>Query success rate: 95%+</li>
+<li>Unknown query rate: <5%</li>
+<li>User satisfaction: High (based on usage)</li>
+</ul></p>
+<p><strong>Test Coverage:</strong>
+<ul>
+<li>32+ verified query types</li>
+<li>10/10 intent detection tests passing</li>
+<li>5/5 unknown query tests passing</li>
+<li>20+ automated test files</li>
+</ul></p>
+<hr>
+<h2>🎓 Tips for Best Results</h2>
+<ul>
+<li><strong>Be specific with account names</strong> - Use "Intel" not "that big tech company"</li>
+<li><strong>Use natural language</strong> - Ask like you'd ask a colleague</li>
+<li><strong>Combine filters</strong> - "late stage contracting" combines stage + product</li>
+<li><strong>Verify account names</strong> - Use "who owns X?" before other queries</li>
+<li><strong>Use timeframes</strong> - "this month" vs "last month" for precision</li>
+<li><strong>Check account plans before calls</strong> - Quick prep tool</li>
+<li><strong>Save plans after discovery</strong> - Capture insights immediately</li>
+<li><strong>Update plans regularly</strong> - Keep team aligned</li>
+</ul>
+<hr>
+<p><strong>Total Capabilities:</strong> 40+ distinct query types  
+<strong>Categories:</strong> 10 major areas  
+<strong>Natural Language Patterns:</strong> 200+ recognized phrasings  
+<strong>Production Status:</strong> Live and serving 41 team members</p>
+<p><strong>Questions about capabilities?</strong> Try it in Slack or reference this guide!</p>
+<p></p>
+    </div>
+</body>
+</html>

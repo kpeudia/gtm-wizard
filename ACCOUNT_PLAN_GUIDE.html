@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Plan Guide - GTM-Wizard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #1a1a1a;
+            border-bottom: 3px solid #4A90E2;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        h2 {
+            color: #2c3e50;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            border-left: 4px solid #4A90E2;
+            padding-left: 15px;
+        }
+        
+        h3 {
+            color: #34495e;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+        
+        p {
+            margin-bottom: 15px;
+            line-height: 1.8;
+        }
+        
+        ul, ol {
+            margin-left: 30px;
+            margin-bottom: 20px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        
+        pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+        }
+        
+        strong {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        em {
+            color: #555;
+        }
+        
+        hr {
+            border: none;
+            border-top: 2px solid #e0e0e0;
+            margin: 40px 0;
+        }
+        
+        a {
+            color: #4A90E2;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        td, th {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #4A90E2;
+            color: white;
+            font-weight: 600;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .toc {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+        
+        .toc h2 {
+            margin-top: 0;
+            font-size: 1.3em;
+        }
+        
+        .highlight {
+            background: #fff3cd;
+            padding: 15px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+        }
+        
+        .success {
+            background: #d4edda;
+            padding: 15px;
+            border-left: 4px solid #28a745;
+            margin: 20px 0;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            padding: 15px;
+            border-left: 4px solid #17a2b8;
+            margin: 20px 0;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            padding: 15px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Account Plan Feature - Complete Guide</h1>
+<p><strong>Status:</strong> ✅ READY FOR TESTING  
+<strong>Added:</strong> November 19, 2025  
+<strong>Security:</strong> Available to ALL users (read and write)  
+<strong>Salesforce Field:</strong> <code>Account.Account_Plan_s__c</code></p>
+<hr>
+<h2>🎯 Overview</h2>
+<p>The Account Plan feature allows your team to collaboratively create and maintain strategic account plans directly from Slack, stored in Salesforce for permanent record-keeping.</p>
+<p><strong>Key Benefits:</strong>
+<ul>
+<li><strong>Structured Format:</strong> Consistent account planning across all accounts</li>
+<li><strong>Collaborative:</strong> All team members can create and update plans</li>
+<li><strong>Integrated:</strong> Stored in Salesforce, accessible everywhere</li>
+<li><strong>Fast:</strong> Update plans without opening Salesforce</li>
+<li><strong>Tracked:</strong> Automatically timestamps and attributes updates</li>
+</ul></p>
+<hr>
+<h2>📝 Feature 1: Save Account Plan</h2>
+<h3>Template Format</h3>
+<pre><code>
+add account plan for [Company Name]:
+CLO engagement: [engagement details]
+Budget holder: [name/title]
+Champion(s): [names and roles]
+Use case(s): [specific use cases]
+Why Eudia: [value proposition]
+Why now: [timing/urgency]
+Why at all: [fundamental value]
+</code></pre>
+<h3>How to Use</h3>
+<p><strong>Basic Syntax:</strong>
+<ul>
+<li><code>add account plan for [Company]:</code></li>
+<li><code>save account plan for [Company]:</code></li>
+<li><code>update account plan for [Company]:</code></li>
+</ul></p>
+<p><strong>Complete Example:</strong></p>
+<pre><code>
+@gtm-brain add account plan for Intel:
+CLO engagement: Monthly strategic meetings with General Counsel, quarterly reviews with exec team
+Budget holder: CFO Jane Smith, approved $500K budget for legal tech
+Champion(s): Legal Director John Doe (5 years tenure, strong advocate), VP Operations Sarah Johnson
+Use case(s): Contract review automation (200+ contracts/month), M&A due diligence, compliance monitoring
+Why Eudia: AI-powered contract analysis proven to save 60% review time in pilot
+Why now: Q4 compliance audit requires faster turnaround, current solution sunset in 6 months
+Why at all: Manual review process not scalable for 40% YoY growth plans, competitive risk
+</code></pre>
+<h3>Field Definitions</h3>
+<p><tr><td>Field</td><td>Purpose</td><td>Example</td></tr>
+<tr><td>-------</td><td>---------</td><td>---------</td></tr>
+<tr><td><strong>CLO Engagement</strong></td><td>Current relationship status with legal leadership</td><td>"Monthly meetings, quarterly exec reviews"</td></tr>
+<tr><td><strong>Budget Holder</strong></td><td>Who controls purchasing decision</td><td>"CFO Jane Smith, $500K approved"</td></tr>
+<tr><td><strong>Champion(s)</strong></td><td>Internal advocates and their influence</td><td>"Legal Director John Doe (5 yrs, strong advocate)"</td></tr>
+<tr><td><strong>Use Case(s)</strong></td><td>Specific problems Eudia solves</td><td>"Contract review automation, M&A due diligence"</td></tr>
+<tr><td><strong>Why Eudia</strong></td><td>Unique value proposition</td><td>"AI platform saves 60% review time"</td></tr>
+<tr><td><strong>Why Now</strong></td><td>Timing and urgency factors</td><td>"Q4 audit, current solution sunset"</td></tr>
+<tr><td><strong>Why at All</strong></td><td>Fundamental business value</td><td>"Scale for 40% growth, competitive advantage"</td></tr></p>
+<h3>What Happens</h3>
+<ul>
+<li><strong>Account Lookup:</strong> Finds the account in Salesforce using fuzzy matching</li>
+<li><strong>Parse Fields:</strong> Extracts each section from your message</li>
+<li><strong>Format:</strong> Creates structured plan with timestamp and your name</li>
+<li><strong>Save:</strong> Updates <code>Account_Plan_s__c</code> field in Salesforce</li>
+<li><strong>Confirm:</strong> Sends confirmation with Salesforce link</li>
+</ul>
+<h3>Success Response</h3>
+<pre><code>
+✅ Account Plan saved for Intel
+<p><em>Account Plan - Last Updated: 11/19/2025 by John Smith</em></p>
+<p><strong>CLO Engagement:</strong> Monthly strategic meetings...
+<strong>Budget Holder:</strong> CFO Jane Smith...
+<strong>Champion(s):</strong> Legal Director John Doe...
+<strong>Use Case(s):</strong> Contract review automation...
+<strong>Why Eudia:</strong> AI-powered contract analysis...
+<strong>Why Now:</strong> Q4 compliance audit...
+<strong>Why at All:</strong> Manual review not scalable...</p>
+<p><View in Salesforce>
+</code></pre></p>
+<h3>Validation Rules</h3>
+<ul>
+<li><strong>Minimum 3 fields required</strong> (prevents incomplete plans)</li>
+<li><strong>Account must exist</strong> in Salesforce</li>
+<li><strong>At least 2 lines</strong> of content (company name + data)</li>
+</ul>
+<hr>
+<h2>📖 Feature 2: Query Account Plan</h2>
+<h3>How to Ask</h3>
+<p><strong>Flexible Natural Language:</strong>
+<ul>
+<li>"What's the account plan for [Company]?"</li>
+<li>"Show me [Company]'s account plan"</li>
+<li>"Get account plan for [Company]"</li>
+<li>"Tell me about the account plan for [Company]"</li>
+<li>"Account plan for [Company]"</li>
+<li>"What is [Company]'s strategic plan?"</li>
+<li>"[Company] account plan"</li>
+</ul></p>
+<p><strong>Examples:</strong>
+<pre><code>
+@gtm-brain what's the account plan for Intel?
+@gtm-brain show me Apple's account plan
+@gtm-brain get account plan for Microsoft
+@gtm-brain Intel account plan
+@gtm-brain tell me about the account plan for Best Buy
+</code></pre></p>
+<h3>Success Response</h3>
+<pre><code>
+<em>Account Plan: Intel</em>
+<p><em>Account Plan - Last Updated: 11/19/2025 by John Smith</em></p>
+<p><strong>CLO Engagement:</strong> Monthly strategic meetings...
+<strong>Budget Holder:</strong> CFO Jane Smith, approved $500K...
+<strong>Champion(s):</strong> Legal Director John Doe...
+<strong>Use Case(s):</strong> Contract review automation...
+<strong>Why Eudia:</strong> AI-powered contract analysis...
+<strong>Why Now:</strong> Q4 compliance audit requires...
+<strong>Why at All:</strong> Manual review not scalable...</p>
+<p><em>Account Owner:</em> Himanshu Agarwal
+<View in Salesforce>
+</code></pre></p>
+<h3>No Plan Found Response</h3>
+<pre><code>
+<em>Intel</em>
+<p>⚠️  No account plan found.</p>
+<p>Owner: Himanshu Agarwal</p>
+<p>Create one with:
+</code></pre>
+add account plan for Intel:
+CLO engagement: [details]
+Budget holder: [name]
+Champion(s): [names]
+Use case(s): [details]
+Why Eudia: [reason]
+Why now: [timing]
+Why at all: [value prop]
+<pre><code>
+</code></pre></p>
+<hr>
+<h2>🤔 Feature 3: Improved Unknown Query Handling</h2>
+<h3>What Changed</h3>
+<p><strong>Before:</strong>
+<ul>
+<li>Unknown queries returned random pipeline reports</li>
+<li>Poor user experience</li>
+<li>Confusing responses</li>
+</ul></p>
+<p><strong>After:</strong>
+<ul>
+<li>Detects truly unknown queries</li>
+<li>Asks clarifying questions</li>
+<li>Provides smart suggestions based on keywords</li>
+<li>Graceful fallback without breaking functionality</li>
+</ul></p>
+<h3>How It Works</h3>
+<p>When you ask something GTM-Wizard doesn't understand, it:</p>
+<ul>
+<li><strong>Extracts key words</strong> from your query</li>
+<li><strong>Analyzes context</strong> to guess what you might be asking about</li>
+<li><strong>Provides smart suggestions</strong> based on the words you used</li>
+<li><strong>Offers examples</strong> of how to rephrase</li>
+</ul>
+<h3>Example Interactions</h3>
+<p><strong>Query:</strong> "How many employees work at Intel?"</p>
+<p><strong>Response:</strong>
+<pre><code>
+🤔 I'm not sure I understand that query.</p>
+<p>I noticed you mentioned: <em>employees, work, intel</em></p>
+<p>Are you asking about:
+• Account information? Try: "who owns Intel"
+• Pipeline data? Try: "show me the pipeline"</p>
+<p>Or try rephrasing your question, or ask "hello" for more examples.
+</code></pre></p>
+<p><strong>Query:</strong> "What's the weather like?"</p>
+<p><strong>Response:</strong>
+<pre><code>
+🤔 I'm not sure I understand that query.</p>
+<p>I noticed you mentioned: <em>weather, like</em></p>
+<p><em>I can help with:</em>
+• Account ownership: "who owns [company]?"
+• Pipeline queries: "show me late stage contracting"
+• LOI/ARR tracking: "what LOIs signed last week?"
+• Contract queries: "contracts for [company]"
+• Account plans: "what's the account plan for [company]?"
+• Excel reports: "send pipeline excel report"</p>
+<p>Try rephrasing your question, or ask "hello" for more examples.
+</code></pre></p>
+<h3>Smart Suggestions</h3>
+<p>Based on keywords detected, GTM-Wizard suggests relevant features:</p>
+<p><tr><td>Keywords Detected</td><td>Suggestion</td></tr>
+<tr><td>-------------------</td><td>------------</td></tr>
+<tr><td>company, customer, client</td><td>Account information lookups</td></tr>
+<tr><td>sales, revenue, money</td><td>Pipeline data queries</td></tr>
+<tr><td>report, summary, stats</td><td>Excel reports</td></tr>
+<tr><td>document, agreement</td><td>Contract queries</td></tr></p>
+<hr>
+<h2>🎯 Use Cases & Examples</h2>
+<h3>Use Case 1: Pre-Call Planning</h3>
+<p><strong>Scenario:</strong> You have a call with Intel tomorrow and need to review the strategy.</p>
+<pre><code>
+@gtm-brain what's the account plan for Intel?
+<p>[Reviews the plan]</p>
+<p>Ready for meeting with full context on:
+<ul>
+<li>Current engagement status</li>
+<li>Key champions to mention</li>
+<li>Specific use cases to discuss</li>
+<li>Value props to emphasize</li>
+</ul>
+</code></pre></p>
+<h3>Use Case 2: Post-Discovery Update</h3>
+<p><strong>Scenario:</strong> Just finished discovery call, need to capture insights.</p>
+<pre><code>
+@gtm-brain add account plan for Acme Corp:
+CLO engagement: First meeting today, very positive, wants follow-up next week
+Budget holder: CFO mentioned $300K allocated for legal tech this year
+Champion(s): Legal Director Sarah Lee (enthusiastic, mentioned pain points)
+Use case(s): Contract redlining takes 2 weeks, need to reduce to 3 days, also interested in compliance monitoring
+Why Eudia: Only platform with AI redlining + compliance in one
+Why now: Budget expires end of Q4, need to move fast
+Why at all: Current growth (50+ contracts/month) unsustainable with current team size
+<p>[Plan saved with timestamp]</p>
+<p>Now entire team has visibility into account strategy
+</code></pre></p>
+<h3>Use Case 3: Account Handoff</h3>
+<p><strong>Scenario:</strong> Account ownership changing from Keigan to Julie.</p>
+<pre><code>
+[Keigan saved comprehensive account plan]
+<p>@gtm-brain what's the account plan for Microsoft?</p>
+<p>[Julie sees full history and strategy]</p>
+<p>Seamless handoff with complete context preserved
+</code></pre></p>
+<h3>Use Case 4: Pre-QBR Preparation</h3>
+<p><strong>Scenario:</strong> Preparing for quarterly business review, need account status.</p>
+<pre><code>
+@gtm-brain get account plan for Intel
+<p>[Reviews all strategic accounts]</p>
+<p>Full context on:
+<ul>
+<li>Engagement levels</li>
+<li>Budget status</li>
+<li>Champion relationships</li>
+<li>Pipeline alignment with use cases</li>
+</ul>
+</code></pre></p>
+<hr>
+<h2>🔐 Security & Permissions</h2>
+<h3>Who Can Use</h3>
+<ul>
+<li>✅ <strong>ALL users</strong> can save account plans</li>
+<li>✅ <strong>ALL users</strong> can query account plans</li>
+<li>✅ <strong>NO restrictions</strong> (unlike Customer_Brain which is Keigan-only)</li>
+</ul>
+<h3>Why Open Access?</h3>
+<p>Account plans are <strong>strategic documents</strong> that benefit from team collaboration:
+<ul>
+<li>Multiple touchpoints create better plans</li>
+<li>Different perspectives add value</li>
+<li>Collaborative planning improves accuracy</li>
+<li>Transparency benefits entire team</li>
+</ul></p>
+<h3>Audit Trail</h3>
+<p>Every plan includes:
+<ul>
+<li><strong>Timestamp:</strong> When it was last updated</li>
+<li><strong>Attribution:</strong> Who made the update</li>
+<li><strong>Full history:</strong> Stored in Salesforce field history (if enabled)</li>
+</ul></p>
+<hr>
+<h2>🧪 Testing Guide</h2>
+<h3>Step 1: Create Test Account Plan</h3>
+<p><strong>In Slack:</strong>
+<pre><code>
+@gtm-brain add account plan for Test Company:
+CLO engagement: Testing engagement field
+Budget holder: Test CFO
+Champion(s): Test Champion 1, Test Champion 2
+Use case(s): Contract automation testing
+Why Eudia: Testing value prop
+Why now: Testing timing
+Why at all: Testing fundamental value
+</code></pre></p>
+<p><strong>Verify:</strong>
+<ul>
+<li>✅ Confirmation message appears</li>
+<li>✅ All fields are present</li>
+<li>✅ Timestamp and your name included</li>
+<li>✅ Salesforce link works</li>
+</ul></p>
+<h3>Step 2: Query Account Plan</h3>
+<p><strong>In Slack:</strong>
+<pre><code>
+@gtm-brain what's the account plan for Test Company?
+</code></pre></p>
+<p><strong>Verify:</strong>
+<ul>
+<li>✅ Plan displays correctly</li>
+<li>✅ All fields are formatted properly</li>
+<li>✅ Timestamp and attribution visible</li>
+<li>✅ Account owner shown</li>
+<li>✅ Salesforce link works</li>
+</ul></p>
+<h3>Step 3: Test Unknown Queries</h3>
+<p><strong>In Slack:</strong>
+<pre><code>
+@gtm-brain what color is the sky?
+@gtm-brain how many employees at Google?
+</code></pre></p>
+<p><strong>Verify:</strong>
+<ul>
+<li>✅ Recognizes as unknown query</li>
+<li>✅ Provides helpful suggestions</li>
+<li>✅ Doesn't return random pipeline data</li>
+<li>✅ Offers ways to rephrase</li>
+</ul></p>
+<h3>Step 4: Update Existing Plan</h3>
+<p><strong>In Slack:</strong>
+<pre><code>
+@gtm-brain update account plan for Test Company:
+CLO engagement: UPDATED engagement
+Budget holder: NEW CFO
+Champion(s): Updated champions
+Use case(s): New use cases
+Why Eudia: Updated value
+Why now: New timing
+Why at all: New reasoning
+</code></pre></p>
+<p><strong>Verify:</strong>
+<ul>
+<li>✅ Plan updates successfully</li>
+<li>✅ New timestamp</li>
+<li>✅ Your name as updater</li>
+<li>✅ Previous content replaced</li>
+</ul></p>
+<h3>Step 5: Test Validation</h3>
+<p><strong>Try incomplete plan:</strong>
+<pre><code>
+@gtm-brain add account plan for Test Company:
+CLO engagement: Only one field
+</code></pre></p>
+<p><strong>Verify:</strong>
+<ul>
+<li>⚠️  Validation error appears</li>
+<li>⚠️  Prompts for minimum 3 fields</li>
+<li>⚠️  No Salesforce update made</li>
+</ul></p>
+<p><strong>Try non-existent account:</strong>
+<pre><code>
+@gtm-brain add account plan for Fake Company XYZ:
+[Full plan]
+</code></pre></p>
+<p><strong>Verify:</strong>
+<ul>
+<li>❌ Account not found error</li>
+<li>❌ Suggests verification command</li>
+<li>❌ No Salesforce update made</li>
+</ul></p>
+<hr>
+<h2>💡 Best Practices</h2>
+<h3>1. Be Specific and Detailed</h3>
+<p><strong>❌ Bad:</strong>
+<pre><code>
+CLO engagement: Met once
+Budget holder: CFO
+Champion(s): Someone
+</code></pre></p>
+<p><strong>✅ Good:</strong>
+<pre><code>
+CLO engagement: Monthly strategic meetings with General Counsel since March, quarterly reviews with exec team, strong relationship
+Budget holder: CFO Jane Smith, approved $500K budget for legal tech, decision authority confirmed
+Champion(s): Legal Director John Doe (5 years tenure, strong advocate, reports to GC), VP Operations Sarah Johnson (budget influence)
+</code></pre></p>
+<h3>2. Update After Every Major Interaction</h3>
+<ul>
+<li>After discovery calls</li>
+<li>Following budget discussions</li>
+<li>When champions identified</li>
+<li>After pilot milestones</li>
+<li>When timing changes</li>
+</ul>
+<h3>3. Include Context, Not Just Facts</h3>
+<p><strong>❌ Fact only:</strong>
+<pre><code>
+Why now: Budget available
+</code></pre></p>
+<p><strong>✅ Context included:</strong>
+<pre><code>
+Why now: Budget expires end of Q4 (Dec 31), CFO wants to allocate before year-end, current solution contract ends Jan 15, creates urgency window
+</code></pre></p>
+<h3>4. Use Plans for Preparation</h3>
+<p>Before ANY customer interaction:
+<pre><code>
+@gtm-brain what's the account plan for [Company]?
+</code></pre></p>
+<p>Review:
+<ul>
+<li>Current engagement status</li>
+<li>Who to mention</li>
+<li>What to discuss</li>
+<li>Why they care</li>
+</ul></p>
+<h3>5. Make it Team Sport</h3>
+<p>Encourage everyone to update:
+<ul>
+<li>Sales: Budget and timing info</li>
+<li>CS: Use case details and pain points</li>
+<li>Leadership: Strategic alignment</li>
+<li>BDRs: Champion identification</li>
+</ul></p>
+<h3>6. Keep Plans Current</h3>
+<p>Set reminders to review/update:
+<ul>
+<li>Weekly for active deals</li>
+<li>Monthly for pipeline accounts</li>
+<li>Quarterly for existing customers</li>
+</ul></p>
+<hr>
+<h2>🚨 Troubleshooting</h2>
+<h3>"Account not found" Error</h3>
+<p><strong>Problem:</strong> Account doesn't exist or name mismatch</p>
+<p><strong>Solutions:</strong>
+<ul>
+<li>Verify spelling: <code>@gtm-brain who owns [Company]?</code></li>
+<li>Try shorter name: "Microsoft" instead of "Microsoft Corporation"</li>
+<li>Check account exists in Salesforce</li>
+<li>Try partial match: "Intel" finds "Intel Corporation"</li>
+</ul></p>
+<h3>"Account plan incomplete" Error</h3>
+<p><strong>Problem:</strong> Less than 3 fields provided</p>
+<p><strong>Solution:</strong> Include at least 3 of the 7 fields:
+<ul>
+<li>CLO engagement</li>
+<li>Budget holder</li>
+<li>Champion(s)</li>
+<li>Use case(s)</li>
+<li>Why Eudia</li>
+<li>Why now</li>
+<li>Why at all</li>
+</ul></p>
+<h3>Plan Not Formatting Correctly</h3>
+<p><strong>Problem:</strong> Fields not recognized</p>
+<p><strong>Common Issues:</strong>
+<ul>
+<li>Missing colon after field name <code>:</code> </li>
+<li>Misspelled field names</li>
+<li>Using different field names</li>
+</ul></p>
+<p><strong>Solution:</strong> Use EXACT field names:
+<pre><code>
+CLO engagement:  ✅
+CLO Engagement:  ✅ (case insensitive)
+CLO:             ❌ (wrong name)
+Legal engagement: ❌ (wrong name)
+</code></pre></p>
+<h3>Can't See Updated Plan</h3>
+<p><strong>Problem:</strong> Updated in Slack but Salesforce shows old</p>
+<p><strong>Solutions:</strong>
+<ul>
+<li>Check Salesforce field: <code>Account_Plan_s__c</code></li>
+<li>Refresh Salesforce page</li>
+<li>Verify update confirmation appeared in Slack</li>
+<li>Check Render logs if error occurred</li>
+</ul></p>
+<hr>
+<h2>📊 Field Mapping</h2>
+<h3>Salesforce Side</h3>
+<pre><code>
+Object: Account
+Field API Name: Account_Plan_s__c
+Field Type: Long Text Area
+Character Limit: 131,072 characters
+Accessible: All users with Account read/write
+</code></pre>
+<h3>Storage Format</h3>
+<pre><code>
+<em>Account Plan - Last Updated: 11/19/2025 by John Smith</em>
+<p><strong>CLO Engagement:</strong> [content]
+<strong>Budget Holder:</strong> [content]
+<strong>Champion(s):</strong> [content]
+<strong>Use Case(s):</strong> [content]
+<strong>Why Eudia:</strong> [content]
+<strong>Why Now:</strong> [content]
+<strong>Why at All:</strong> [content]
+</code></pre></p>
+<h3>Query Used</h3>
+<pre><code>sql
+SELECT Id, Name, Owner.Name, Account_Plan_s__c
+FROM Account
+WHERE Name LIKE '%{accountName}%'
+LIMIT 5
+</code></pre>
+<hr>
+<h2>🎓 Training Your Team</h2>
+<h3>Onboarding Message</h3>
+<pre><code>
+🎉 New Feature: Account Plans in Slack!
+<p>Create and update strategic account plans directly in Slack:</p>
+<p>1️⃣ Save a plan:
+@gtm-brain add account plan for [Company]:
+CLO engagement: [details]
+Budget holder: [name]
+Champion(s): [names]
+Use case(s): [details]
+Why Eudia: [value]
+Why now: [timing]
+Why at all: [reason]</p>
+<p>2️⃣ View a plan:
+@gtm-brain what's the account plan for [Company]?</p>
+<p>All plans saved to Salesforce automatically!</p>
+<p>Questions? Ask in #gtm-wizard-help
+</code></pre></p>
+<h3>Team Workshop Agenda</h3>
+<p><strong>15-Minute Training Session:</strong></p>
+<ul>
+<li><strong>Demo save plan</strong> (3 min)</li>
+</ul>
+   - Show live example
+   - Walk through template
+   - Explain each field
+<ul>
+<li><strong>Demo query plan</strong> (2 min)</li>
+</ul>
+   - Show how to retrieve
+   - Point out Salesforce link
+   - Show in actual Salesforce
+<ul>
+<li><strong>Practice session</strong> (7 min)</li>
+</ul>
+   - Each person saves test plan
+   - Query someone else's plan
+   - Discuss best practices
+<ul>
+<li><strong>Q&A</strong> (3 min)</li>
+</ul>
+   - Common questions
+   - Troubleshooting
+   - Use case examples
+<hr>
+<h2>📈 Success Metrics</h2>
+<p>Track these to measure adoption:</p>
+<ul>
+<li><strong>Plans Created:</strong> Count of accounts with plans</li>
+<li><strong>Plan Updates:</strong> Frequency of updates</li>
+<li><strong>Plan Queries:</strong> How often plans are accessed</li>
+<li><strong>Users Active:</strong> Number of team members using feature</li>
+<li><strong>Win Rate:</strong> Compare accounts with plans vs without</li>
+</ul>
+<hr>
+<h2>🔮 Future Enhancements</h2>
+<p>Potential additions (not yet implemented):</p>
+<ul>
+<li>[ ] Plan templates by account segment</li>
+<li>[ ] Plan change history/diff view</li>
+<li>[ ] Automated reminders to update stale plans</li>
+<li>[ ] AI-suggested plan improvements</li>
+<li>[ ] Plan completeness scoring</li>
+<li>[ ] Integration with opportunity stages</li>
+<li>[ ] Multi-language support</li>
+<li>[ ] Plan sharing/export to PDF</li>
+<li>[ ] Plan comparison across similar accounts</li>
+</ul>
+<hr>
+<h2>📞 Support</h2>
+<p><strong>Issues or Questions:</strong>
+<ul>
+<li>Test with "Test Company" first</li>
+<li>Check error messages (they're helpful!)</li>
+<li>Verify account exists: <code>who owns [Company]?</code></li>
+<li>Review this guide</li>
+<li>Check Render logs for technical errors</li>
+</ul></p>
+<p><strong>Feature Requests:</strong>
+<ul>
+<li>Document needed improvements</li>
+<li>Share use cases we haven't covered</li>
+<li>Suggest better ways to phrase things</li>
+</ul></p>
+<hr>
+<p><strong>Last Updated:</strong> November 19, 2025  
+<strong>Version:</strong> 1.0  
+<strong>Status:</strong> Ready for Testing ✅</p>
+<p><strong>Related Documentation:</strong>
+<ul>
+<li>ACCOUNT_MANAGEMENT_GUIDE.md - Move to nurture, close lost</li>
+<li>CUSTOMER_BRAIN_IMPLEMENTATION.md - Note capture feature</li>
+<li>QUERY_EXAMPLES.md - All query types</li>
+</ul></p>
+<hr>
+<p><strong>Ready to test!</strong> Start with a test account and iterate based on your team's feedback.</p>
+<p></p>
+    </div>
+</body>
+</html>
