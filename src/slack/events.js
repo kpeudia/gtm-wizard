@@ -433,6 +433,9 @@ Ask me anything about your pipeline, accounts, or deals!`;
       formattedResponse = formatWeightedSummary(queryResult, parsedIntent);
     } else if (parsedIntent.intent === 'contract_query') {
       formattedResponse = formatContractResults(queryResult, parsedIntent);
+    } else if (parsedIntent.intent === 'pipeline_summary' && parsedIntent.entities.stages) {
+      // IMPROVED: Stage-based pipeline queries return account list (not detailed table)
+      formattedResponse = formatPipelineAccountList(queryResult, parsedIntent);
     } else {
       formattedResponse = formatResponse(queryResult, parsedIntent, conversationContext);
     }
@@ -744,15 +747,14 @@ async function handleCustomerBrainNote(message, userId, channelId, client, threa
       Customer_Brain__c: updatedNotes
     });
 
-    // Confirm to user
+    // Confirm to user - CONCISE (no text repetition)
     const sfBaseUrl = process.env.SF_INSTANCE_URL || 'https://eudia.my.salesforce.com';
     const accountUrl = `${sfBaseUrl}/lightning/r/Account/${account.Id}/view`;
     
-    let confirmMessage = `✅ Note saved to ${account.Name}\n\n`;
-    confirmMessage += `*Added to Customer_Brain:*\n${formattedNote}\n\n`;
-    confirmMessage += `*Account Details:*\n`;
-    confirmMessage += `Owner: ${account.Owner?.Name}\n`;
-    confirmMessage += `<${accountUrl}|View Account in Salesforce>\n`;
+    let confirmMessage = `✅ *Note saved to ${account.Name}*\n\n`;
+    confirmMessage += `${dateShort} - Added to Customer_Brain\n`;
+    confirmMessage += `Owner: ${account.Owner?.Name}\n\n`;
+    confirmMessage += `<${accountUrl}|View in Salesforce>`;
 
     await client.chat.postMessage({
       channel: channelId,
@@ -1060,20 +1062,73 @@ function formatAccountStageResults(queryResult, parsedIntent) {
 
   const accounts = Array.from(accountMap.values());
   
-  let response = `*Accounts in ${stageName}*\n\n`;
+  // IMPROVED: Simple list format like customer queries
+  const accountNames = accounts.map(a => a.name).join(', ');
   
-  accounts.slice(0, 15).forEach(account => {
-    response += `*${account.name}*\n`;
-    response += `Owner: ${account.owner || 'Unassigned'}\n`;
-    if (account.industry) response += `Industry: ${account.industry}\n`;
-    if (account.dealCount > 1) response += `Deals: ${account.dealCount} (${formatCurrency(account.totalAmount)})\n`;
-    response += '\n';
-  });
+  let response = `*Accounts in ${cleanStageName(stageName)}* (${accounts.length} total)\n\n`;
+  response += `${accountNames}`;
+  
+  return response;
+}
 
-  if (accounts.length > 15) {
-    response += `_Showing 15 of ${accounts.length} accounts_`;
+/**
+ * Format pipeline queries with stages as account list (IMPROVED UX)
+ */
+function formatPipelineAccountList(queryResult, parsedIntent) {
+  if (!queryResult || !queryResult.records || queryResult.totalSize === 0) {
+    const stageDesc = parsedIntent.entities.stages?.[0] || 'that stage';
+    const productLine = parsedIntent.entities.productLine;
+    return productLine 
+      ? `No ${productLine} opportunities found in ${cleanStageName(stageDesc)}.`
+      : `No opportunities found in ${cleanStageName(stageDesc)}.`;
   }
 
+  const records = queryResult.records;
+  
+  // Group by account to get unique companies
+  const accountMap = new Map();
+  let totalAmount = 0;
+  
+  records.forEach(record => {
+    const accountName = record.Account?.Name;
+    totalAmount += record.Amount || 0;
+    
+    if (accountName && !accountMap.has(accountName)) {
+      accountMap.set(accountName, {
+        name: accountName,
+        owner: record.Account?.Owner?.Name,
+        dealCount: 1,
+        totalAmount: record.Amount || 0,
+        maxAmount: record.Amount || 0
+      });
+    } else if (accountName) {
+      const existing = accountMap.get(accountName);
+      existing.dealCount++;
+      existing.totalAmount += record.Amount || 0;
+      existing.maxAmount = Math.max(existing.maxAmount, record.Amount || 0);
+    }
+  });
+
+  const accounts = Array.from(accountMap.values());
+  const accountNames = accounts.map(a => a.name).join(', ');
+  
+  // Build response with summary + account list
+  const stageDesc = parsedIntent.entities.stages?.map(s => cleanStageName(s)).join(', ');
+  const productLine = parsedIntent.entities.productLine;
+  
+  let response = '';
+  if (productLine && stageDesc) {
+    response += `*${productLine} opportunities in ${stageDesc}*\n\n`;
+  } else if (stageDesc) {
+    response += `*${stageDesc} opportunities*\n\n`;
+  } else {
+    response += `*Pipeline Summary*\n\n`;
+  }
+  
+  response += `${records.length} opportunities across ${accounts.length} accounts\n`;
+  response += `Total value: ${formatCurrency(totalAmount)}\n\n`;
+  response += `*Companies:*\n${accountNames}`;
+  
   return response;
 }
 
@@ -2206,47 +2261,18 @@ async function handleAccountPlanSave(message, userId, channelId, client, threadT
       Account_Plan_s__c: formattedPlan
     });
     
-    // Confirm to user (use Slack markdown for display, but Salesforce gets plain text)
+    // Confirm to user - CONCISE (no text repetition)
     const sfBaseUrl = process.env.SF_INSTANCE_URL || 'https://eudia.my.salesforce.com';
     const accountUrl = `${sfBaseUrl}/lightning/r/Account/${account.Id}/view`;
     
-    // Build Slack-formatted preview (with markdown for Slack display)
-    let slackPreview = `✅ *Account Plan saved for ${account.Name}*\n\n`;
-    slackPreview += `_Account Plan - Last updated: ${dateFormatted} by ${userName}_\n\n`;
-    
-    let slackNum = 1;
-    if (planData.clo) {
-      slackPreview += `*${slackNum}. CLO engagement:*\n${cleanText(planData.clo)}\n\n`;
-      slackNum++;
-    }
-    if (planData.budget) {
-      slackPreview += `*${slackNum}. Budget holder:*\n${cleanText(planData.budget)}\n\n`;
-      slackNum++;
-    }
-    if (planData.champions) {
-      slackPreview += `*${slackNum}. Champion(s):*\n${cleanText(planData.champions)}\n\n`;
-      slackNum++;
-    }
-    if (planData.useCases) {
-      slackPreview += `*${slackNum}. Use case(s):*\n${cleanText(planData.useCases)}\n\n`;
-      slackNum++;
-    }
-    if (planData.whyEudia) {
-      slackPreview += `*${slackNum}. Why Eudia:*\n${cleanText(planData.whyEudia)}\n\n`;
-      slackNum++;
-    }
-    if (planData.whyNow) {
-      slackPreview += `*${slackNum}. Why now:*\n${cleanText(planData.whyNow)}\n\n`;
-      slackNum++;
-    }
-    if (planData.whyAtAll) {
-      slackPreview += `*${slackNum}. Why at all:*\n${cleanText(planData.whyAtAll)}\n`;
-    }
-    slackPreview += `\n<${accountUrl}|View in Salesforce>`;
+    const fieldCount = Object.keys(planData).length;
+    let confirmMessage = `✅ *Account Plan saved for ${account.Name}*\n\n`;
+    confirmMessage += `${fieldCount} sections saved • Last updated: ${dateFormatted} by ${userName}\n\n`;
+    confirmMessage += `<${accountUrl}|View in Salesforce>`;
     
     await client.chat.postMessage({
       channel: channelId,
-      text: slackPreview,
+      text: confirmMessage,
       thread_ts: threadTs
     });
     

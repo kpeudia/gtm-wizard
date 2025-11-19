@@ -3,7 +3,7 @@ const { cleanStageName } = require('../utils/formatters');
 
 class ResponseFormatter {
   constructor() {
-    this.maxTableRows = 15;
+    this.maxTableRows = 50; // Increased from 15 to show more results
     this.maxMessageLength = 3000;
   }
 
@@ -262,78 +262,34 @@ class ResponseFormatter {
   }
 
   /**
-   * Build deals table
+   * Build deals table - IMPROVED compact list format for better readability
    */
   buildDealsTable(records, columns = null) {
     if (!records || records.length === 0) return '';
 
-    const defaultColumns = ['Name', 'Amount', 'StageName', 'CloseDate', 'Owner.Name'];
-    const cols = columns || defaultColumns;
-
-    let table = '```\n';
+    // IMPROVED: Compact list format - easier to read, shows more info
+    let list = '';
     
-    // Header
-    const headers = cols.map(col => {
-      switch (col) {
-        case 'Name': return 'DEAL NAME';
-        case 'Amount': return 'AMOUNT';
-        case 'StageName': return 'STAGE';
-        case 'CloseDate': return 'CLOSE DATE';
-        case 'Owner.Name': return 'OWNER';
-        case 'LastActivityDate': return 'LAST ACTIVITY';
-        case 'Account.Name': return 'ACCOUNT';
-        default: return col.toUpperCase();
+    records.forEach((record, index) => {
+      const accountName = record.Account?.Name || 'No Account';
+      const dealName = record.Name || 'Untitled Deal';
+      const amount = this.formatCurrency(record.Amount || 0);
+      const stage = cleanStageName(record.StageName) || 'No Stage';
+      const owner = record.Owner?.Name || 'Unassigned';
+      const targetDate = this.formatDate(record.IsClosed ? record.CloseDate : record.Target_LOI_Date__c);
+      const productLine = record.Product_Line__c;
+      
+      // One deal per 2 lines - much more readable
+      list += `${index + 1}. *${accountName}* - ${dealName}`;
+      if (productLine) list += ` (${productLine})`;
+      list += `\n   $${amount} • ${stage} • ${owner} • ${targetDate}\n`;
+      
+      if (index < records.length - 1) {
+        list += '\n'; // Blank line between deals
       }
     });
 
-    const colWidths = [30, 12, 18, 12, 15]; // Adjust based on content
-    table += headers.map((header, i) => header.padEnd(colWidths[i] || 15)).join(' ') + '\n';
-    table += '─'.repeat(90) + '\n';
-
-    // Rows
-    records.slice(0, this.maxTableRows).forEach(record => {
-      const row = cols.map((col, i) => {
-        let value = '';
-        
-        switch (col) {
-          case 'Name':
-            value = (record.Name || 'Untitled').substring(0, 28);
-            break;
-          case 'Amount':
-            value = this.formatCurrency(record.Amount || 0);
-            break;
-          case 'StageName':
-            value = cleanStageName(record.StageName || 'No Stage').substring(0, 16);
-            break;
-          case 'CloseDate':
-            // Show Target LOI Date for active deals, CloseDate for closed deals
-            if (record.IsClosed) {
-              value = this.formatDate(record.CloseDate);
-            } else {
-              value = this.formatDate(record.Target_LOI_Date__c);
-            }
-            break;
-          case 'Owner.Name':
-            value = (record.Owner?.Name || 'Unassigned').substring(0, 13);
-            break;
-          case 'LastActivityDate':
-            value = this.formatDate(record.LastActivityDate);
-            break;
-          case 'Account.Name':
-            value = (record.Account?.Name || 'No Account').substring(0, 13);
-            break;
-          default:
-            value = (record[col] || '').toString().substring(0, 13);
-        }
-
-        return value.padEnd(colWidths[i] || 15);
-      });
-
-      table += row.join(' ') + '\n';
-    });
-
-    table += '```';
-    return table;
+    return list;
   }
 
   /**
