@@ -2080,7 +2080,7 @@ async function handleAccountPlanSave(message, userId, channelId, client, threadT
     if (lines.length < 2) {
       await client.chat.postMessage({
         channel: channelId,
-        text: `Please use the account plan template:\n\n*Format:*\nadd account plan for [Company Name]:\nCLO engagement: [details]\nBudget holder: [name]\nChampion(s): [names]\nUse case(s): [details]\nWhy Eudia: [reason]\nWhy now: [timing]\nWhy at all: [value prop]`,
+        text: `Please use the account plan template:\n\n*Format:*\n\`\`\`\nadd account plan for [Company Name]:\nCLO engagement: [details]\nBudget holder: [name]\nChampion(s): [names]\nUse case(s): [details]\nWhy Eudia: [reason]\nWhy now: [timing]\nWhy at all: [value prop]\n\`\`\`\n\n_Will be saved with numbered sections in Salesforce_`,
         thread_ts: threadTs
       });
       return;
@@ -2117,7 +2117,7 @@ async function handleAccountPlanSave(message, userId, channelId, client, threadT
     if (fieldCount < 3) {
       await client.chat.postMessage({
         channel: channelId,
-        text: `⚠️  Account plan incomplete. Please include at least:\n• CLO engagement\n• Budget holder\n• Champion(s)\n• Use case(s)\n• Why Eudia\n• Why now\n• Why at all`,
+        text: `⚠️  Account plan incomplete. Please include at least 3 fields:\n• CLO engagement\n• Budget holder\n• Champion(s)\n• Use case(s)\n• Why Eudia\n• Why now\n• Why at all\n\n_Fields will be numbered automatically (1, 2, 3...)_`,
         thread_ts: threadTs
       });
       return;
@@ -2165,16 +2165,37 @@ async function handleAccountPlanSave(message, userId, channelId, client, threadT
     };
     
     // Plain text formatting (Salesforce doesn't render markdown)
-    let formattedPlan = `ACCOUNT PLAN - Last Updated: ${dateFormatted} by ${userName}\n`;
-    formattedPlan += `${'='.repeat(60)}\n\n`;
+    // Clean, numbered format with sentence case
+    let formattedPlan = `Account Plan - Last updated: ${dateFormatted} by ${userName}\n\n`;
     
-    if (planData.clo) formattedPlan += `CLO ENGAGEMENT:\n${cleanText(planData.clo)}\n\n`;
-    if (planData.budget) formattedPlan += `BUDGET HOLDER:\n${cleanText(planData.budget)}\n\n`;
-    if (planData.champions) formattedPlan += `CHAMPION(S):\n${cleanText(planData.champions)}\n\n`;
-    if (planData.useCases) formattedPlan += `USE CASE(S):\n${cleanText(planData.useCases)}\n\n`;
-    if (planData.whyEudia) formattedPlan += `WHY EUDIA:\n${cleanText(planData.whyEudia)}\n\n`;
-    if (planData.whyNow) formattedPlan += `WHY NOW:\n${cleanText(planData.whyNow)}\n\n`;
-    if (planData.whyAtAll) formattedPlan += `WHY AT ALL:\n${cleanText(planData.whyAtAll)}\n`;
+    let sectionNum = 1;
+    if (planData.clo) {
+      formattedPlan += `${sectionNum}. CLO engagement:\n${cleanText(planData.clo)}\n\n`;
+      sectionNum++;
+    }
+    if (planData.budget) {
+      formattedPlan += `${sectionNum}. Budget holder:\n${cleanText(planData.budget)}\n\n`;
+      sectionNum++;
+    }
+    if (planData.champions) {
+      formattedPlan += `${sectionNum}. Champion(s):\n${cleanText(planData.champions)}\n\n`;
+      sectionNum++;
+    }
+    if (planData.useCases) {
+      formattedPlan += `${sectionNum}. Use case(s):\n${cleanText(planData.useCases)}\n\n`;
+      sectionNum++;
+    }
+    if (planData.whyEudia) {
+      formattedPlan += `${sectionNum}. Why Eudia:\n${cleanText(planData.whyEudia)}\n\n`;
+      sectionNum++;
+    }
+    if (planData.whyNow) {
+      formattedPlan += `${sectionNum}. Why now:\n${cleanText(planData.whyNow)}\n\n`;
+      sectionNum++;
+    }
+    if (planData.whyAtAll) {
+      formattedPlan += `${sectionNum}. Why at all:\n${cleanText(planData.whyAtAll)}`;
+    }
     
     // Update Salesforce
     const { sfConnection } = require('../salesforce/connection');
@@ -2191,15 +2212,36 @@ async function handleAccountPlanSave(message, userId, channelId, client, threadT
     
     // Build Slack-formatted preview (with markdown for Slack display)
     let slackPreview = `✅ *Account Plan saved for ${account.Name}*\n\n`;
-    slackPreview += `*ACCOUNT PLAN - Last Updated: ${dateFormatted} by ${userName}*\n`;
-    slackPreview += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-    if (planData.clo) slackPreview += `*CLO ENGAGEMENT:*\n${cleanText(planData.clo)}\n\n`;
-    if (planData.budget) slackPreview += `*BUDGET HOLDER:*\n${cleanText(planData.budget)}\n\n`;
-    if (planData.champions) slackPreview += `*CHAMPION(S):*\n${cleanText(planData.champions)}\n\n`;
-    if (planData.useCases) slackPreview += `*USE CASE(S):*\n${cleanText(planData.useCases)}\n\n`;
-    if (planData.whyEudia) slackPreview += `*WHY EUDIA:*\n${cleanText(planData.whyEudia)}\n\n`;
-    if (planData.whyNow) slackPreview += `*WHY NOW:*\n${cleanText(planData.whyNow)}\n\n`;
-    if (planData.whyAtAll) slackPreview += `*WHY AT ALL:*\n${cleanText(planData.whyAtAll)}\n`;
+    slackPreview += `_Account Plan - Last updated: ${dateFormatted} by ${userName}_\n\n`;
+    
+    let slackNum = 1;
+    if (planData.clo) {
+      slackPreview += `*${slackNum}. CLO engagement:*\n${cleanText(planData.clo)}\n\n`;
+      slackNum++;
+    }
+    if (planData.budget) {
+      slackPreview += `*${slackNum}. Budget holder:*\n${cleanText(planData.budget)}\n\n`;
+      slackNum++;
+    }
+    if (planData.champions) {
+      slackPreview += `*${slackNum}. Champion(s):*\n${cleanText(planData.champions)}\n\n`;
+      slackNum++;
+    }
+    if (planData.useCases) {
+      slackPreview += `*${slackNum}. Use case(s):*\n${cleanText(planData.useCases)}\n\n`;
+      slackNum++;
+    }
+    if (planData.whyEudia) {
+      slackPreview += `*${slackNum}. Why Eudia:*\n${cleanText(planData.whyEudia)}\n\n`;
+      slackNum++;
+    }
+    if (planData.whyNow) {
+      slackPreview += `*${slackNum}. Why now:*\n${cleanText(planData.whyNow)}\n\n`;
+      slackNum++;
+    }
+    if (planData.whyAtAll) {
+      slackPreview += `*${slackNum}. Why at all:*\n${cleanText(planData.whyAtAll)}\n`;
+    }
     slackPreview += `\n<${accountUrl}|View in Salesforce>`;
     
     await client.chat.postMessage({
@@ -2260,7 +2302,7 @@ async function handleAccountPlanQuery(entities, userId, channelId, client, threa
     if (!account.Account_Plan_s__c || account.Account_Plan_s__c.trim().length === 0) {
       await client.chat.postMessage({
         channel: channelId,
-        text: `*${account.Name}*\n\n⚠️  No account plan found.\n\nOwner: ${account.Owner?.Name}\n\nCreate one with:\n\`\`\`\nadd account plan for ${account.Name}:\nCLO engagement: [details]\nBudget holder: [name]\nChampion(s): [names]\nUse case(s): [details]\nWhy Eudia: [reason]\nWhy now: [timing]\nWhy at all: [value prop]\n\`\`\``,
+        text: `*${account.Name}*\n\n⚠️  No account plan found.\n\nOwner: ${account.Owner?.Name}\n\nCreate one with:\n\`\`\`\nadd account plan for ${account.Name}:\nCLO engagement: [details]\nBudget holder: [name]\nChampion(s): [names]\nUse case(s): [details]\nWhy Eudia: [reason]\nWhy now: [timing]\nWhy at all: [value prop]\n\`\`\`\n\n_Note: Format will be numbered automatically in Salesforce_`,
         thread_ts: threadTs
       });
       return;
@@ -2270,14 +2312,13 @@ async function handleAccountPlanQuery(entities, userId, channelId, client, threa
     const sfBaseUrl = process.env.SF_INSTANCE_URL || 'https://eudia.my.salesforce.com';
     const accountUrl = `${sfBaseUrl}/lightning/r/Account/${account.Id}/view`;
     
-    // Convert plain text formatting to Slack markdown for better display
+    // Format plan text for Slack display (add bold to numbered sections)
     let planText = account.Account_Plan_s__c;
     
-    // Convert UPPERCASE HEADERS to *Slack Bold Headers*
+    // Bold the numbered headers (1. CLO engagement: → *1. CLO engagement:*)
     planText = planText
-      .replace(/^(CLO ENGAGEMENT|BUDGET HOLDER|CHAMPION\(S\)|USE CASE\(S\)|WHY EUDIA|WHY NOW|WHY AT ALL):/gm, '*$1:*')
-      .replace(/^(ACCOUNT PLAN - .*?)$/m, '*$1*')
-      .replace(/^={60}$/m, '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      .replace(/^(\d+\. (?:CLO engagement|Budget holder|Champion\(s\)|Use case\(s\)|Why Eudia|Why now|Why at all):)/gm, '*$1*')
+      .replace(/^(Account Plan - Last updated:.*?)$/m, '_$1_');
     
     let response = `*Account Plan: ${account.Name}*\n\n`;
     response += planText;
