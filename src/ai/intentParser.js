@@ -397,6 +397,55 @@ Business Context:
       };
     }
     
+    // Account Plan save (ALL USERS can save) - CHECK FIRST (has structured fields)
+    if ((message.includes('add account plan') || message.includes('save account plan') || 
+         message.includes('update account plan')) &&
+        (message.includes('clo engagement') || message.includes('budget holder') || 
+         message.includes('champion') || message.includes('use case') || 
+         message.includes('why eudia') || message.includes('why now') || message.includes('why at all'))) {
+      intent = 'save_account_plan';
+      
+      return {
+        intent: 'save_account_plan',
+        entities: { accountPlanCapture: true },
+        followUp: false,
+        confidence: 0.95,
+        explanation: 'Save account plan to Account_Plan_s__c',
+        originalMessage: userMessage,
+        timestamp: Date.now()
+      };
+    }
+    
+    // Account Plan query (GET account plan) - CHECK AFTER save (no structured fields)
+    if ((message.includes('account plan') || message.includes('strategic plan') || 
+         message.includes('account strategy')) &&
+        !message.includes('add account plan') && !message.includes('save account plan') && 
+        !message.includes('update account plan')) {
+      intent = 'query_account_plan';
+      
+      // Extract account name
+      const planMatch = message.match(/account plan (?:for |at )?(.+?)(?:\?|$)/i) ||
+                       message.match(/(?:what\'?s|show|get)(?: the)? account plan(?: for| at)? (.+?)(?:\?|$)/i) ||
+                       message.match(/(.+?)(?:'s| account) (?:plan|strategy)/i);
+      
+      if (planMatch && planMatch[1]) {
+        entities.accounts = [planMatch[1].trim()
+          .replace(/the account plan/gi, '')
+          .replace(/account plan/gi, '')
+          .trim()];
+      }
+      
+      return {
+        intent: 'query_account_plan',
+        entities,
+        followUp: false,
+        confidence: 0.95,
+        explanation: 'Query account plan',
+        originalMessage: userMessage,
+        timestamp: Date.now()
+      };
+    }
+    
     // Send Johnson Hana Pipeline Report (specific filtered report)
     if ((message.includes('send') || message.includes('generate') || message.includes('create')) &&
         (message.includes('johnson') || message.includes('hana')) &&
@@ -1020,6 +1069,39 @@ Business Context:
         entities.stages.push(stage);
       }
     });
+
+    // IMPROVED: Detect truly unknown queries
+    // If intent is still pipeline_summary (default) and message doesn't contain expected keywords,
+    // mark as unknown for better handling
+    const pipelineKeywords = ['pipeline', 'deals', 'opportunities', 'opps', 'stage', 'closed', 'won', 'lost', 'forecast', 'target'];
+    const accountKeywords = ['account', 'company', 'owner', 'owns', 'who'];
+    const contractKeywords = ['contract', 'pdf', 'loi', 'agreement'];
+    const allKnownKeywords = [...pipelineKeywords, ...accountKeywords, ...contractKeywords];
+    
+    const hasKnownKeyword = allKnownKeywords.some(keyword => message.includes(keyword));
+    const hasQuestionWord = /what|who|when|where|how|show|tell|get|give|find/i.test(message);
+    
+    // If it's a question without known keywords and intent is default pipeline_summary, mark as unknown
+    if (intent === 'pipeline_summary' && hasQuestionWord && !hasKnownKeyword && Object.keys(entities).length <= 1) {
+      // Extract key nouns/words for clarification
+      const words = message.toLowerCase()
+        .replace(/[?!.,]/g, '')
+        .split(/\s+/)
+        .filter(w => w.length > 3 && !['what', 'when', 'where', 'show', 'tell', 'give', 'with', 'this', 'that', 'from', 'have', 'about', 'could', 'would', 'should'].includes(w));
+      
+      return {
+        intent: 'unknown_query',
+        entities: { 
+          extractedWords: words.slice(0, 5), // Keep top 5 words
+          originalIntent: intent
+        },
+        followUp: false,
+        confidence: 0.3,
+        explanation: 'Query not understood - needs clarification',
+        originalMessage: userMessage,
+        timestamp: Date.now()
+      };
+    }
 
     return {
       intent,

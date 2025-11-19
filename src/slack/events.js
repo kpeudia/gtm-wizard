@@ -317,6 +317,18 @@ Ask me anything about your pipeline, accounts, or deals!`;
       // Handle Customer_Brain note saving - pass full event context
       await handleCustomerBrainNote(text, userId, channelId, client, threadTs, conversationContext);
       return; // Exit early
+    } else if (parsedIntent.intent === 'save_account_plan') {
+      // Handle Account Plan saving - available to all users
+      await handleAccountPlanSave(text, userId, channelId, client, threadTs);
+      return; // Exit early
+    } else if (parsedIntent.intent === 'query_account_plan') {
+      // Handle Account Plan query
+      await handleAccountPlanQuery(parsedIntent.entities, userId, channelId, client, threadTs);
+      return; // Exit early
+    } else if (parsedIntent.intent === 'unknown_query') {
+      // Handle unknown queries with clarification
+      await handleUnknownQuery(parsedIntent, userId, channelId, client, threadTs);
+      return; // Exit early
     } else if (parsedIntent.intent === 'send_johnson_hana_excel') {
       // Handle Johnson Hana specific Excel report
       await handleJohnsonHanaExcelReport(userId, channelId, client, threadTs);
@@ -2033,6 +2045,304 @@ async function handleCloseAccountLost(entities, userId, channelId, client, threa
     await client.chat.postMessage({
       channel: channelId,
       text: `❌ Error closing opportunities: ${error.message}\n\nPlease try again or contact support.`,
+      thread_ts: threadTs
+    });
+  }
+}
+
+/**
+ * Handle Account Plan Save (All users can save)
+ */
+async function handleAccountPlanSave(message, userId, channelId, client, threadTs) {
+  try {
+    // Parse the structured account plan
+    // Expected format:
+    // add account plan for [Company]:
+    // CLO engagement: [text]
+    // Budget holder: [text]
+    // Champion(s): [text]
+    // Use case(s): [text]
+    // Why Eudia: [text]
+    // Why now: [text]
+    // Why at all: [text]
+    
+    // Clean message
+    let content = message
+      .replace(/@gtm-brain/gi, '')
+      .replace(/add account plan/gi, '')
+      .replace(/save account plan/gi, '')
+      .replace(/update account plan/gi, '')
+      .trim();
+    
+    // Extract account name (first line or before colon)
+    const lines = content.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    
+    if (lines.length < 2) {
+      await client.chat.postMessage({
+        channel: channelId,
+        text: `Please use the account plan template:\n\n*Format:*\nadd account plan for [Company Name]:\nCLO engagement: [details]\nBudget holder: [name]\nChampion(s): [names]\nUse case(s): [details]\nWhy Eudia: [reason]\nWhy now: [timing]\nWhy at all: [value prop]`,
+        thread_ts: threadTs
+      });
+      return;
+    }
+    
+    // First line should contain account name
+    let accountName = lines[0]
+      .replace(/for/gi, '')
+      .replace(/:/g, '')
+      .trim();
+    
+    // Parse structured fields
+    const planData = {};
+    lines.slice(1).forEach(line => {
+      if (line.toLowerCase().includes('clo engagement:')) {
+        planData.clo = line.split(':').slice(1).join(':').trim();
+      } else if (line.toLowerCase().includes('budget holder:')) {
+        planData.budget = line.split(':').slice(1).join(':').trim();
+      } else if (line.toLowerCase().includes('champion')) {
+        planData.champions = line.split(':').slice(1).join(':').trim();
+      } else if (line.toLowerCase().includes('use case')) {
+        planData.useCases = line.split(':').slice(1).join(':').trim();
+      } else if (line.toLowerCase().includes('why eudia:')) {
+        planData.whyEudia = line.split(':').slice(1).join(':').trim();
+      } else if (line.toLowerCase().includes('why now:')) {
+        planData.whyNow = line.split(':').slice(1).join(':').trim();
+      } else if (line.toLowerCase().includes('why at all:')) {
+        planData.whyAtAll = line.split(':').slice(1).join(':').trim();
+      }
+    });
+    
+    // Validate we have at least some data
+    const fieldCount = Object.keys(planData).length;
+    if (fieldCount < 3) {
+      await client.chat.postMessage({
+        channel: channelId,
+        text: `⚠️  Account plan incomplete. Please include at least:\n• CLO engagement\n• Budget holder\n• Champion(s)\n• Use case(s)\n• Why Eudia\n• Why now\n• Why at all`,
+        thread_ts: threadTs
+      });
+      return;
+    }
+    
+    // Find account in Salesforce
+    const escapeQuotes = (str) => str.replace(/'/g, "\\'");
+    const accountQuery = `SELECT Id, Name, Owner.Name, Account_Plan_s__c
+                          FROM Account
+                          WHERE Name LIKE '%${escapeQuotes(accountName)}%'
+                          LIMIT 5`;
+    
+    const accountResult = await query(accountQuery);
+    
+    if (!accountResult || accountResult.totalSize === 0) {
+      await client.chat.postMessage({
+        channel: channelId,
+        text: `❌ Account "${accountName}" not found.\n\nTry: "who owns ${accountName}" to verify the account exists.`,
+        thread_ts: threadTs
+      });
+      return;
+    }
+    
+    const account = accountResult.records[0];
+    
+    // Format the account plan
+    const date = new Date();
+    const dateFormatted = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+    
+    // Get user info for attribution
+    let userName = 'User';
+    try {
+      const userInfo = await client.users.info({ user: userId });
+      userName = userInfo.user.real_name || userInfo.user.name;
+    } catch (e) {
+      logger.warn('Could not fetch user info for account plan');
+    }
+    
+    let formattedPlan = `*Account Plan - Last Updated: ${dateFormatted} by ${userName}*\n\n`;
+    if (planData.clo) formattedPlan += `**CLO Engagement:** ${planData.clo}\n`;
+    if (planData.budget) formattedPlan += `**Budget Holder:** ${planData.budget}\n`;
+    if (planData.champions) formattedPlan += `**Champion(s):** ${planData.champions}\n`;
+    if (planData.useCases) formattedPlan += `**Use Case(s):** ${planData.useCases}\n`;
+    if (planData.whyEudia) formattedPlan += `**Why Eudia:** ${planData.whyEudia}\n`;
+    if (planData.whyNow) formattedPlan += `**Why Now:** ${planData.whyNow}\n`;
+    if (planData.whyAtAll) formattedPlan += `**Why at All:** ${planData.whyAtAll}\n`;
+    
+    // Update Salesforce
+    const { sfConnection } = require('../salesforce/connection');
+    const conn = sfConnection.getConnection();
+    
+    await conn.sobject('Account').update({
+      Id: account.Id,
+      Account_Plan_s__c: formattedPlan
+    });
+    
+    // Confirm to user
+    const sfBaseUrl = process.env.SF_INSTANCE_URL || 'https://eudia.my.salesforce.com';
+    const accountUrl = `${sfBaseUrl}/lightning/r/Account/${account.Id}/view`;
+    
+    let confirmMessage = `✅ *Account Plan saved for ${account.Name}*\n\n`;
+    confirmMessage += formattedPlan;
+    confirmMessage += `\n<${accountUrl}|View in Salesforce>`;
+    
+    await client.chat.postMessage({
+      channel: channelId,
+      text: confirmMessage,
+      thread_ts: threadTs
+    });
+    
+    logger.info(`✅ Account plan saved for ${account.Name} by ${userName}`);
+    
+  } catch (error) {
+    logger.error('Failed to save account plan:', error);
+    await client.chat.postMessage({
+      channel: channelId,
+      text: `❌ Error saving account plan: ${error.message}\n\nPlease try again or contact support.`,
+      thread_ts: threadTs
+    });
+  }
+}
+
+/**
+ * Handle Account Plan Query
+ */
+async function handleAccountPlanQuery(entities, userId, channelId, client, threadTs) {
+  try {
+    if (!entities.accounts || entities.accounts.length === 0) {
+      await client.chat.postMessage({
+        channel: channelId,
+        text: `Please specify an account name.\n\n*Examples:*\n• "What's the account plan for Intel?"\n• "Show me Apple's account plan"\n• "Get account plan for Microsoft"`,
+        thread_ts: threadTs
+      });
+      return;
+    }
+    
+    const accountName = entities.accounts[0];
+    
+    // Query Salesforce
+    const escapeQuotes = (str) => str.replace(/'/g, "\\'");
+    const accountQuery = `SELECT Id, Name, Owner.Name, Account_Plan_s__c
+                          FROM Account
+                          WHERE Name LIKE '%${escapeQuotes(accountName)}%'
+                          LIMIT 5`;
+    
+    const accountResult = await query(accountQuery);
+    
+    if (!accountResult || accountResult.totalSize === 0) {
+      await client.chat.postMessage({
+        channel: channelId,
+        text: `❌ Account "${accountName}" not found.\n\nTry: "who owns ${accountName}" to verify the account exists.`,
+        thread_ts: threadTs
+      });
+      return;
+    }
+    
+    const account = accountResult.records[0];
+    
+    // Check if account plan exists
+    if (!account.Account_Plan_s__c || account.Account_Plan_s__c.trim().length === 0) {
+      await client.chat.postMessage({
+        channel: channelId,
+        text: `*${account.Name}*\n\n⚠️  No account plan found.\n\nOwner: ${account.Owner?.Name}\n\nCreate one with:\n\`\`\`\nadd account plan for ${account.Name}:\nCLO engagement: [details]\nBudget holder: [name]\nChampion(s): [names]\nUse case(s): [details]\nWhy Eudia: [reason]\nWhy now: [timing]\nWhy at all: [value prop]\n\`\`\``,
+        thread_ts: threadTs
+      });
+      return;
+    }
+    
+    // Return the account plan
+    const sfBaseUrl = process.env.SF_INSTANCE_URL || 'https://eudia.my.salesforce.com';
+    const accountUrl = `${sfBaseUrl}/lightning/r/Account/${account.Id}/view`;
+    
+    let response = `*Account Plan: ${account.Name}*\n\n`;
+    response += account.Account_Plan_s__c;
+    response += `\n\n*Account Owner:* ${account.Owner?.Name}`;
+    response += `\n<${accountUrl}|View in Salesforce>`;
+    
+    await client.chat.postMessage({
+      channel: channelId,
+      text: response,
+      thread_ts: threadTs
+    });
+    
+    logger.info(`✅ Account plan retrieved for ${account.Name} by user ${userId}`);
+    
+  } catch (error) {
+    logger.error('Failed to retrieve account plan:', error);
+    await client.chat.postMessage({
+      channel: channelId,
+      text: `❌ Error retrieving account plan: ${error.message}\n\nPlease try again or contact support.`,
+      thread_ts: threadTs
+    });
+  }
+}
+
+/**
+ * Handle Unknown Queries - Ask for clarification
+ */
+async function handleUnknownQuery(parsedIntent, userId, channelId, client, threadTs) {
+  try {
+    const extractedWords = parsedIntent.entities.extractedWords || [];
+    const originalMessage = parsedIntent.originalMessage;
+    
+    let response = `🤔 I'm not sure I understand that query.\n\n`;
+    
+    if (extractedWords.length > 0) {
+      response += `I noticed you mentioned: *${extractedWords.join(', ')}*\n\n`;
+      response += `Are you asking about:\n`;
+      
+      // Smart suggestions based on extracted words
+      const suggestions = [];
+      
+      // Check if words might relate to accounts
+      if (extractedWords.some(w => ['company', 'customer', 'client', 'vendor'].includes(w))) {
+        suggestions.push('• Account information? Try: "who owns [company name]"');
+      }
+      
+      // Check if words might relate to pipeline
+      if (extractedWords.some(w => ['sales', 'revenue', 'money', 'value', 'worth'].includes(w))) {
+        suggestions.push('• Pipeline data? Try: "show me the pipeline"');
+      }
+      
+      // Check if words might relate to reports
+      if (extractedWords.some(w => ['report', 'summary', 'stats', 'numbers', 'metrics'].includes(w))) {
+        suggestions.push('• A report? Try: "send pipeline excel report"');
+      }
+      
+      // Check if words might relate to contracts
+      if (extractedWords.some(w => ['document', 'agreement', 'signed', 'signature'].includes(w))) {
+        suggestions.push('• Contracts? Try: "show contracts for [company]"');
+      }
+      
+      if (suggestions.length > 0) {
+        response += suggestions.join('\n');
+      } else {
+        response += `• Pipeline queries: "show me late stage deals"\n`;
+        response += `• Account lookups: "who owns Intel?"\n`;
+        response += `• Contract queries: "contracts for Cargill"\n`;
+        response += `• Reports: "send pipeline excel"`;
+      }
+    } else {
+      // Generic help
+      response += `*I can help with:*\n`;
+      response += `• Account ownership: "who owns [company]?"\n`;
+      response += `• Pipeline queries: "show me late stage contracting"\n`;
+      response += `• LOI/ARR tracking: "what LOIs signed last week?"\n`;
+      response += `• Contract queries: "contracts for [company]"\n`;
+      response += `• Account plans: "what's the account plan for [company]?"\n`;
+      response += `• Excel reports: "send pipeline excel report"\n\n`;
+      response += `Try rephrasing your question, or ask "hello" for more examples.`;
+    }
+    
+    await client.chat.postMessage({
+      channel: channelId,
+      text: response,
+      thread_ts: threadTs
+    });
+    
+    logger.info(`❓ Unknown query from ${userId}: "${originalMessage}"`);
+    
+  } catch (error) {
+    logger.error('Failed to handle unknown query:', error);
+    await client.chat.postMessage({
+      channel: channelId,
+      text: `I'm not sure how to help with that. Try asking "hello" for examples of what I can do!`,
       thread_ts: threadTs
     });
   }
