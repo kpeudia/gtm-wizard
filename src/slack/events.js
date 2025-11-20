@@ -2583,28 +2583,32 @@ async function handleCreateAccount(entities, userId, channelId, client, threadTs
     // 5. Rev_MN__c
     
     // Map State to State__c picklist
+    // From screenshots, picklist includes: US state codes + specific international countries
+    // ONLY use values that are confirmed in the picklist
     let statePicklistValue = null;
-    if (enrichment.headquarters.country && enrichment.headquarters.country !== 'USA' && enrichment.headquarters.country !== 'US') {
-      // International: Use country name
-      const countryMap = {
-        'SWEDEN': 'Sweden',
-        'SWITZERLAND': 'Switzerland',
-        'FRANCE': 'France',
-        'UNITED KINGDOM': 'United Kingdom',
-        'UK': 'United Kingdom',
-        'GERMANY': 'Germany',
+    
+    if (enrichment.headquarters.state && !enrichment.headquarters.country || 
+        enrichment.headquarters.country === 'USA' || enrichment.headquarters.country === 'US') {
+      // USA: Use state code (CA, NY, MA, etc.)
+      statePicklistValue = enrichment.headquarters.state.toUpperCase();
+    } else if (enrichment.headquarters.country) {
+      // International: ONLY use countries confirmed in picklist from screenshots
+      const validInternationalStates = {
+        'VIETNAM': 'Vietnam',
         'NETHERLANDS': 'Netherlands',
         'SPAIN': 'Spain',
-        'CANADA': 'Canada',
+        'UNITED KINGDOM': 'United Kingdom',
+        'UK': 'United Kingdom',
         'JAPAN': 'Japan',
+        'HONG KONG': 'Hong Kong',
+        'IRELAND': 'Ireland',
+        'AUSTRALIA': 'Australia',
         'CHINA': 'China',
-        'INDIA': 'India',
-        'AUSTRALIA': 'Australia'
+        'BRITISH VIRGIN ISLANDS': 'British Virgin Islands'
+        // Sweden NOT in list - leave blank if Sweden
       };
-      statePicklistValue = countryMap[enrichment.headquarters.country.toUpperCase()] || enrichment.headquarters.country;
-    } else if (enrichment.headquarters.state) {
-      // USA: Use state code
-      statePicklistValue = enrichment.headquarters.state.toUpperCase();
+      const countryUpper = enrichment.headquarters.country.toUpperCase();
+      statePicklistValue = validInternationalStates[countryUpper] || null; // null if not in list
     }
     
     // Build account data - ONLY MANDATORY + 5 ENRICHMENT FIELDS
@@ -2624,26 +2628,28 @@ async function handleCreateAccount(entities, userId, channelId, client, threadTs
       hasRevenue: !!enrichment.revenue
     });
     
-    // Add enrichment fields ONLY if they have values
+    // Add ONLY the 5 enrichment fields if they have valid values
     if (enrichment.website) {
       accountData.Website = enrichment.website;
-      logger.info('Adding Website:', enrichment.website);
+      logger.info('✅ Adding Website:', enrichment.website);
     }
     if (enrichment.linkedIn) {
       accountData.Linked_in_URL__c = enrichment.linkedIn;
-      logger.info('Adding Linked_in_URL__c:', enrichment.linkedIn);
+      logger.info('✅ Adding Linked_in_URL__c:', enrichment.linkedIn);
     }
     if (statePicklistValue) {
       accountData.State__c = statePicklistValue;
-      logger.info('Adding State__c:', statePicklistValue);
+      logger.info('✅ Adding State__c:', statePicklistValue);
+    } else {
+      logger.warn('⚠️  State__c not set - country not in picklist or no HQ data');
     }
     if (assignment.sfRegion) {
       accountData.Region__c = assignment.sfRegion;
-      logger.info('Adding Region__c:', assignment.sfRegion);
+      logger.info('✅ Adding Region__c:', assignment.sfRegion);
     }
     if (enrichment.revenue) {
       accountData.Rev_MN__c = enrichment.revenue / 1000000;
-      logger.info('Adding Rev_MN__c:', enrichment.revenue / 1000000);
+      logger.info('✅ Adding Rev_MN__c:', enrichment.revenue / 1000000);
     }
     
     // Query to get BL's Salesforce User ID
