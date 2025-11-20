@@ -415,19 +415,93 @@ Business Context:
     }
     
     // Opportunity creation (Keigan only)
-    if ((message.includes('create opp') || message.includes('create opportunity') || 
-         message.includes('add opp') || message.includes('add opportunity')) &&
-        (message.includes('for ') || message.includes('at '))) {
+    if ((message.includes('create') || message.includes('add')) && 
+        (message.includes(' opp ') || message.includes(' opportunity') || 
+         message.includes('opp for') || message.includes('opportunity for')) &&
+        !message.includes('account') && !message.includes('assign to bl')) {
       intent = 'create_opportunity';
       
-      // Extract account name
-      const oppMatch = message.match(/(?:create|add) opp(?:ortunity)? (?:for |at )(.+?)(?:\n|$)/i);
+      // Extract account name - VERY CAREFULLY
+      // Pattern: "create [an] opp for [ACCOUNT NAME]"  
+      // Account name can be multi-word, ends at sentence or before field keywords
+      const oppMatch = message.match(/(?:create|add) (?:an |a |)opp(?:ortunity)? for (.+)/i);
       
       if (oppMatch && oppMatch[1]) {
-        entities.accounts = [oppMatch[1].trim()];
+        let extractedName = oppMatch[1].trim();
+        
+        // Stop at period followed by space (allows "O'Reilly" but stops at ". stage")
+        extractedName = extractedName.replace(/\.\s+.*/g, '').trim();
+        
+        // Stop before field keywords (but only if preceded by space/punctuation)
+        // This preserves "Testing Account" but stops before " and stage"
+        const fieldKeywords = [
+          ' and stage ',
+          ' and acv',
+          ' and \\$',
+          ' and target',
+          ' with stage',
+          ' with acv',
+          '\\. stage',
+          '\\. acv',
+          '\\. \\$'
+        ];
+        
+        for (const keyword of fieldKeywords) {
+          const regex = new RegExp(keyword, 'i');
+          const match = extractedName.match(regex);
+          if (match) {
+            extractedName = extractedName.substring(0, match.index).trim();
+            break;
+          }
+        }
+        
+        entities.accounts = [extractedName];
       }
       
-      // Mark as opportunity creation
+      // Extract inline fields if mentioned (Stage, ACV, Target Sign, Product Line)
+      // Parse inline natural language: "stage 4 and $300k acv and target sign of 11/31/2025"
+      
+      // Stage detection
+      const stageMatch = message.match(/stage\s+(\d+)/i);
+      if (stageMatch) {
+        entities.stage = stageMatch[1];
+      }
+      
+      // ACV detection (multiple formats)
+      const acvMatch = message.match(/\$(\d+)k\s+acv/i) || 
+                      message.match(/acv\s+\$?(\d+)k/i) ||
+                      message.match(/\$(\d{1,3}(?:,\d{3})*)/);
+      if (acvMatch) {
+        // Convert to number (handle $300k format)
+        let acvValue = acvMatch[1].replace(/,/g, '');
+        if (message.match(/\d+k/i)) {
+          acvValue = parseInt(acvValue) * 1000; // Convert 300k to 300000
+        }
+        entities.acv = parseInt(acvValue);
+      }
+      
+      // Target Sign Date detection
+      const dateMatch = message.match(/target sign (?:of |date |)(\d{1,2}\/\d{1,2}\/\d{4})/i) ||
+                       message.match(/sign (?:date |)(\d{1,2}\/\d{1,2}\/\d{4})/i);
+      if (dateMatch) {
+        entities.targetDate = dateMatch[1];
+      }
+      
+      // Product Line detection
+      const productMatch = message.match(/product line:?\s+(.+?)(?:\n|and|with|stage|acv|\$|target|revenue|$)/i);
+      if (productMatch) {
+        entities.productLine = productMatch[1].trim();
+      }
+      
+      // Revenue Type detection
+      const revenueMatch = message.match(/revenue type:?\s+(booking|revenue|project)/i) ||
+                          message.match(/type:?\s+(booking|revenue|project)/i);
+      if (revenueMatch) {
+        entities.revenueType = revenueMatch[1];
+      }
+      
+      // Mark as simple mode if no inline fields detected
+      entities.simpleMode = !stageMatch && !acvMatch && !dateMatch && !productMatch && !revenueMatch;
       entities.createOpp = true;
       
       return {

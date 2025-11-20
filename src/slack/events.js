@@ -2710,6 +2710,7 @@ async function handleReassignAccount(entities, userId, channelId, client, thread
 
 /**
  * Handle Opportunity Creation (Keigan only)
+ * SMART MODE: Use defaults for everything, only override mentioned fields
  */
 async function handleCreateOpportunity(message, entities, userId, channelId, client, threadTs) {
   const KEIGAN_USER_ID = 'U094AQE9V7D';
@@ -2725,71 +2726,19 @@ async function handleCreateOpportunity(message, entities, userId, channelId, cli
       return;
     }
     
-    // Parse the structured opportunity data
-    // Expected format:
-    // create opp for [Company]:
-    // ACV: [amount]
-    // Stage: [stage number or name]
-    // Product Line: [product]
-    // Target Sign Date: [MM/DD/YYYY]
-    // Revenue Type: [Booking/Revenue/Project]
-    
-    const lines = message.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-    
-    if (lines.length < 2) {
+    // Extract account name from entities (already parsed)
+    if (!entities.accounts || entities.accounts.length === 0) {
       await client.chat.postMessage({
         channel: channelId,
-        text: `Please use the opportunity creation template:\n\n\`\`\`\ncreate opp for [Company Name]:\nACV: [amount]\nStage: [0-4]\nProduct Line: [AI-Augmented Contracting/Augmented-M&A/Compliance/sigma/Cortex]\nTarget Sign Date: [MM/DD/YYYY]\nRevenue Type: [Booking/Revenue/Project]\n\`\`\`\n\n*Example:*\n\`\`\`\ncreate opp for Intel:\nACV: 500000\nStage: 1\nProduct Line: AI-Augmented Contracting\nTarget Sign Date: 12/31/2025\nRevenue Type: Revenue\n\`\`\``,
+        text: `Please specify an account name.\n\n*Examples:*\n• Simple: "create an opp for Intel"\n• Detailed: "create an opp for Intel. stage 4 and $300k acv and target sign of 12/31/2025"`,
         thread_ts: threadTs
       });
       return;
     }
     
-    // Extract account name from first line
-    let accountName = lines[0]
-      .replace(/create opp(?:ortunity)? for/gi, '')
-      .replace(/add opp(?:ortunity)? for/gi, '')
-      .replace(/:/g, '')
-      .trim();
+    const accountName = entities.accounts[0];
     
-    // Parse fields
-    const oppData = {};
-    lines.slice(1).forEach(line => {
-      if (line.toLowerCase().includes('acv:')) {
-        const value = line.split(':')[1].trim().replace(/[$,]/g, '');
-        oppData.acv = parseFloat(value);
-      } else if (line.toLowerCase().includes('stage:')) {
-        const value = line.split(':')[1].trim();
-        oppData.stage = value;
-      } else if (line.toLowerCase().includes('product line:')) {
-        oppData.productLine = line.split(':').slice(1).join(':').trim();
-      } else if (line.toLowerCase().includes('target sign') || line.toLowerCase().includes('target date')) {
-        oppData.targetDate = line.split(':').slice(1).join(':').trim();
-      } else if (line.toLowerCase().includes('revenue type:') || line.toLowerCase().includes('type:')) {
-        oppData.revenueType = line.split(':').slice(1).join(':').trim();
-      } else if (line.toLowerCase().includes('name:') || line.toLowerCase().includes('opp name:')) {
-        oppData.oppName = line.split(':').slice(1).join(':').trim();
-      }
-    });
-    
-    // Validate required fields
-    const missing = [];
-    if (!oppData.acv) missing.push('ACV');
-    if (!oppData.stage) missing.push('Stage');
-    if (!oppData.productLine) missing.push('Product Line');
-    if (!oppData.targetDate) missing.push('Target Sign Date');
-    if (!oppData.revenueType) missing.push('Revenue Type');
-    
-    if (missing.length > 0) {
-      await client.chat.postMessage({
-        channel: channelId,
-        text: `⚠️  Missing required fields: ${missing.join(', ')}\n\nPlease include all required fields in your request.`,
-        thread_ts: threadTs
-      });
-      return;
-    }
-    
-    // Find account
+    // CRITICAL: Find account with EXACT matching to prevent wrong attachments
     const escapeQuotes = (str) => str.replace(/'/g, "\\'");
     const accountQuery = `SELECT Id, Name, Owner.Name, OwnerId
                           FROM Account
@@ -2801,13 +2750,55 @@ async function handleCreateOpportunity(message, entities, userId, channelId, cli
     if (!accountResult || accountResult.totalSize === 0) {
       await client.chat.postMessage({
         channel: channelId,
-        text: `❌ Account "${accountName}" not found.\n\nCreate it first: "create ${accountName} and assign to BL"`,
+        text: `❌ Account "${accountName}" not found.\n\nCreate it first: "create ${accountName} and assign to BL"\n\nOr check spelling: "does ${accountName} exist?"`,
+        thread_ts: threadTs
+      });
+      return;
+    }
+    
+    // ANTI-HALLUCINATION: If multiple matches, confirm with user
+    if (accountResult.totalSize > 1) {
+      const accountNames = accountResult.records.map(r => r.Name).join(', ');
+      await client.chat.postMessage({
+        channel: channelId,
+        text: `⚠️  Multiple accounts match "${accountName}":\n\n${accountNames}\n\nPlease be more specific (use exact account name).`,
         thread_ts: threadTs
       });
       return;
     }
     
     const account = accountResult.records[0];
+    
+    // SMART DEFAULTS (Salesforce flow defaults)
+    const DEFAULTS = {
+      acv: 300000, // $300k default
+      tcv: 300000, // Same as ACV by default (updated below if term provided)
+      term: 36, // 36 months always
+      stage: '1', // Stage 1 - Discovery default
+      targetDate: null, // Will calculate: TODAY + 150 days
+      revenueType: 'Revenue', // Revenue default (12+ month contracts)
+      opportunitySource: 'Inbound', // Always Inbound for now
+      productLine: 'AI-Augmented Contracting' // Default product (can override)
+    };
+    
+    // Calculate default target date (TODAY + 150 days, matching Salesforce formula)
+    const defaultTargetDate = new Date();
+    defaultTargetDate.setDate(defaultTargetDate.getDate() + 150);
+    DEFAULTS.targetDate = defaultTargetDate;
+    
+    // Build opportunity data: Start with defaults, override ONLY mentioned fields
+    const oppData = {
+      acv: entities.acv || DEFAULTS.acv,
+      stage: entities.stage || DEFAULTS.stage,
+      targetDate: entities.targetDate || DEFAULTS.targetDate,
+      productLine: entities.productLine || DEFAULTS.productLine,
+      revenueType: entities.revenueType || DEFAULTS.revenueType,
+      term: DEFAULTS.term, // Always 36 months
+      opportunitySource: DEFAULTS.opportunitySource // Always Inbound
+    };
+    
+    // Calculate TCV from ACV and term
+    oppData.tcv = oppData.acv; // For now, TCV = ACV (can adjust if term-based calculation needed)
     
     // Map stage number to full stage name
     const stageMap = {
@@ -2820,27 +2811,51 @@ async function handleCreateOpportunity(message, entities, userId, channelId, cli
     
     const stageName = stageMap[oppData.stage] || oppData.stage;
     
-    // Parse target date
-    const targetDate = new Date(oppData.targetDate);
-    const targetDateFormatted = targetDate.toISOString().split('T')[0]; // YYYY-MM-DD for Salesforce
+    // Map stage to probability
+    const probabilityMap = {
+      '0': 5,
+      '1': 10,
+      '2': 25,
+      '3': 50,
+      '4': 75
+    };
+    const probability = probabilityMap[oppData.stage] || 10;
     
-    // Create opportunity
+    // Format target date for Salesforce
+    let targetDateFormatted;
+    if (typeof oppData.targetDate === 'string') {
+      // Parse MM/DD/YYYY format
+      const dateParts = oppData.targetDate.split('/');
+      const targetDate = new Date(dateParts[2], dateParts[0] - 1, dateParts[1]);
+      targetDateFormatted = targetDate.toISOString().split('T')[0];
+    } else {
+      // It's a Date object (default)
+      targetDateFormatted = oppData.targetDate.toISOString().split('T')[0];
+    }
+    
+    // Auto-generate opportunity name
+    const oppName = `${account.Name} - ${oppData.productLine}`;
+    
+    // Create opportunity in Salesforce
     const { sfConnection } = require('../salesforce/connection');
     const conn = sfConnection.getConnection();
     
     const opportunityData = {
-      Name: oppData.oppName || `${account.Name} - ${oppData.productLine}`,
+      Name: oppName,
       AccountId: account.Id,
       OwnerId: account.OwnerId, // Same as account owner
       StageName: stageName,
       ACV__c: oppData.acv,
-      Amount: oppData.acv, // Standard Amount field
+      Amount: oppData.acv, // Salesforce required field (same as ACV)
+      TCV__c: oppData.tcv,
       Product_Line__c: oppData.productLine,
-      Target_LOI_Date__c: targetDateFormatted,
-      CloseDate: targetDateFormatted, // Required standard field
+      Target_LOI_Date__c: targetDateFormatted, // Custom field
+      Target_Sign_Date__c: targetDateFormatted, // Another custom field variant
+      CloseDate: targetDateFormatted, // Salesforce required (same as Target Sign)
       Revenue_Type__c: oppData.revenueType,
+      LeadSource: oppData.opportunitySource, // Opportunity Source → LeadSource in Salesforce
       IsClosed: false,
-      Probability: stageName === 'Stage 1 - Discovery' ? 10 : 25 // Default probability
+      Probability: probability
     };
     
     const createResult = await conn.sobject('Opportunity').create(opportunityData);
@@ -2849,18 +2864,41 @@ async function handleCreateOpportunity(message, entities, userId, channelId, cli
       throw new Error(`Salesforce opportunity creation failed: ${createResult.errors?.join(', ')}`);
     }
     
-    // Confirmation
+    // Build concise confirmation
     const sfBaseUrl = process.env.SF_INSTANCE_URL || 'https://eudia.my.salesforce.com';
     const oppUrl = `${sfBaseUrl}/lightning/r/Opportunity/${createResult.id}/view`;
     
+    // Show which fields were custom vs default
+    const customFields = [];
+    const defaultFields = [];
+    
+    if (entities.acv) customFields.push(`ACV: $${oppData.acv.toLocaleString()}`);
+    else defaultFields.push(`ACV: $${oppData.acv.toLocaleString()} (default)`);
+    
+    if (entities.stage) customFields.push(`Stage: ${stageName}`);
+    else defaultFields.push(`Stage: ${stageName} (default)`);
+    
+    if (entities.targetDate) customFields.push(`Target Sign: ${oppData.targetDate}`);
+    else defaultFields.push(`Target Sign: ${targetDateFormatted} (default: +150 days)`);
+    
+    if (entities.productLine) customFields.push(`Product Line: ${oppData.productLine}`);
+    else defaultFields.push(`Product Line: ${oppData.productLine} (default)`);
+    
+    if (entities.revenueType) customFields.push(`Revenue Type: ${oppData.revenueType}`);
+    else defaultFields.push(`Revenue Type: ${oppData.revenueType} (default)`);
+    
     let confirmMessage = `✅ *Opportunity created for ${account.Name}*\n\n`;
-    confirmMessage += `*Details:*\n`;
-    confirmMessage += `• ACV: $${oppData.acv.toLocaleString()}\n`;
-    confirmMessage += `• Stage: ${stageName}\n`;
-    confirmMessage += `• Product Line: ${oppData.productLine}\n`;
-    confirmMessage += `• Target Sign: ${oppData.targetDate}\n`;
-    confirmMessage += `• Revenue Type: ${oppData.revenueType}\n`;
-    confirmMessage += `• Owner: ${account.Owner?.Name}\n\n`;
+    
+    if (customFields.length > 0) {
+      confirmMessage += `*Your values:*\n${customFields.map(f => '• ' + f).join('\n')}\n\n`;
+    }
+    
+    if (defaultFields.length > 0) {
+      confirmMessage += `*Defaults applied:*\n${defaultFields.map(f => '• ' + f).join('\n')}\n\n`;
+    }
+    
+    confirmMessage += `Owner: ${account.Owner?.Name}\n`;
+    confirmMessage += `Term: 36 months\n\n`;
     confirmMessage += `<${oppUrl}|View Opportunity in Salesforce>`;
     
     await client.chat.postMessage({
@@ -2869,7 +2907,7 @@ async function handleCreateOpportunity(message, entities, userId, channelId, cli
       thread_ts: threadTs
     });
     
-    logger.info(`✅ Opportunity created for ${account.Name}, ACV: $${oppData.acv}, Stage: ${stageName} by ${userId}`);
+    logger.info(`✅ Opportunity created for ${account.Name}, ACV: $${oppData.acv}, Stage: ${stageName}, CustomFields: ${customFields.length}, Defaults: ${defaultFields.length} by ${userId}`);
     
   } catch (error) {
     logger.error('Opportunity creation failed:', error);
