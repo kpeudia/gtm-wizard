@@ -75,36 +75,52 @@ class ClayEnrichment {
       }
 
       logger.info(`🔍 Calling Clay API for: ${companyName}`);
-      logger.warn('⚠️  Clay API endpoint unknown - v1 is deprecated');
-      logger.warn('Need to contact Clay support for correct API endpoint');
-      logger.warn('For now, falling back to empty enrichment');
-      
-      // Clay v1 endpoint is deprecated
-      // Need correct endpoint from Clay documentation or support
-      // Until then, return empty enrichment
-      throw new Error('Clay API v1 endpoint deprecated - need v2 endpoint from Clay support');
 
-      // Parse Clay response
-      const enrichment = {
-        companyName: data.name || companyName,
-        headquarters: this.parseHeadquarters(data),
-        revenue: data.revenue || data.annual_revenue || null,
-        website: data.website || data.domain || null,
-        linkedIn: data.linkedin_url || data.linkedin || null,
-        employeeCount: data.employee_count || data.headcount || null,
-        industry: data.industry || null,
-        foundedYear: data.founded_year || null,
-        success: true,
-        source: 'Clay API'
-      };
-
-      logger.info(`✅ Company enriched successfully:`, {
-        company: companyName,
-        hq: enrichment.headquarters,
-        revenue: enrichment.revenue
+      // Clay enrichment endpoint (v1/companies/enrich)
+      const response = await fetch(`${this.baseUrl}/companies/enrich`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: companyName // Try 'name' instead of 'company_name'
+        }),
+        timeout: 10000 // 10 second timeout
       });
 
-      return enrichment;
+      if (!response.ok) {
+        const errorText = await response.text();
+        logger.error(`Clay API error: ${response.status} - ${errorText}`);
+        
+        // Try alternate request format if first fails
+        logger.info('Trying alternate request format...');
+        const response2 = await fetch(`${this.baseUrl}/companies/enrich`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            domain: companyName.toLowerCase().replace(/\s+/g, '') + '.com' // Try domain format
+          })
+        });
+        
+        if (!response2.ok) {
+          throw new Error(`Clay API error: ${response.status} - ${errorText}`);
+        }
+        
+        const data = await response2.json();
+        logger.info('Clay API response (alternate format):', { hasData: !!data, keys: Object.keys(data || {}) });
+        return this.parseClayResponse(data, companyName);
+      }
+
+      const data = await response.json();
+      logger.info('Clay API response received:', { hasData: !!data, keys: Object.keys(data || {}) });
+      
+      return this.parseClayResponse(data, companyName);
+
+      return this.parseClayResponse(data, companyName);
 
     } catch (error) {
       logger.error(`Clay enrichment failed for ${companyName}:`, error.message);
@@ -112,6 +128,36 @@ class ClayEnrichment {
       // Return empty enrichment on failure (allow manual entry)
       return this.getEmptyEnrichment(companyName, error.message);
     }
+  }
+
+  /**
+   * Parse Clay API response to our enrichment format
+   */
+  parseClayResponse(data, companyName) {
+    logger.info('📊 Parsing Clay response:', JSON.stringify(data, null, 2));
+    
+    const enrichment = {
+      companyName: data.name || data.company_name || companyName,
+      headquarters: this.parseHeadquarters(data),
+      revenue: data.revenue || data.annual_revenue || data.estimated_revenue || null,
+      website: data.website || data.domain || data.url || null,
+      linkedIn: data.linkedin_url || data.linkedin || data.linkedin_company_url || null,
+      employeeCount: data.employee_count || data.headcount || data.employees || null,
+      industry: data.industry || data.industry_category || null,
+      foundedYear: data.founded_year || data.founded || null,
+      success: true,
+      source: 'Clay API'
+    };
+
+    logger.info(`✅ Parsed enrichment:`, {
+      companyName: enrichment.companyName,
+      hasWebsite: !!enrichment.website,
+      hasLinkedIn: !!enrichment.linkedIn,
+      hasRevenue: !!enrichment.revenue,
+      hasHQ: !!enrichment.headquarters?.state || !!enrichment.headquarters?.country
+    });
+
+    return enrichment;
   }
 
   /**
