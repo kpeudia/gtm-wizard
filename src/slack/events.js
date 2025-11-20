@@ -2513,9 +2513,19 @@ async function handleCreateAccount(entities, userId, channelId, client, threadTs
       thread_ts: threadTs
     });
     
-    // Step 1: Enrich company data via Clay
+    // Step 1: Enrich company data via Clay (preserves proper casing)
     const { enrichCompanyData } = require('../services/clayEnrichment');
     const enrichment = await enrichCompanyData(companyName);
+    
+    // DEBUG: Log enrichment result
+    logger.info('Enrichment result:', {
+      companyName: enrichment.companyName,
+      hasWebsite: !!enrichment.website,
+      hasLinkedIn: !!enrichment.linkedIn,
+      hasRevenue: !!enrichment.revenue,
+      hasHQ: !!enrichment.headquarters?.state || !!enrichment.headquarters?.country,
+      source: enrichment.source
+    });
     
     // Step 2: Determine BL assignment
     const { determineAccountAssignment } = require('../services/accountAssignment');
@@ -2599,16 +2609,41 @@ async function handleCreateAccount(entities, userId, channelId, client, threadTs
     
     // Build account data - ONLY MANDATORY + 5 ENRICHMENT FIELDS
     const accountData = {
-      Name: enrichment.companyName || companyName, // Use enriched name for proper casing (IKEA not ikea)
+      Name: enrichment.companyName || companyName, // Use enriched name for proper casing
       OwnerId: null // Will query below
     };
     
+    // DEBUG: Log what we're about to save
+    logger.info('Account data being created:', {
+      Name: accountData.Name,
+      hasWebsite: !!enrichment.website,
+      hasLinkedIn: !!enrichment.linkedIn,
+      hasState: !!statePicklistValue,
+      hasRegion: !!assignment.sfRegion,
+      hasRevenue: !!enrichment.revenue
+    });
+    
     // Add enrichment fields ONLY if they have values
-    if (enrichment.website) accountData.Website = enrichment.website;
-    if (enrichment.linkedIn) accountData.Linked_in_URL__c = enrichment.linkedIn;
-    if (statePicklistValue) accountData.State__c = statePicklistValue;
-    if (assignment.sfRegion) accountData.Region__c = assignment.sfRegion;
-    if (enrichment.revenue) accountData.Rev_MN__c = enrichment.revenue / 1000000;
+    if (enrichment.website) {
+      accountData.Website = enrichment.website;
+      logger.info('Adding Website:', enrichment.website);
+    }
+    if (enrichment.linkedIn) {
+      accountData.Linked_in_URL__c = enrichment.linkedIn;
+      logger.info('Adding Linked_in_URL__c:', enrichment.linkedIn);
+    }
+    if (statePicklistValue) {
+      accountData.State__c = statePicklistValue;
+      logger.info('Adding State__c:', statePicklistValue);
+    }
+    if (assignment.sfRegion) {
+      accountData.Region__c = assignment.sfRegion;
+      logger.info('Adding Region__c:', assignment.sfRegion);
+    }
+    if (enrichment.revenue) {
+      accountData.Rev_MN__c = enrichment.revenue / 1000000;
+      logger.info('Adding Rev_MN__c:', enrichment.revenue / 1000000);
+    }
     
     // Query to get BL's Salesforce User ID
     const userQuery = `SELECT Id FROM User WHERE Name = '${finalAssignedBL}' AND IsActive = true LIMIT 1`;
@@ -2945,18 +2980,18 @@ async function handleCreateOpportunity(message, entities, userId, channelId, cli
     const opportunityData = {
       Name: oppName,
       AccountId: account.Id,
-      OwnerId: account.OwnerId, // Same as account owner
+      OwnerId: account.OwnerId,
       StageName: stageName,
       ACV__c: oppData.acv,
-      Amount: oppData.acv, // Salesforce required field (same as ACV)
+      Amount: oppData.acv,
       TCV__c: oppData.tcv,
       Product_Line__c: oppData.productLine,
-      Target_LOI_Date__c: targetDateFormatted, // CORRECT field name used throughout GTM Brain
-      CloseDate: targetDateFormatted, // Salesforce required (same as Target LOI Date)
-      Revenue_Type__c: oppData.revenueType, // API name: ARR, Booking, or Project
-      LeadSource: oppData.opportunitySource, // Opportunity Source
-      IsClosed: false,
+      Target_LOI_Date__c: targetDateFormatted,
+      CloseDate: targetDateFormatted,
+      Revenue_Type__c: oppData.revenueType, // ARR, Booking, or Project
+      LeadSource: oppData.opportunitySource,
       Probability: probability
+      // IsClosed: REMOVED - read-only field, set automatically by Salesforce based on StageName
     };
     
     const createResult = await conn.sobject('Opportunity').create(opportunityData);
