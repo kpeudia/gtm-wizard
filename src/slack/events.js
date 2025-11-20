@@ -652,57 +652,41 @@ async function handleCustomerBrainNote(message, userId, channelId, client, threa
   }
 
   try {
-    // Clean message to get just the note content
-    let noteContent = message
-      .replace(/@gtm-brain/gi, '')
-      .replace(/add to customer history\s*:?\s*/gi, '')
-      .replace(/save note\s*:?\s*/gi, '')
-      .replace(/log note\s*:?\s*/gi, '')
-      .replace(/customer history\s*:?\s*/gi, '')
-      .trim();
+    // STRICT extraction: Account name is ONLY what's immediately after the colon
+    // Format: "add to customer history: Pegasystems"
+    // Everything after first newline is the note content
     
-    if (noteContent.length < 5) {
+    const triggerMatch = message.match(/add to customer history\s*:\s*([^\n]+)/i);
+    
+    if (!triggerMatch || !triggerMatch[1]) {
       await client.chat.postMessage({
         channel: channelId,
-        text: `Please include the note content:\n\n*Format:*\n@gtm-brain add to customer history: Nielsen - Discussion...\n\nOR\n@gtm-brain add to customer history Nielsen - Discussion...`,
-        thread_ts: threadTs
-      });
-      return;
-    }
-
-    // Extract account name from note content
-    // SIMPLE: First line after "add to customer history:" is the account name
-    // Format: "add to customer history: Pegasystems\n[rest of notes]"
-    
-    const lines = noteContent.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-    
-    if (lines.length === 0) {
-      await client.chat.postMessage({
-        channel: channelId,
-        text: `Please include account name and notes.\n\n*Format:*\nadd to customer history: Pegasystems\n[Your notes here]`,
+        text: `Please include account name after colon.\n\n*Format:*\nadd to customer history: Pegasystems\n[Your notes here]`,
         thread_ts: threadTs
       });
       return;
     }
     
-    // First line is the account name
-    let accountName = lines[0];
+    // Account name is EXACTLY what's between colon and first newline
+    let accountName = triggerMatch[1].trim();
     
-    // Clean up the account name - remove any leading symbols or whitespace
-    accountName = accountName
-      .replace(/^[•\-–—\*\s]+/, '') // Remove leading bullets, dashes, asterisks
-      .replace(/\s*[-–—]\s*.*$/, '') // Remove anything after dash
-      .trim();
+    // Remove any trailing dashes or punctuation (allows "Pegasystems - Note" format)
+    accountName = accountName.replace(/\s*[-–—].*$/, '').trim();
     
-    // If account name looks invalid (too short or starts with lowercase), reject
     if (accountName.length < 2) {
       await client.chat.postMessage({
         channel: channelId,
-        text: `Could not detect account name from first line: "${lines[0]}"\n\n*Format:*\nadd to customer history: Pegasystems\n[Your notes]`,
+        text: `Account name too short: "${accountName}"\n\n*Format:*\nadd to customer history: Pegasystems\n[Your notes]`,
         thread_ts: threadTs
       });
       return;
     }
+    
+    // Get the full note content (everything in the message)
+    let noteContent = message
+      .replace(/@gtm-brain/gi, '')
+      .replace(/add to customer history\s*:\s*/gi, '')
+      .trim();
     
     if (!accountName) {
       await client.chat.postMessage({
