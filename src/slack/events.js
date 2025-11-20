@@ -345,6 +345,18 @@ Ask me anything about your pipeline, accounts, or deals!`;
       // Handle close account lost (Keigan only)
       await handleCloseAccountLost(parsedIntent.entities, userId, channelId, client, threadTs);
       return; // Exit early
+    } else if (parsedIntent.intent === 'account_existence_check') {
+      // Handle account existence check
+      await handleAccountExistenceCheck(parsedIntent.entities, userId, channelId, client, threadTs);
+      return; // Exit early
+    } else if (parsedIntent.intent === 'create_account') {
+      // Handle account creation with auto-assignment (Keigan only)
+      await handleCreateAccount(parsedIntent.entities, userId, channelId, client, threadTs);
+      return; // Exit early
+    } else if (parsedIntent.intent === 'reassign_account') {
+      // Handle manual account reassignment (Keigan only)
+      await handleReassignAccount(parsedIntent.entities, userId, channelId, client, threadTs);
+      return; // Exit early
     } else if (parsedIntent.intent === 'pipeline_summary' || parsedIntent.intent === 'deal_lookup') {
       soql = queryBuilder.buildOpportunityQuery(parsedIntent.entities);
     } else if (parsedIntent.intent === 'activity_check') {
@@ -2364,6 +2376,325 @@ async function handleAccountPlanQuery(entities, userId, channelId, client, threa
     await client.chat.postMessage({
       channel: channelId,
       text: `❌ Error retrieving account plan: ${error.message}\n\nPlease try again or contact support.`,
+      thread_ts: threadTs
+    });
+  }
+}
+
+/**
+ * Handle Account Existence Check
+ */
+async function handleAccountExistenceCheck(entities, userId, channelId, client, threadTs) {
+  try {
+    if (!entities.accounts || entities.accounts.length === 0) {
+      await client.chat.postMessage({
+        channel: channelId,
+        text: `Please specify an account name.\n\n*Example:* "does Intel exist?"`,
+        thread_ts: threadTs
+      });
+      return;
+    }
+    
+    const accountName = entities.accounts[0];
+    
+    // Query Salesforce using existing fuzzy matching logic
+    const escapeQuotes = (str) => str.replace(/'/g, "\\'");
+    const accountQuery = `SELECT Id, Name, Owner.Name, Owner.Email
+                          FROM Account
+                          WHERE Name LIKE '%${escapeQuotes(accountName)}%'
+                          LIMIT 5`;
+    
+    const result = await query(accountQuery);
+    
+    if (!result || result.totalSize === 0) {
+      // Account does NOT exist
+      await client.chat.postMessage({
+        channel: channelId,
+        text: `❌ Account "${accountName}" not found in Salesforce.\n\nReply *"create ${accountName} and assign to BL"* to create it with auto-assignment.`,
+        thread_ts: threadTs
+      });
+      return;
+    }
+    
+    // Account EXISTS
+    const businessLeads = ['Julie Stefanich', 'Himanshu Agarwal', 'Asad Hussain', 'Ananth Cherukupally', 'David Van Ryk', 'John Cobb', 'Jon Cobb', 'Olivia Jung'];
+    const account = result.records[0];
+    const isBL = businessLeads.includes(account.Owner?.Name);
+    
+    let response = `✅ *Account "${account.Name}" exists*\n\n`;
+    response += `Current owner: ${account.Owner?.Name || 'Unassigned'}`;
+    
+    if (isBL) {
+      response += ` (Business Lead)`;
+    } else {
+      response += ` (Not a Business Lead)`;
+    }
+    
+    response += `\nEmail: ${account.Owner?.Email || 'No email'}`;
+    
+    await client.chat.postMessage({
+      channel: channelId,
+      text: response,
+      thread_ts: threadTs
+    });
+    
+    logger.info(`Account existence check: ${account.Name} - exists (owner: ${account.Owner?.Name})`);
+    
+  } catch (error) {
+    logger.error('Account existence check failed:', error);
+    await client.chat.postMessage({
+      channel: channelId,
+      text: `❌ Error checking account: ${error.message}`,
+      thread_ts: threadTs
+    });
+  }
+}
+
+/**
+ * Handle Account Creation with Auto-Assignment (Keigan only)
+ */
+async function handleCreateAccount(entities, userId, channelId, client, threadTs) {
+  const KEIGAN_USER_ID = 'U094AQE9V7D';
+  
+  try {
+    // Security check - Keigan only
+    if (userId !== KEIGAN_USER_ID) {
+      await client.chat.postMessage({
+        channel: channelId,
+        text: '🔒 Account creation is restricted to Keigan. Contact him for assistance.',
+        thread_ts: threadTs
+      });
+      return;
+    }
+    
+    if (!entities.accounts || entities.accounts.length === 0) {
+      await client.chat.postMessage({
+        channel: channelId,
+        text: `Please specify an account name.\n\n*Example:* "create Intel and assign to BL"`,
+        thread_ts: threadTs
+      });
+      return;
+    }
+    
+    const companyName = entities.accounts[0];
+    
+    // Show loading message
+    await client.chat.postMessage({
+      channel: channelId,
+      text: `🔍 Enriching company data for ${companyName}...\n\n_This may take a few seconds_`,
+      thread_ts: threadTs
+    });
+    
+    // Step 1: Enrich company data via Clay
+    const { enrichCompanyData } = require('../services/clayEnrichment');
+    const enrichment = await enrichCompanyData(companyName);
+    
+    // Step 2: Determine BL assignment
+    const { determineAccountAssignment } = require('../services/accountAssignment');
+    const assignment = await determineAccountAssignment(enrichment.headquarters);
+    
+    // Step 3: Create account in Salesforce
+    const { sfConnection } = require('../salesforce/connection');
+    const conn = sfConnection.getConnection();
+    
+    const accountData = {
+      Name: enrichment.companyName,
+      OwnerId: null, // Will need to query user ID from name
+      Website: enrichment.website,
+      BillingCity: enrichment.headquarters.city,
+      BillingState: enrichment.headquarters.state,
+      BillingCountry: enrichment.headquarters.country || 'USA',
+      AnnualRevenue: enrichment.revenue,
+      NumberOfEmployees: enrichment.employeeCount,
+      Industry: enrichment.industry
+    };
+    
+    // Query to get BL's Salesforce User ID
+    const userQuery = `SELECT Id FROM User WHERE Name = '${assignment.assignedTo}' AND IsActive = true LIMIT 1`;
+    const userResult = await query(userQuery);
+    
+    if (!userResult || userResult.totalSize === 0) {
+      throw new Error(`Could not find active user: ${assignment.assignedTo}`);
+    }
+    
+    accountData.OwnerId = userResult.records[0].Id;
+    
+    // Create the account
+    const createResult = await conn.sobject('Account').create(accountData);
+    
+    if (!createResult.success) {
+      throw new Error(`Salesforce account creation failed: ${createResult.errors?.join(', ')}`);
+    }
+    
+    // Build confirmation message
+    const sfBaseUrl = process.env.SF_INSTANCE_URL || 'https://eudia.my.salesforce.com';
+    const accountUrl = `${sfBaseUrl}/lightning/r/Account/${createResult.id}/view`;
+    
+    let confirmMessage = `✅ *Account created: ${enrichment.companyName}*\n\n`;
+    confirmMessage += `*Assigned to:* ${assignment.assignedTo}\n\n`;
+    confirmMessage += `*Reasoning:*\n`;
+    confirmMessage += `• Company HQ: ${assignment.reasoning.hqLocation}\n`;
+    confirmMessage += `• Region: ${assignment.region}\n`;
+    if (enrichment.revenue) {
+      confirmMessage += `• Revenue: $${(enrichment.revenue / 1000000).toFixed(1)}M\n`;
+    }
+    confirmMessage += `• Current coverage: ${assignment.assignedTo} has ${assignment.reasoning.activeOpportunities} active opps (Stage 1+) and ${assignment.reasoning.closingThisMonth} closing this month\n\n`;
+    
+    if (!enrichment.success) {
+      confirmMessage += `⚠️  *Clay enrichment ${enrichment.error ? 'failed' : 'incomplete'}*\n`;
+      confirmMessage += `Some fields may need manual entry.\n\n`;
+    }
+    
+    confirmMessage += `<${accountUrl}|View Account in Salesforce>`;
+    
+    await client.chat.postMessage({
+      channel: channelId,
+      text: confirmMessage,
+      thread_ts: threadTs
+    });
+    
+    logger.info(`✅ Account created: ${enrichment.companyName}, assigned to ${assignment.assignedTo} by ${userId}`);
+    
+  } catch (error) {
+    logger.error('Account creation failed:', error);
+    await client.chat.postMessage({
+      channel: channelId,
+      text: `❌ Error creating account: ${error.message}\n\nPlease try again or create manually in Salesforce.`,
+      thread_ts: threadTs
+    });
+  }
+}
+
+/**
+ * Handle Account Reassignment (Keigan only)
+ */
+async function handleReassignAccount(entities, userId, channelId, client, threadTs) {
+  const KEIGAN_USER_ID = 'U094AQE9V7D';
+  
+  try {
+    // Security check - Keigan only
+    if (userId !== KEIGAN_USER_ID) {
+      await client.chat.postMessage({
+        channel: channelId,
+        text: '🔒 Account assignment is restricted to Keigan. Contact him for assistance.',
+        thread_ts: threadTs
+      });
+      return;
+    }
+    
+    if (!entities.accounts || entities.accounts.length === 0) {
+      await client.chat.postMessage({
+        channel: channelId,
+        text: `Please specify an account name.\n\n*Example:* "assign Intel to Julie Stefanich"`,
+        thread_ts: threadTs
+      });
+      return;
+    }
+    
+    if (!entities.targetBL) {
+      await client.chat.postMessage({
+        channel: channelId,
+        text: `Please specify a Business Lead.\n\n*Example:* "assign Intel to Julie Stefanich"`,
+        thread_ts: threadTs
+      });
+      return;
+    }
+    
+    const accountName = entities.accounts[0];
+    const targetBLName = entities.targetBL;
+    
+    // Validate BL name
+    const { validateBusinessLead } = require('../services/accountAssignment');
+    const validBL = validateBusinessLead(targetBLName);
+    
+    if (!validBL) {
+      const { ALL_BUSINESS_LEADS } = require('../services/accountAssignment');
+      await client.chat.postMessage({
+        channel: channelId,
+        text: `❌ "${targetBLName}" is not a valid Business Lead.\n\n*Valid BLs:*\n${ALL_BUSINESS_LEADS.join(', ')}`,
+        thread_ts: threadTs
+      });
+      return;
+    }
+    
+    // Find account
+    const escapeQuotes = (str) => str.replace(/'/g, "\\'");
+    const accountQuery = `SELECT Id, Name, Owner.Name,
+                                 (SELECT Id, Name, Owner.Name FROM Opportunities WHERE IsClosed = false)
+                          FROM Account
+                          WHERE Name LIKE '%${escapeQuotes(accountName)}%'
+                          LIMIT 5`;
+    
+    const accountResult = await query(accountQuery);
+    
+    if (!accountResult || accountResult.totalSize === 0) {
+      await client.chat.postMessage({
+        channel: channelId,
+        text: `❌ Account "${accountName}" not found.\n\nTry: "does ${accountName} exist?" to check if it exists.`,
+        thread_ts: threadTs
+      });
+      return;
+    }
+    
+    const account = accountResult.records[0];
+    const oldOwner = account.Owner?.Name;
+    const opportunities = account.Opportunities || [];
+    
+    // Get target BL's Salesforce User ID
+    const userQuery = `SELECT Id FROM User WHERE Name = '${validBL}' AND IsActive = true LIMIT 1`;
+    const userResult = await query(userQuery);
+    
+    if (!userResult || userResult.totalSize === 0) {
+      throw new Error(`Could not find active user: ${validBL}`);
+    }
+    
+    const newOwnerId = userResult.records[0].Id;
+    
+    // Update account owner
+    const { sfConnection } = require('../salesforce/connection');
+    const conn = sfConnection.getConnection();
+    
+    await conn.sobject('Account').update({
+      Id: account.Id,
+      OwnerId: newOwnerId
+    });
+    
+    // Update all open opportunities
+    let oppUpdateCount = 0;
+    if (opportunities.length > 0) {
+      const oppUpdates = opportunities.map(opp => ({
+        Id: opp.Id,
+        OwnerId: newOwnerId
+      }));
+      
+      const oppResults = await conn.sobject('Opportunity').update(oppUpdates);
+      const resultsArray = Array.isArray(oppResults) ? oppResults : [oppResults];
+      oppUpdateCount = resultsArray.filter(r => r.success).length;
+    }
+    
+    // Confirmation
+    const sfBaseUrl = process.env.SF_INSTANCE_URL || 'https://eudia.my.salesforce.com';
+    const accountUrl = `${sfBaseUrl}/lightning/r/Account/${account.Id}/view`;
+    
+    let confirmMessage = `✅ *${account.Name} reassigned to ${validBL}*\n\n`;
+    confirmMessage += `• Previous owner: ${oldOwner || 'Unassigned'}\n`;
+    confirmMessage += `• New owner: ${validBL}\n`;
+    confirmMessage += `• ${oppUpdateCount} opportunities transferred\n\n`;
+    confirmMessage += `<${accountUrl}|View in Salesforce>`;
+    
+    await client.chat.postMessage({
+      channel: channelId,
+      text: confirmMessage,
+      thread_ts: threadTs
+    });
+    
+    logger.info(`✅ Account reassigned: ${account.Name} from ${oldOwner} to ${validBL}, ${oppUpdateCount} opps transferred by ${userId}`);
+    
+  } catch (error) {
+    logger.error('Account reassignment failed:', error);
+    await client.chat.postMessage({
+      channel: channelId,
+      text: `❌ Error reassigning account: ${error.message}\n\nPlease try again or update manually in Salesforce.`,
       thread_ts: threadTs
     });
   }

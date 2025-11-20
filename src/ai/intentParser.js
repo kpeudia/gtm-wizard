@@ -339,6 +339,80 @@ Business Context:
       };
     }
 
+    // Account existence check (PRIORITY - before regular lookup)
+    if (message.includes('does') && message.includes('exist') && !message.includes('not exist')) {
+      intent = 'account_existence_check';
+      
+      // Extract company name
+      const existMatch = message.match(/does (.+?) exist/i) ||
+                         message.match(/(.+?) exist/i);
+      
+      if (existMatch && existMatch[1]) {
+        entities.accounts = [existMatch[1].trim()];
+      }
+      
+      return {
+        intent: 'account_existence_check',
+        entities,
+        followUp: false,
+        confidence: 0.95,
+        explanation: 'Check if account exists in Salesforce',
+        originalMessage: userMessage,
+        timestamp: Date.now()
+      };
+    }
+    
+    // Account creation with assignment
+    if ((message.includes('create') || message.includes('add')) && 
+        (message.includes('and assign to bl') || message.includes('and assign to business lead') || 
+         message.includes('assign to bl'))) {
+      intent = 'create_account';
+      
+      // Extract company name - more flexible patterns
+      const createMatch = message.match(/create (?:account for |account |)(.+?)(?:\s+and assign|$)/i) ||
+                         message.match(/add (?:account for |account |)(.+?)(?:\s+and assign|$)/i) ||
+                         message.match(/create (.+?) and assign/i);
+      
+      if (createMatch && createMatch[1]) {
+        entities.accounts = [createMatch[1].trim()];
+      }
+      
+      return {
+        intent: 'create_account',
+        entities,
+        followUp: false,
+        confidence: 0.95,
+        explanation: 'Create account and assign to BL',
+        originalMessage: userMessage,
+        timestamp: Date.now()
+      };
+    }
+    
+    // Manual account assignment/reassignment
+    if ((message.includes('assign') || message.includes('reassign')) && 
+        message.includes(' to ') && 
+        !message.includes('assign to bl')) {
+      intent = 'reassign_account';
+      
+      // Extract account name and BL name
+      const assignMatch = message.match(/(?:assign|reassign) (.+?) to (.+?)(?:\?|$)/i);
+      
+      if (assignMatch) {
+        entities.accounts = [assignMatch[1].trim()];
+        entities.targetBL = assignMatch[2].trim();
+      }
+      
+      return {
+        intent: 'reassign_account',
+        entities,
+        followUp: false,
+        confidence: 0.95,
+        explanation: 'Reassign account to specific BL',
+        originalMessage: userMessage,
+        timestamp: Date.now()
+      };
+    }
+    
     // Handle ownership and business lead questions - PRIORITY INTENT
     if (message.includes('who owns') || message.includes('who is the owner') || 
         message.includes('who\'s the owner') || message.includes('whos the owner') ||
