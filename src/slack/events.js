@@ -2565,10 +2565,17 @@ async function handleCreateAccount(entities, userId, channelId, client, threadTs
       }
     }
     
-    // Map State to State__c picklist (can be state codes OR country names)
+    // ONLY THESE 5 ENRICHMENT FIELDS (as specified):
+    // 1. Website
+    // 2. Linked_in_URL__c
+    // 3. State__c
+    // 4. Region__c
+    // 5. Rev_MN__c
+    
+    // Map State to State__c picklist
     let statePicklistValue = null;
-    if (enrichment.headquarters.country && enrichment.headquarters.country !== 'USA') {
-      // International: Use full country name from picklist
+    if (enrichment.headquarters.country && enrichment.headquarters.country !== 'USA' && enrichment.headquarters.country !== 'US') {
+      // International: Use country name
       const countryMap = {
         'SWEDEN': 'Sweden',
         'SWITZERLAND': 'Switzerland',
@@ -2578,46 +2585,30 @@ async function handleCreateAccount(entities, userId, channelId, client, threadTs
         'GERMANY': 'Germany',
         'NETHERLANDS': 'Netherlands',
         'SPAIN': 'Spain',
-        'ITALY': 'Italy',
         'CANADA': 'Canada',
         'JAPAN': 'Japan',
         'CHINA': 'China',
         'INDIA': 'India',
-        'AUSTRALIA': 'Australia',
-        'HONG KONG': 'Hong Kong',
-        'SINGAPORE': 'Singapore',
-        'IRELAND': 'Ireland',
-        'TAIWAN': 'Taiwan',
-        'VIETNAM': 'Vietnam'
+        'AUSTRALIA': 'Australia'
       };
       statePicklistValue = countryMap[enrichment.headquarters.country.toUpperCase()] || enrichment.headquarters.country;
     } else if (enrichment.headquarters.state) {
-      // USA: Use state code (CA, NY, etc.)
+      // USA: Use state code
       statePicklistValue = enrichment.headquarters.state.toUpperCase();
     }
     
+    // Build account data - ONLY MANDATORY + 5 ENRICHMENT FIELDS
     const accountData = {
-      Name: enrichment.companyName || companyName, // Use enriched name if available (proper casing)
-      OwnerId: null, // Will query below
-      Website: enrichment.website,
-      Linked_in_URL__c: enrichment.linkedIn,
-      BillingCity: enrichment.headquarters.city,
-      BillingState: enrichment.headquarters.state,
-      BillingCountry: enrichment.headquarters.country || 'USA',
-      State__c: statePicklistValue, // Picklist: state codes OR country names
-      Region__c: assignment.sfRegion, // Picklist: West/Northeast/Midwest/Southwest/Southeast/International
-      Rev_MN__c: enrichment.revenue ? enrichment.revenue / 1000000 : null,
-      NumberOfEmployees: enrichment.employeeCount,
-      Industry: enrichment.industry,
-      Industry_Grouping__c: industryGrouping
+      Name: enrichment.companyName || companyName, // Use enriched name for proper casing (IKEA not ikea)
+      OwnerId: null // Will query below
     };
     
-    // Remove null/undefined values to avoid Salesforce errors
-    Object.keys(accountData).forEach(key => {
-      if (accountData[key] === null || accountData[key] === undefined) {
-        delete accountData[key];
-      }
-    });
+    // Add enrichment fields ONLY if they have values
+    if (enrichment.website) accountData.Website = enrichment.website;
+    if (enrichment.linkedIn) accountData.Linked_in_URL__c = enrichment.linkedIn;
+    if (statePicklistValue) accountData.State__c = statePicklistValue;
+    if (assignment.sfRegion) accountData.Region__c = assignment.sfRegion;
+    if (enrichment.revenue) accountData.Rev_MN__c = enrichment.revenue / 1000000;
     
     // Query to get BL's Salesforce User ID
     const userQuery = `SELECT Id FROM User WHERE Name = '${finalAssignedBL}' AND IsActive = true LIMIT 1`;
@@ -2883,11 +2874,11 @@ async function handleCreateOpportunity(message, entities, userId, channelId, cli
     // SMART DEFAULTS (Salesforce flow defaults)
     const DEFAULTS = {
       acv: 300000, // $300k default
-      tcv: 300000, // Same as ACV by default (updated below if term provided)
+      tcv: 300000, // Same as ACV by default
       term: 36, // 36 months always
       stage: '1', // Stage 1 - Discovery default
       targetDate: null, // Will calculate: TODAY + 150 days
-      revenueType: 'Recurring', // CORRECT: Recurring (not "Revenue") - picklist value for 12+ month contracts
+      revenueType: 'ARR', // CORRECT API NAME for Recurring (12+ month contracts)
       opportunitySource: 'Inbound', // Always Inbound for now
       productLine: 'AI-Augmented Contracting' // Default product (can override)
     };
@@ -2962,7 +2953,7 @@ async function handleCreateOpportunity(message, entities, userId, channelId, cli
       Product_Line__c: oppData.productLine,
       Target_LOI_Date__c: targetDateFormatted, // CORRECT field name used throughout GTM Brain
       CloseDate: targetDateFormatted, // Salesforce required (same as Target LOI Date)
-      Revenue_Type__c: oppData.revenueType,
+      Revenue_Type__c: oppData.revenueType, // API name: ARR, Booking, or Project
       LeadSource: oppData.opportunitySource, // Opportunity Source
       IsClosed: false,
       Probability: probability
@@ -2994,8 +2985,10 @@ async function handleCreateOpportunity(message, entities, userId, channelId, cli
     if (entities.productLine) customFields.push(`Product Line: ${oppData.productLine}`);
     else defaultFields.push(`Product Line: ${oppData.productLine} (default)`);
     
-    if (entities.revenueType) customFields.push(`Revenue Type: ${oppData.revenueType}`);
-    else defaultFields.push(`Revenue Type: ${oppData.revenueType} (default: Recurring = 12+ mo contracts)`);
+    // Display revenue type (ARR shows as "Recurring" for users)
+    const displayType = oppData.revenueType === 'ARR' ? 'Recurring (ARR)' : oppData.revenueType;
+    if (entities.revenueType) customFields.push(`Revenue Type: ${displayType}`);
+    else defaultFields.push(`Revenue Type: ${displayType} (default: 12+ mo contracts)`);
     
     let confirmMessage = `✅ *Opportunity created for ${account.Name}*\n\n`;
     

@@ -487,14 +487,23 @@ Business Context:
         entities.productLine = productMatch[1].trim();
       }
       
-      // Revenue Type detection (CORRECT picklist values: Recurring, Booking, Project)
-      const revenueMatch = message.match(/revenue type:?\s+(recurring|booking|project)/i) ||
-                          message.match(/type:?\s+(recurring|booking|project)/i) ||
-                          message.match(/\b(recurring|booking|project)\s+opp/i); // Also match "booking opp"
+      // Revenue Type detection - Map to API names
+      // User says "recurring" → API name "ARR"
+      // User says "booking" → API name "Booking"  
+      // User says "project" → API name "Project"
+      const revenueMatch = message.match(/revenue type:?\s+(recurring|arr|booking|project)/i) ||
+                          message.match(/type:?\s+(recurring|arr|booking|project)/i) ||
+                          message.match(/\b(recurring|arr|booking|project)\s+opp/i);
       if (revenueMatch) {
-        // Capitalize first letter to match Salesforce picklist
-        const typeValue = revenueMatch[1].charAt(0).toUpperCase() + revenueMatch[1].slice(1).toLowerCase();
-        entities.revenueType = typeValue; // "Recurring", "Booking", or "Project"
+        const userValue = revenueMatch[1].toLowerCase();
+        // Map to API names
+        const typeMap = {
+          'recurring': 'ARR',
+          'arr': 'ARR',
+          'booking': 'Booking',
+          'project': 'Project'
+        };
+        entities.revenueType = typeMap[userValue] || 'ARR';
       }
       
       // Mark as simple mode if no inline fields detected
