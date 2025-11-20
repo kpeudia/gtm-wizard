@@ -2454,6 +2454,78 @@ async function handleCreateAccount(entities, userId, channelId, client, threadTs
     
     const companyName = entities.accounts[0];
     
+    // Show loading message
+    await client.chat.postMessage({
+      channel: channelId,
+      text: `🔍 Creating account for ${companyName}...\n\n_Checking for duplicates, enriching data, assigning to BL_`,
+      thread_ts: threadTs
+    });
+    
+    // Use comprehensive account creation service with full logging
+    const { createAccountWithEnrichment } = require('../services/accountCreation');
+    const result = await createAccountWithEnrichment(companyName, userId);
+    
+    // Handle duplicate
+    if (result.duplicate) {
+      await client.chat.postMessage({
+        channel: channelId,
+        text: `Account already exists: "${result.existingAccount.Name}"\n\nOwner: ${result.existingAccount.Owner?.Name}\n\nNo duplicate created.`,
+        thread_ts: threadTs
+      });
+      return;
+    }
+    
+    // Build confirmation from comprehensive result
+    const sfBaseUrl = process.env.SF_INSTANCE_URL || 'https://eudia.my.salesforce.com';
+    const accountUrl = `${sfBaseUrl}/lightning/r/Account/${result.accountId}/view`;
+    
+    // Show what was enriched
+    const enrichedFields = [];
+    if (result.verifiedAccount.Website) enrichedFields.push(`Website: ${result.verifiedAccount.Website}`);
+    if (result.verifiedAccount.Linked_in_URL__c) enrichedFields.push(`LinkedIn: ${result.verifiedAccount.Linked_in_URL__c}`);
+    if (result.verifiedAccount.Rev_MN__c) enrichedFields.push(`Revenue: $${result.verifiedAccount.Rev_MN__c}M`);
+    if (result.verifiedAccount.State__c) enrichedFields.push(`State: ${result.verifiedAccount.State__c}`);
+    if (result.verifiedAccount.Region__c) enrichedFields.push(`Region: ${result.verifiedAccount.Region__c}`);
+    
+    let confirmMessage = `Account created: ${result.verifiedAccount.Name}\n\n`;
+    confirmMessage += `Assigned to: ${result.assignment.assignedTo}\n\n`;
+    
+    if (enrichedFields.length > 0) {
+      confirmMessage += `Enriched data:\n${enrichedFields.map(f => '• ' + f).join('\n')}\n\n`;
+    } else {
+      confirmMessage += `Note: No enrichment data available\n\n`;
+    }
+    
+    confirmMessage += `HQ: ${result.assignment.reasoning.hqLocation}\n`;
+    confirmMessage += `Salesforce Region: ${result.assignment.sfRegion}\n`;
+    confirmMessage += `Current coverage: ${result.assignment.assignedTo} has ${result.assignment.reasoning.activeOpportunities} active opps, ${result.assignment.reasoning.closingThisMonth} closing this month\n\n`;
+    confirmMessage += `<${accountUrl}|View in Salesforce>`;
+    
+    await client.chat.postMessage({
+      channel: channelId,
+      text: confirmMessage,
+      thread_ts: threadTs
+    });
+    
+    logger.info(`✅ Account creation complete: ${result.verifiedAccount.Name}`);
+    
+  } catch (error) {
+    logger.error('❌ Account creation failed:', error);
+    await client.chat.postMessage({
+      channel: channelId,
+      text: `Error creating account: ${error.message}\n\nCheck Render logs for details.`,
+      thread_ts: threadTs
+    });
+  }
+}
+
+/**
+ * Handle Account Reassignment (Keigan only)
+ */
+async function handleReassignAccountNEW(entities, userId, channelId, client, threadTs) {
+  const KEIGAN_USER_ID = 'U094AQE9V7D';
+  
+  try {
     // STEP 0: Check if account already exists (DUPLICATE DETECTION)
     const escapeQuotes = (str) => str.replace(/'/g, "\\'");
     
