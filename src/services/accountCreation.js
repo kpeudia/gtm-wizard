@@ -9,7 +9,11 @@ const { determineAccountAssignment } = require('./accountAssignment');
  */
 
 async function createAccountWithEnrichment(companyName, userId) {
-  logger.info(`🚀 Starting account creation for: "${companyName}" (Original input)`);
+  // CRITICAL: Ensure proper company name casing
+  const { toProperCompanyCase } = require('../utils/companyNameFormatter');
+  const properCaseName = toProperCompanyCase(companyName);
+  
+  logger.info(`🚀 Starting account creation for: "${companyName}" → Proper case: "${properCaseName}"`);
   
   try {
     // STEP 1: Duplicate Detection (using fuzzy matching from "who owns" logic)
@@ -73,10 +77,10 @@ async function createAccountWithEnrichment(companyName, userId) {
     
     // STEP 4: Build account data
     const accountData = {
-      Name: companyName // CRITICAL: Use ORIGINAL input name exactly as provided
+      Name: properCaseName // CRITICAL: Use proper case name (Levi Strauss not levi strauss)
     };
     
-    logger.info(`🏷️  Account Name being used: "${accountData.Name}" (from original input: "${companyName}")`);
+    logger.info(`🏷️  Account Name being used: "${accountData.Name}" (original: "${companyName}", proper case: "${properCaseName}")`);
     
     // Add 5 enrichment fields
     if (enrichment.website) accountData.Website = enrichment.website;
