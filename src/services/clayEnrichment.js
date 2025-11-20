@@ -75,28 +75,14 @@ class ClayEnrichment {
       }
 
       logger.info(`🔍 Calling Clay API for: ${companyName}`);
-
-      // Clay enrichment endpoint (adjust based on actual Clay API documentation)
-      const response = await fetch(`${this.baseUrl}/enrichment/company`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          company_name: companyName
-        }),
-        timeout: 10000 // 10 second timeout
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        logger.error(`Clay API error: ${response.status} - ${errorText}`);
-        throw new Error(`Clay API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      logger.info('Clay API response received:', { hasData: !!data, keys: Object.keys(data || {}) });
+      logger.warn('⚠️  Clay API endpoint unknown - v1 is deprecated');
+      logger.warn('Need to contact Clay support for correct API endpoint');
+      logger.warn('For now, falling back to empty enrichment');
+      
+      // Clay v1 endpoint is deprecated
+      // Need correct endpoint from Clay documentation or support
+      // Until then, return empty enrichment
+      throw new Error('Clay API v1 endpoint deprecated - need v2 endpoint from Clay support');
 
       // Parse Clay response
       const enrichment = {
