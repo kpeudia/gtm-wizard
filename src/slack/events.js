@@ -652,10 +652,10 @@ async function handleCustomerBrainNote(message, userId, channelId, client, threa
   }
 
   try {
-    // STRICT extraction: Account name is ONLY what's immediately after the colon
+    // STRICT extraction: Account name is ONLY what's immediately after "add to customer history:"
     // Format: "add to customer history: Pegasystems"
-    // Everything after first newline is the note content
     
+    // Extract account name - ONLY text between colon and first newline
     const triggerMatch = message.match(/add to customer history\s*:\s*([^\n]+)/i);
     
     if (!triggerMatch || !triggerMatch[1]) {
@@ -667,11 +667,11 @@ async function handleCustomerBrainNote(message, userId, channelId, client, threa
       return;
     }
     
-    // Account name is EXACTLY what's between colon and first newline
-    let accountName = triggerMatch[1].trim();
+    // Account name is EXACTLY what was captured
+    const accountName = triggerMatch[1].trim();
     
-    // Remove any trailing dashes or punctuation (allows "Pegasystems - Note" format)
-    accountName = accountName.replace(/\s*[-–—].*$/, '').trim();
+    // Log what we extracted for debugging
+    logger.info(`Customer Brain: Extracted account name: "${accountName}" from message`);
     
     if (accountName.length < 2) {
       await client.chat.postMessage({
@@ -682,20 +682,11 @@ async function handleCustomerBrainNote(message, userId, channelId, client, threa
       return;
     }
     
-    // Get the full note content (everything in the message)
-    let noteContent = message
+    // Get the full note content
+    const noteContent = message
       .replace(/@gtm-brain/gi, '')
       .replace(/add to customer history\s*:\s*/gi, '')
       .trim();
-    
-    if (!accountName) {
-      await client.chat.postMessage({
-        channel: channelId,
-        text: `Could not detect account name.\n\nYour note should start with the account name:\n"Nielsen - [note content]"\n\nFirst line was: "${firstLine}"`,
-        thread_ts: threadTs
-      });
-      return;
-    }
 
     // Query and validate account using existing fuzzy matching
     const accountQuery = `SELECT Id, Name, Owner.Name, Customer_Brain__c
