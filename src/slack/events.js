@@ -2568,13 +2568,13 @@ async function handleCreateAccount(entities, userId, channelId, client, threadTs
       Name: enrichment.companyName,
       OwnerId: null, // Will query below
       Website: enrichment.website,
-      LinkedIn_URL__c: enrichment.linkedIn, // Correct field name from screenshot
+      Linked_in_URL__c: enrichment.linkedIn, // EXACT field name from screenshot
       BillingCity: enrichment.headquarters.city,
       BillingState: enrichment.headquarters.state,
       BillingCountry: enrichment.headquarters.country || 'USA',
-      Region__c: enrichment.headquarters.state || enrichment.headquarters.country, // Region custom field
+      Region__c: enrichment.headquarters.state || enrichment.headquarters.country,
       Rev_MN__c: enrichment.revenue ? enrichment.revenue / 1000000 : null, // Revenue in millions
-      AnnualRevenue: enrichment.revenue, // Standard field (keep for compatibility)
+      AnnualRevenue: enrichment.revenue, // Standard field
       NumberOfEmployees: enrichment.employeeCount,
       Industry: enrichment.industry, // Standard field
       Industry_Grouping__c: industryGrouping // Custom picklist field
@@ -2607,13 +2607,13 @@ async function handleCreateAccount(entities, userId, channelId, client, threadTs
     confirmMessage += `• Company HQ: ${assignment.reasoning.hqLocation}\n`;
     confirmMessage += `• Region: ${assignment.region}\n`;
     
-    // Show enriched fields
+    // Show enriched fields (only if actually populated)
     const enrichedFields = [];
     if (enrichment.website) enrichedFields.push(`Website: ${enrichment.website}`);
-    if (enrichment.linkedIn) enrichedFields.push(`LinkedIn: ${enrichment.linkedIn}`);
-    if (enrichment.revenue) enrichedFields.push(`Revenue: $${(enrichment.revenue / 1000000).toFixed(1)}M`);
+    if (enrichment.linkedIn) enrichedFields.push(`Linked_in_URL: ${enrichment.linkedIn}`);
+    if (enrichment.revenue) enrichedFields.push(`Rev_MN: $${(enrichment.revenue / 1000000).toFixed(1)}M`);
     if (enrichment.employeeCount) enrichedFields.push(`Employees: ${enrichment.employeeCount.toLocaleString()}`);
-    if (industryGrouping) enrichedFields.push(`Industry: ${industryGrouping}`);
+    if (industryGrouping) enrichedFields.push(`Industry_Grouping: ${industryGrouping}`);
     
     if (enrichedFields.length > 0) {
       confirmMessage += `\nEnriched data:\n${enrichedFields.map(f => '• ' + f).join('\n')}\n`;
