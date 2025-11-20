@@ -391,7 +391,8 @@ Business Context:
     // Manual account assignment/reassignment
     if ((message.includes('assign') || message.includes('reassign')) && 
         message.includes(' to ') && 
-        !message.includes('assign to bl')) {
+        !message.includes('assign to bl') &&
+        !message.includes('create opp') && !message.includes('create opportunity')) {
       intent = 'reassign_account';
       
       // Extract account name and BL name
@@ -408,6 +409,33 @@ Business Context:
         followUp: false,
         confidence: 0.95,
         explanation: 'Reassign account to specific BL',
+        originalMessage: userMessage,
+        timestamp: Date.now()
+      };
+    }
+    
+    // Opportunity creation (Keigan only)
+    if ((message.includes('create opp') || message.includes('create opportunity') || 
+         message.includes('add opp') || message.includes('add opportunity')) &&
+        (message.includes('for ') || message.includes('at '))) {
+      intent = 'create_opportunity';
+      
+      // Extract account name
+      const oppMatch = message.match(/(?:create|add) opp(?:ortunity)? (?:for |at )(.+?)(?:\n|$)/i);
+      
+      if (oppMatch && oppMatch[1]) {
+        entities.accounts = [oppMatch[1].trim()];
+      }
+      
+      // Mark as opportunity creation
+      entities.createOpp = true;
+      
+      return {
+        intent: 'create_opportunity',
+        entities,
+        followUp: false,
+        confidence: 0.95,
+        explanation: 'Create opportunity for account',
         originalMessage: userMessage,
         timestamp: Date.now()
       };
@@ -451,6 +479,25 @@ Business Context:
     }
 
     // Handle comprehensive pipeline and deal queries
+    
+    // Post-call summary (BLs - uses Socrates to structure notes)
+    if ((message.includes('post-call summary') || message.includes('post call summary') || 
+         message.includes('meeting summary') || message.includes('call summary')) &&
+        (message.length > 100 || message.split('\n').length > 3)) {
+      intent = 'post_call_summary';
+      
+      entities.summaryCapture = true;
+      
+      return {
+        intent: 'post_call_summary',
+        entities,
+        followUp: false,
+        confidence: 0.95,
+        explanation: 'Structure post-call summary using Socrates AI',
+        originalMessage: userMessage,
+        timestamp: Date.now()
+      };
+    }
     
     // Customer Brain note capture (HIGHEST PRIORITY - Keigan only)
     if (message.includes('add to customer') || message.includes('save note') || 

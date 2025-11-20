@@ -1,77 +1,74 @@
 # Salesforce Quick Reference Guide for Sales Team
 
-**Last Updated:** November 19, 2025 | **Version:** 1.0  
-**Audience:** Sales Professionals | **Purpose:** Essential Salesforce knowledge for day-to-day operations
+Last Updated: November 19, 2025 | Version: 1.0  
+Audience: Sales Professionals | Purpose: Essential Salesforce knowledge for day-to-day operations
 
 ---
 
-## ACCOUNT MANAGEMENT
+## Account Management
 
 ### What is an Account?
 An **Account** is a company or organization you're selling to. Each account has one owner (Business Lead) responsible for the relationship.
 
-### Critical Account Fields
+### Critical account fields
 
-| Field | What It Means | Your Action |
+| Field | What it means | Your action |
 |-------|---------------|-------------|
-| **Customer Type** | Current relationship status | Set based on deal stage |
-| **Account Owner** | Who owns this relationship | Contact them before engaging |
-| **Headquarters Location** | Where company is based | Auto-populated, used for assignment |
-| **Annual Revenue** | Company size indicator | Helps prioritize accounts |
+| Customer Type | Current relationship status | Set based on deal stage |
+| Account Owner | Who owns this relationship | Contact them before engaging |
+| Headquarters Location | Where company is based | Auto-populated, used for assignment |
+| Annual Revenue | Company size indicator | Helps prioritize accounts |
 
-### Customer Type Classifications
+### Customer type classifications
 
-- **LOI, no $ attached** - Signed LOI, no financial commitment yet
-- **LOI, with $ attached** - Signed LOI with committed dollar amount
-- **Pilot** - Running pilot program, not yet customer
-- **ARR** - Active customer with recurring revenue contract
+- LOI, no $ attached - Signed LOI, no financial commitment yet
+- LOI, with $ attached - Signed LOI with committed dollar amount
+- Pilot - Running pilot program, not yet customer
+- Revenue - Active customer with 12+ month contract (recurring revenue)
 
-### Account Assignment Rules
+### Account assignment rules
 
-**Geographic-Based:**
-- **West Coast states** → Himanshu, Julie, or Justin
-- **East Coast states** → Olivia
-- **International** → Johnson or Hannah
-- **Auto-assigned based on lowest current workload**
+Geographic-based:
+- West Coast states → Himanshu, Julie, or Justin
+- East Coast states → Olivia
+- International → Johnson or Hannah
+- Auto-assigned based on lowest current workload
 
-**Key Rule:** Don't create accounts yourself—use GTM-Wizard to auto-assign correctly
+Key rule: Don't create accounts yourself—use GTM-Wizard to auto-assign correctly
 
 ---
 
-## OPPORTUNITY MANAGEMENT
+## Opportunity Management
 
 ### What is an Opportunity?
 An **Opportunity** is a specific deal or sales cycle. One account can have multiple opportunities.
 
-### Stage Definitions (In Order)
+### Stage definitions (in order)
 
-| Stage | What It Means | Your Action |
+| Stage | What it means | Your action |
 |-------|---------------|-------------|
-| **Stage 0 - Qualifying** | Initial contact, determining fit | Qualify or disqualify quickly |
-| **Stage 1 - Discovery** | Understanding needs, pain points | Deep discovery, document use cases |
-| **Stage 2 - SQO** | Solution presented, qualified opportunity | Proposal preparation, SOW scoping |
-| **Stage 3 - Pilot** | Running pilot program | Drive pilot success, gather metrics |
-| **Stage 4 - Proposal** | Contract negotiation, final stages | Close the deal, legal review |
-| **Closed Won** | Deal signed, customer onboarded | Handoff to CS, celebrate! |
-| **Closed Lost** | Deal lost to competitor or no decision | Document loss reason, learn |
+| Stage 0 - Qualifying | Trying to schedule initial meeting | EA/BDR schedules meeting on behalf of BL |
+| Stage 1 - Discovery | Meeting set, discovering needs and pain points | Conduct discovery, document use cases |
+| Stage 2 - SQO | Qualified opportunity, path to close defined | Create Account Plan, prepare proposal |
+| Stage 3 - Pilot | Running pilot program | Drive pilot success, gather metrics |
+| Stage 4 - Proposal | Contract negotiation, final stages | Close the deal, legal review |
+| Closed Won | Deal signed, customer onboarded | Handoff to CS, celebrate! |
+| Closed Lost | Deal lost to competitor or no decision | Document loss reason, learn |
 
-### Critical Opportunity Fields
+### Critical opportunity fields (reviewed/updated weekly on Thursdays)
 
-| Field | Purpose | Required? |
-|-------|---------|-----------|
-| **Amount (ACV)** | Deal size in dollars | Yes - update as you learn |
-| **Close Date / Target LOI Date** | When deal expected to close | Yes - keep current |
-| **Revenue Type** | Booking, ARR, or Project | Yes - determines metrics |
-| **Product Line** | Which product(s) they're buying | Yes - for forecasting |
-| **Stage** | Current sales stage | Yes - update as you progress |
-| **Next Steps** | What happens next | Yes - always document |
-| **Owner** | Who's responsible | Auto-assigned with account |
+| Field | Purpose |
+|-------|---------|
+| ACV | Annual contract value in dollars |
+| Stage | Current sales stage (0-4, Won, Lost) |
+| Product Line | Which product(s) they're buying |
+| Target Sign Date | When deal expected to sign |
 
-### Revenue Type Explained
+### Revenue type explained
 
-- **Booking** - One-time purchase or LOI signing
-- **ARR** - Annual Recurring Revenue (subscription/ongoing)
-- **Project** - Project-based engagement
+- Booking - One-time purchase or LOI signing
+- Revenue - 12+ month contracts (recurring revenue)
+- Project - Short-term project (e.g., paid pilot)
 
 ### Product Lines
 
@@ -84,71 +81,64 @@ An **Opportunity** is a specific deal or sales cycle. One account can have multi
 
 ---
 
-## STAGE MOVEMENT BEST PRACTICES
+## Stage Movement Best Practices
 
-### When to Move Stages
+### When to move stages
 
-**0 → 1 (Qualifying → Discovery):**
-- Champion identified
-- Budget conversation started
-- Use case confirmed
+0 → 1 (Qualifying → Discovery):
+- Meeting successfully scheduled
+- Initial contact made
 
-**1 → 2 (Discovery → SQO):**
+1 → 2 (Discovery → SQO):
+- Meeting completed, opportunity qualified
+- Account Plan created and shared
 - Clear use cases documented
-- Budget range confirmed
 - Decision process understood
-- Technical requirements gathered
 
-**2 → 3 (SQO → Pilot):**
+2 → 3 (SQO → Pilot):
 - Proposal accepted
 - Pilot SOW signed
 - Pilot timeline confirmed
 
-**3 → 4 (Pilot → Proposal):**
+3 → 4 (Pilot → Proposal):
 - Pilot successful (documented)
 - Ready for commercial discussion
 - Legal review initiated
 
-**4 → Closed Won:**
+4 → Closed Won:
 - Contract signed
 - Payment terms agreed
 - Implementation scheduled
 
-### What Requires Manager Approval
+### Data hygiene rules
 
-- **Discounts > 15%** - RevOps approval required
-- **Custom contract terms** - Legal review required
-- **Payment plans > 90 days** - Finance approval required
-- **Pilot extensions** - VP approval required
+Required before moving to Stage 2:
+- ACV field populated (best estimate)
+- Target Sign Date set
+- Product Line selected
+- Revenue Type set
+- Account Plan created and shared
 
-### Data Hygiene Rules
-
-**Required Before Moving to Stage 2:**
-- ✅ Amount field populated (best estimate)
-- ✅ Target LOI Date set
-- ✅ Product Line selected
-- ✅ Revenue Type set
-- ✅ Champion documented (Account field)
-- ✅ Use cases documented (Account field)
-
-**Update Weekly (Minimum):**
-- Next Steps field
-- Close Date (if timeline changes)
+Update weekly on Thursdays:
+- ACV
+- Target Sign Date
 - Stage (if progress made)
+- Product Line
 
-**Never:**
+Never:
 - Create opportunities without accounts
 - Skip stages (must progress sequentially)
 - Leave Amount at $0 past Stage 1
+- Move to Stage 2 without Account Plan
 - Forget to document loss reasons (Closed Lost)
 
 ---
 
-## QUICK REFERENCE
+## Quick Reference
 
-### Common GTM-Wizard Commands
+### Common GTM-Wizard commands
 
-**Account Checks:**
+Account checks:
 - `does [Company] exist?` - Check if account exists
 - `who owns [Company]?` - Find account owner
 - `who's the BL for [Company]?` - Business lead lookup

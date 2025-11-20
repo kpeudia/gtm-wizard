@@ -357,6 +357,14 @@ Ask me anything about your pipeline, accounts, or deals!`;
       // Handle manual account reassignment (Keigan only)
       await handleReassignAccount(parsedIntent.entities, userId, channelId, client, threadTs);
       return; // Exit early
+    } else if (parsedIntent.intent === 'create_opportunity') {
+      // Handle opportunity creation (Keigan only)
+      await handleCreateOpportunity(text, parsedIntent.entities, userId, channelId, client, threadTs);
+      return; // Exit early
+    } else if (parsedIntent.intent === 'post_call_summary') {
+      // Handle post-call summary structuring (BLs)
+      await handlePostCallSummary(text, userId, channelId, client, threadTs);
+      return; // Exit early
     } else if (parsedIntent.intent === 'pipeline_summary' || parsedIntent.intent === 'deal_lookup') {
       soql = queryBuilder.buildOpportunityQuery(parsedIntent.entities);
     } else if (parsedIntent.intent === 'activity_check') {
@@ -2695,6 +2703,339 @@ async function handleReassignAccount(entities, userId, channelId, client, thread
     await client.chat.postMessage({
       channel: channelId,
       text: `❌ Error reassigning account: ${error.message}\n\nPlease try again or update manually in Salesforce.`,
+      thread_ts: threadTs
+    });
+  }
+}
+
+/**
+ * Handle Opportunity Creation (Keigan only)
+ */
+async function handleCreateOpportunity(message, entities, userId, channelId, client, threadTs) {
+  const KEIGAN_USER_ID = 'U094AQE9V7D';
+  
+  try {
+    // Security check - Keigan only
+    if (userId !== KEIGAN_USER_ID) {
+      await client.chat.postMessage({
+        channel: channelId,
+        text: '🔒 Opportunity creation is restricted to Keigan. Contact him for assistance.',
+        thread_ts: threadTs
+      });
+      return;
+    }
+    
+    // Parse the structured opportunity data
+    // Expected format:
+    // create opp for [Company]:
+    // ACV: [amount]
+    // Stage: [stage number or name]
+    // Product Line: [product]
+    // Target Sign Date: [MM/DD/YYYY]
+    // Revenue Type: [Booking/Revenue/Project]
+    
+    const lines = message.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    
+    if (lines.length < 2) {
+      await client.chat.postMessage({
+        channel: channelId,
+        text: `Please use the opportunity creation template:\n\n\`\`\`\ncreate opp for [Company Name]:\nACV: [amount]\nStage: [0-4]\nProduct Line: [AI-Augmented Contracting/Augmented-M&A/Compliance/sigma/Cortex]\nTarget Sign Date: [MM/DD/YYYY]\nRevenue Type: [Booking/Revenue/Project]\n\`\`\`\n\n*Example:*\n\`\`\`\ncreate opp for Intel:\nACV: 500000\nStage: 1\nProduct Line: AI-Augmented Contracting\nTarget Sign Date: 12/31/2025\nRevenue Type: Revenue\n\`\`\``,
+        thread_ts: threadTs
+      });
+      return;
+    }
+    
+    // Extract account name from first line
+    let accountName = lines[0]
+      .replace(/create opp(?:ortunity)? for/gi, '')
+      .replace(/add opp(?:ortunity)? for/gi, '')
+      .replace(/:/g, '')
+      .trim();
+    
+    // Parse fields
+    const oppData = {};
+    lines.slice(1).forEach(line => {
+      if (line.toLowerCase().includes('acv:')) {
+        const value = line.split(':')[1].trim().replace(/[$,]/g, '');
+        oppData.acv = parseFloat(value);
+      } else if (line.toLowerCase().includes('stage:')) {
+        const value = line.split(':')[1].trim();
+        oppData.stage = value;
+      } else if (line.toLowerCase().includes('product line:')) {
+        oppData.productLine = line.split(':').slice(1).join(':').trim();
+      } else if (line.toLowerCase().includes('target sign') || line.toLowerCase().includes('target date')) {
+        oppData.targetDate = line.split(':').slice(1).join(':').trim();
+      } else if (line.toLowerCase().includes('revenue type:') || line.toLowerCase().includes('type:')) {
+        oppData.revenueType = line.split(':').slice(1).join(':').trim();
+      } else if (line.toLowerCase().includes('name:') || line.toLowerCase().includes('opp name:')) {
+        oppData.oppName = line.split(':').slice(1).join(':').trim();
+      }
+    });
+    
+    // Validate required fields
+    const missing = [];
+    if (!oppData.acv) missing.push('ACV');
+    if (!oppData.stage) missing.push('Stage');
+    if (!oppData.productLine) missing.push('Product Line');
+    if (!oppData.targetDate) missing.push('Target Sign Date');
+    if (!oppData.revenueType) missing.push('Revenue Type');
+    
+    if (missing.length > 0) {
+      await client.chat.postMessage({
+        channel: channelId,
+        text: `⚠️  Missing required fields: ${missing.join(', ')}\n\nPlease include all required fields in your request.`,
+        thread_ts: threadTs
+      });
+      return;
+    }
+    
+    // Find account
+    const escapeQuotes = (str) => str.replace(/'/g, "\\'");
+    const accountQuery = `SELECT Id, Name, Owner.Name, OwnerId
+                          FROM Account
+                          WHERE Name LIKE '%${escapeQuotes(accountName)}%'
+                          LIMIT 5`;
+    
+    const accountResult = await query(accountQuery);
+    
+    if (!accountResult || accountResult.totalSize === 0) {
+      await client.chat.postMessage({
+        channel: channelId,
+        text: `❌ Account "${accountName}" not found.\n\nCreate it first: "create ${accountName} and assign to BL"`,
+        thread_ts: threadTs
+      });
+      return;
+    }
+    
+    const account = accountResult.records[0];
+    
+    // Map stage number to full stage name
+    const stageMap = {
+      '0': 'Stage 0 - Qualifying',
+      '1': 'Stage 1 - Discovery',
+      '2': 'Stage 2 - SQO',
+      '3': 'Stage 3 - Pilot',
+      '4': 'Stage 4 - Proposal'
+    };
+    
+    const stageName = stageMap[oppData.stage] || oppData.stage;
+    
+    // Parse target date
+    const targetDate = new Date(oppData.targetDate);
+    const targetDateFormatted = targetDate.toISOString().split('T')[0]; // YYYY-MM-DD for Salesforce
+    
+    // Create opportunity
+    const { sfConnection } = require('../salesforce/connection');
+    const conn = sfConnection.getConnection();
+    
+    const opportunityData = {
+      Name: oppData.oppName || `${account.Name} - ${oppData.productLine}`,
+      AccountId: account.Id,
+      OwnerId: account.OwnerId, // Same as account owner
+      StageName: stageName,
+      ACV__c: oppData.acv,
+      Amount: oppData.acv, // Standard Amount field
+      Product_Line__c: oppData.productLine,
+      Target_LOI_Date__c: targetDateFormatted,
+      CloseDate: targetDateFormatted, // Required standard field
+      Revenue_Type__c: oppData.revenueType,
+      IsClosed: false,
+      Probability: stageName === 'Stage 1 - Discovery' ? 10 : 25 // Default probability
+    };
+    
+    const createResult = await conn.sobject('Opportunity').create(opportunityData);
+    
+    if (!createResult.success) {
+      throw new Error(`Salesforce opportunity creation failed: ${createResult.errors?.join(', ')}`);
+    }
+    
+    // Confirmation
+    const sfBaseUrl = process.env.SF_INSTANCE_URL || 'https://eudia.my.salesforce.com';
+    const oppUrl = `${sfBaseUrl}/lightning/r/Opportunity/${createResult.id}/view`;
+    
+    let confirmMessage = `✅ *Opportunity created for ${account.Name}*\n\n`;
+    confirmMessage += `*Details:*\n`;
+    confirmMessage += `• ACV: $${oppData.acv.toLocaleString()}\n`;
+    confirmMessage += `• Stage: ${stageName}\n`;
+    confirmMessage += `• Product Line: ${oppData.productLine}\n`;
+    confirmMessage += `• Target Sign: ${oppData.targetDate}\n`;
+    confirmMessage += `• Revenue Type: ${oppData.revenueType}\n`;
+    confirmMessage += `• Owner: ${account.Owner?.Name}\n\n`;
+    confirmMessage += `<${oppUrl}|View Opportunity in Salesforce>`;
+    
+    await client.chat.postMessage({
+      channel: channelId,
+      text: confirmMessage,
+      thread_ts: threadTs
+    });
+    
+    logger.info(`✅ Opportunity created for ${account.Name}, ACV: $${oppData.acv}, Stage: ${stageName} by ${userId}`);
+    
+  } catch (error) {
+    logger.error('Opportunity creation failed:', error);
+    await client.chat.postMessage({
+      channel: channelId,
+      text: `❌ Error creating opportunity: ${error.message}\n\nPlease try again or create manually in Salesforce.`,
+      thread_ts: threadTs
+    });
+  }
+}
+
+/**
+ * Handle Post-Call Summary (Business Leads)
+ */
+async function handlePostCallSummary(message, userId, channelId, client, threadTs) {
+  try {
+    // Extract company name and notes
+    let content = message
+      .replace(/@gtm-brain/gi, '')
+      .replace(/post-call summary/gi, '')
+      .replace(/post call summary/gi, '')
+      .replace(/meeting summary/gi, '')
+      .replace(/call summary/gi, '')
+      .trim();
+    
+    const lines = content.split('\n');
+    
+    // First line should be company name or "Company: X"
+    let accountName = lines[0]
+      .replace(/company:/gi, '')
+      .replace(/for:/gi, '')
+      .trim();
+    
+    // Rest is the meeting notes/transcript
+    const meetingNotes = lines.slice(1).join('\n').trim();
+    
+    if (meetingNotes.length < 50) {
+      await client.chat.postMessage({
+        channel: channelId,
+        text: `Please provide more meeting notes.\n\n*Format:*\n\`\`\`\npost-call summary\nCompany: [Name]\n[Your meeting notes or audio transcript here]\n\`\`\`\n\nThe AI will structure it into the standard format automatically.`,
+        thread_ts: threadTs
+      });
+      return;
+    }
+    
+    // Show processing message
+    await client.chat.postMessage({
+      channel: channelId,
+      text: `🤖 Structuring post-call summary for ${accountName}...\n\n_This may take 10-15 seconds_`,
+      thread_ts: threadTs
+    });
+    
+    // Use Socrates AI to structure the summary
+    const { socratesAdapter } = require('../ai/socratesAdapter');
+    
+    const structuringPrompt = `Structure the following meeting notes exactly as provided. Write "Not discussed" for empty sections. Use exact quotes and numbers.
+
+1. MEETING BASICS
+• Company: | Attendee(s): [Name - Role] | Meeting #: [First/Follow-up] | Type: [If follow-up: Demo/Technical/Business Case/etc.] | New Stakeholders: [Name - Role]
+
+2. DISCOVERY & CURRENT STATE
+• Use Case(s): Contracting/M&A/Compliance/Litigation/Sigma/Insights
+• Pain Points: | Volumes: | Outside Counsel Spend: | Current Tools: | Evaluated Tools: | Timeline/Urgency:
+
+3. SOLUTION DISCUSSION
+• Features Resonated: | Concerns/Objections: | Technical Questions: | Success Criteria:
+
+4. KEY INSIGHTS BY OFFERING (Only if explicitly discussed)
+• Contracting: | M&A: | Compliance: | Litigation: | Sigma: | Insights: | Pricing Feedback:
+
+5. COMPETITIVE & DECISION
+• Other Vendors: | Evaluation Criteria: | Decision Timeline: | Budget: | Blockers:
+
+6. STAKEHOLDER DYNAMICS
+• Champion: [Name - Role - Why] | Decision Maker: [Name - Involvement] | Skeptics: [Who - Concerns]
+• Key Quotes: ["Exact words" - Speaker] | Strong Reactions:
+
+7. NEXT STEPS (Include exact dates/times)
+• [Action + Date/Timeframe]
+
+8. OUTCOME & STAGE
+• Result: Demo Scheduled/Follow-up Confirmed/Moving to Evaluation/Building Business Case/Info Requested/Technical Validation/Not Right Now [+ reason]
+• Current Stage: [2/3/4] | Risk Factors:
+
+RULES: Preserve exact wording for compliance/regulatory/risk. Attribute all comments to speakers. Keep competitor names exact.
+
+MEETING NOTES:
+${meetingNotes}`;
+    
+    const response = await socratesAdapter.createChatCompletion({
+      model: 'gpt-4',
+      messages: [
+        { role: 'system', content: 'You are a sales operations assistant. Structure meeting notes exactly as requested, preserving all details and quotes.' },
+        { role: 'user', content: structuringPrompt }
+      ],
+      max_tokens: 2000,
+      temperature: 0.3 // Low temperature for accuracy
+    });
+    
+    const structuredSummary = response.choices[0].message.content;
+    
+    // Find the account and associated opportunity
+    const oppQuery = `SELECT Id, Name, StageName
+                      FROM Opportunity
+                      WHERE AccountId = '${account.Id}' AND IsClosed = false
+                      ORDER BY CreatedDate DESC
+                      LIMIT 1`;
+    
+    const oppResult = await query(oppQuery);
+    
+    // Save to Customer_Brain field with formatted summary
+    const date = new Date();
+    const dateFormatted = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+    
+    // Get user info
+    let userName = 'User';
+    try {
+      const userInfo = await client.users.info({ user: userId });
+      userName = userInfo.user.real_name || userInfo.user.name;
+    } catch (e) {
+      logger.warn('Could not fetch user info');
+    }
+    
+    const formattedSummary = `POST-CALL SUMMARY - ${dateFormatted} by ${userName}\n${'='.repeat(60)}\n\n${structuredSummary}`;
+    
+    // Get existing notes
+    const existingNotes = account.Customer_Brain__c || '';
+    const updatedNotes = formattedSummary + (existingNotes ? '\n\n' + existingNotes : '');
+    
+    // Update Salesforce
+    const { sfConnection } = require('../salesforce/connection');
+    const conn = sfConnection.getConnection();
+    
+    await conn.sobject('Account').update({
+      Id: account.Id,
+      Customer_Brain__c: updatedNotes
+    });
+    
+    // Build response with preview
+    const sfBaseUrl = process.env.SF_INSTANCE_URL || 'https://eudia.my.salesforce.com';
+    const accountUrl = `${sfBaseUrl}/lightning/r/Account/${account.Id}/view`;
+    
+    // Show summary preview (first 1000 chars)
+    const preview = structuredSummary.length > 1000 
+      ? structuredSummary.substring(0, 1000) + '...' 
+      : structuredSummary;
+    
+    let confirmMessage = `✅ *Post-call summary saved for ${account.Name}*\n\n`;
+    confirmMessage += `Structured and saved to Customer_Brain\n`;
+    confirmMessage += `Date: ${dateFormatted} | By: ${userName}\n\n`;
+    confirmMessage += `*Preview:*\n\`\`\`\n${preview}\n\`\`\`\n\n`;
+    confirmMessage += `<${accountUrl}|View Full Summary in Salesforce>`;
+    
+    await client.chat.postMessage({
+      channel: channelId,
+      text: confirmMessage,
+      thread_ts: threadTs
+    });
+    
+    logger.info(`✅ Post-call summary saved for ${account.Name} by ${userName}`);
+    
+  } catch (error) {
+    logger.error('Post-call summary failed:', error);
+    await client.chat.postMessage({
+      channel: channelId,
+      text: `❌ Error structuring summary: ${error.message}\n\nPlease try again or save notes manually.`,
       thread_ts: threadTs
     });
   }
