@@ -19,7 +19,9 @@ class ClayEnrichment {
     // ALWAYS check for test companies first (even if API key is set)
     const companyLower = companyName.toLowerCase();
     
-    // GTM Test Company - Always use mock
+    // MOCK ENRICHMENT for any test/demo company (until real Clay API)
+    // This ensures testing works without Clay API key
+    
     if (companyLower === 'gtm test company' || companyLower === 'gtm test') {
       logger.info('🧪 Using mock enrichment for GTM Test Company');
       return {
@@ -35,7 +37,6 @@ class ClayEnrichment {
       };
     }
     
-    // IKEA - Always use mock (until real Clay API tested)
     if (companyLower === 'ikea' || companyLower.includes('ikea')) {
       logger.info('🧪 Using mock enrichment for IKEA');
       return {
@@ -45,6 +46,21 @@ class ClayEnrichment {
         website: 'www.ikea.com',
         linkedIn: 'https://www.linkedin.com/company/ikea',
         employeeCount: 166000,
+        industry: 'Retail',
+        success: true,
+        source: 'Mock Data'
+      };
+    }
+    
+    if (companyLower === 'levi strauss' || companyLower.includes('levi')) {
+      logger.info('🧪 Using mock enrichment for Levi Strauss');
+      return {
+        companyName: 'Levi Strauss', // Proper casing
+        headquarters: { city: 'San Francisco', state: 'CA', country: 'USA' },
+        revenue: 6200000000, // $6.2B
+        website: 'www.levistrauss.com',
+        linkedIn: 'https://www.linkedin.com/company/levi-strauss',
+        employeeCount: 19000,
         industry: 'Retail',
         success: true,
         source: 'Mock Data'

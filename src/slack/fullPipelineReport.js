@@ -7,6 +7,7 @@ const logger = require('../utils/logger');
  */
 async function generateFullPipelineExcel() {
   // Query: ALL active pipeline (Stages 0-4, all products)
+  // Custom ORDER BY to sort Stage 4 first (descending), then by Name
   const reportQuery = `SELECT Name,
                               Product_Line__c,
                               StageName,
@@ -20,7 +21,15 @@ async function generateFullPipelineExcel() {
                               OR StageName = 'Stage 2 - SQO'
                               OR StageName = 'Stage 3 - Pilot'
                               OR StageName = 'Stage 4 - Proposal')
-                       ORDER BY StageName, Name`;
+                       ORDER BY 
+                         CASE 
+                           WHEN StageName = 'Stage 4 - Proposal' THEN 1
+                           WHEN StageName = 'Stage 3 - Pilot' THEN 2
+                           WHEN StageName = 'Stage 2 - SQO' THEN 3
+                           WHEN StageName = 'Stage 1 - Discovery' THEN 4
+                           WHEN StageName = 'Stage 0 - Qualifying' THEN 5
+                         END,
+                         Name`;
 
   const data = await query(reportQuery, false);
 

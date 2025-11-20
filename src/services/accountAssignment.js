@@ -140,9 +140,16 @@ async function assessWorkload(businessLeads) {
     // Add active opportunity counts
     if (activeResult && activeResult.records) {
       activeResult.records.forEach(record => {
-        const blName = record.Owner?.Name;
+        // SOQL aggregation returns Owner in nested object
+        const blName = record.Owner?.Name || record.Name; // Try both paths
+        const count = record.OpportunityCount || record.expr0 || 0;
+        
+        logger.info(`📊 Processing active opp record:`, { owner: blName, count });
+        
         if (blName && workloadMap[blName]) {
-          workloadMap[blName].activeOpportunities = record.OpportunityCount || 0;
+          workloadMap[blName].activeOpportunities = count;
+        } else {
+          logger.warn(`⚠️  BL name not in workloadMap: "${blName}"`);
         }
       });
     }
@@ -150,9 +157,11 @@ async function assessWorkload(businessLeads) {
     // Add closing this month counts
     if (closingResult && closingResult.records) {
       closingResult.records.forEach(record => {
-        const blName = record.Owner?.Name;
+        const blName = record.Owner?.Name || record.Name;
+        const count = record.ClosingThisMonth || record.expr0 || 0;
+        
         if (blName && workloadMap[blName]) {
-          workloadMap[blName].closingThisMonth = record.ClosingThisMonth || 0;
+          workloadMap[blName].closingThisMonth = count;
         }
       });
     }
