@@ -2454,6 +2454,39 @@ async function handleCreateAccount(entities, userId, channelId, client, threadTs
     
     const companyName = entities.accounts[0];
     
+    // STEP 0: Check if account already exists (DUPLICATE DETECTION)
+    const escapeQuotes = (str) => str.replace(/'/g, "\\'");
+    
+    // Use same fuzzy matching as "who owns" query
+    const normalizedSearch = companyName.trim();
+    const withoutThe = normalizedSearch.replace(/^the\s+/i, '');
+    const withHyphen = normalizedSearch.replace(/\s/g, '-');
+    const withoutHyphen = normalizedSearch.replace(/-/g, ' ');
+    const withAmpersand = normalizedSearch.replace(/\sand\s/gi, ' & ');
+    
+    const duplicateCheckConditions = [
+      `Name = '${escapeQuotes(normalizedSearch)}'`,
+      `Name = '${escapeQuotes(withoutThe)}'`,
+      `Name = 'The ${escapeQuotes(withoutThe)}'`,
+      `Name = '${escapeQuotes(withHyphen)}'`,
+      `Name = '${escapeQuotes(withoutHyphen)}'`,
+      `Name = '${escapeQuotes(withAmpersand)}'`,
+      `Name LIKE '%${escapeQuotes(normalizedSearch)}%'`
+    ].filter((v, i, a) => a.indexOf(v) === i);
+    
+    const duplicateQuery = `SELECT Id, Name, Owner.Name FROM Account WHERE (${duplicateCheckConditions.join(' OR ')}) LIMIT 1`;
+    const duplicateResult = await query(duplicateQuery);
+    
+    if (duplicateResult && duplicateResult.totalSize > 0) {
+      const existing = duplicateResult.records[0];
+      await client.chat.postMessage({
+        channel: channelId,
+        text: `Account already exists: "${existing.Name}"\n\nOwner: ${existing.Owner?.Name}\n\nNo duplicate created. Use existing account.`,
+        thread_ts: threadTs
+      });
+      return;
+    }
+    
     // Show loading message
     await client.chat.postMessage({
       channel: channelId,
@@ -2461,7 +2494,7 @@ async function handleCreateAccount(entities, userId, channelId, client, threadTs
       thread_ts: threadTs
     });
     
-    // Step 1: Enrich company data via Clay (preserves proper casing)
+    // Step 1: Enrich company data via Clay
     const { enrichCompanyData } = require('../services/clayEnrichment');
     const enrichment = await enrichCompanyData(companyName);
     
@@ -2563,46 +2596,39 @@ async function handleCreateAccount(entities, userId, channelId, client, threadTs
       statePicklistValue = validInternationalStates[countryUpper] || null; // null if not in list
     }
     
-    // Build account data - ONLY MANDATORY + 5 ENRICHMENT FIELDS
-    // CRITICAL: Use original input name to preserve exact casing (IKEA not ikea)
+    // Build account data - Use ORIGINAL input name to preserve EXACT casing
     const accountData = {
-      Name: companyName, // Use ORIGINAL input name (preserves your exact casing)
+      Name: companyName, // ORIGINAL input - preserves "IKEA" not "ikea"
       OwnerId: null // Will query below
     };
     
-    // DEBUG: Log what we're about to save
-    logger.info('Account data being created:', {
-      Name: accountData.Name,
-      hasWebsite: !!enrichment.website,
-      hasLinkedIn: !!enrichment.linkedIn,
-      hasState: !!statePicklistValue,
-      hasRegion: !!assignment.sfRegion,
-      hasRevenue: !!enrichment.revenue
+    // Add 5 enrichment fields - these MUST be added if enrichment succeeded
+    logger.info(`📊 Enrichment data available:`, {
+      website: enrichment.website,
+      linkedIn: enrichment.linkedIn,
+      revenue: enrichment.revenue,
+      state: statePicklistValue,
+      region: assignment.sfRegion
     });
     
-    // Add ONLY the 5 enrichment fields if they have valid values
+    // Add each field explicitly
     if (enrichment.website) {
       accountData.Website = enrichment.website;
-      logger.info('✅ Adding Website:', enrichment.website);
     }
     if (enrichment.linkedIn) {
       accountData.Linked_in_URL__c = enrichment.linkedIn;
-      logger.info('✅ Adding Linked_in_URL__c:', enrichment.linkedIn);
     }
     if (statePicklistValue) {
       accountData.State__c = statePicklistValue;
-      logger.info('✅ Adding State__c:', statePicklistValue);
-    } else {
-      logger.warn('⚠️  State__c not set - country not in picklist or no HQ data');
     }
     if (assignment.sfRegion) {
       accountData.Region__c = assignment.sfRegion;
-      logger.info('✅ Adding Region__c:', assignment.sfRegion);
     }
-    if (enrichment.revenue) {
-      accountData.Rev_MN__c = enrichment.revenue / 1000000;
-      logger.info('✅ Adding Rev_MN__c:', enrichment.revenue / 1000000);
+    if (enrichment.revenue && !isNaN(enrichment.revenue)) {
+      accountData.Rev_MN__c = Number((enrichment.revenue / 1000000).toFixed(1));
     }
+    
+    logger.info(`🚀 Creating account with data:`, JSON.stringify(accountData, null, 2));
     
     // Query to get BL's Salesforce User ID
     const userQuery = `SELECT Id FROM User WHERE Name = '${assignment.assignedTo}' AND IsActive = true LIMIT 1`;

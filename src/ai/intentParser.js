@@ -339,13 +339,31 @@ Business Context:
       };
     }
 
-    // Account existence check (PRIORITY - before regular lookup)
-    if (message.includes('does') && message.includes('exist') && !message.includes('not exist')) {
+    // Customer Brain note capture (HIGHEST PRIORITY - before existence check!)
+    // Must be FIRST to prevent "exist" in message body from triggering existence check
+    if (message.includes('add to customer') || message.includes('save note') || 
+        message.includes('log note') || message.includes('customer history')) {
+      intent = 'save_customer_note';
+      
+      entities.noteCapture = true;
+      
+      return {
+        intent: 'save_customer_note',
+        entities,
+        followUp: false,
+        confidence: 0.95,
+        explanation: 'Save note to Customer_Brain',
+        originalMessage: userMessage,
+        timestamp: Date.now()
+      };
+    }
+    
+    // Account existence check (AFTER Customer Brain to avoid conflicts)
+    if (message.includes('does') && message.includes('exist')) {
       intent = 'account_existence_check';
       
-      // Extract company name
-      const existMatch = message.match(/does (.+?) exist/i) ||
-                         message.match(/(.+?) exist/i);
+      // Extract company name - ONLY from "does X exist" pattern
+      const existMatch = message.match(/does (.+?) exist/i);
       
       if (existMatch && existMatch[1]) {
         entities.accounts = [existMatch[1].trim()];
@@ -574,25 +592,6 @@ Business Context:
         followUp: false,
         confidence: 0.95,
         explanation: 'Structure post-call summary using Socrates AI',
-        originalMessage: userMessage,
-        timestamp: Date.now()
-      };
-    }
-    
-    // Customer Brain note capture (HIGHEST PRIORITY - Keigan only)
-    if (message.includes('add to customer') || message.includes('save note') || 
-        message.includes('log note') || message.includes('customer history')) {
-      intent = 'save_customer_note';
-      
-      // The note is the original message (we'll extract it later)
-      entities.noteCapture = true;
-      
-      return {
-        intent: 'save_customer_note',
-        entities,
-        followUp: false,
-        confidence: 0.95,
-        explanation: 'Save note to Customer_Brain',
         originalMessage: userMessage,
         timestamp: Date.now()
       };
