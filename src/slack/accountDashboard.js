@@ -56,7 +56,7 @@ async function generateAccountDashboard() {
     // Einstein Activity might not be enabled, skip gracefully
   }
   
-  // Group by account
+  // Group by account and CALCULATE totalACV properly
   const accountMap = new Map();
   let newLogoCount = 0;
   
@@ -69,14 +69,20 @@ async function generateAccountDashboard() {
         owner: opp.Account?.Owner?.Name,
         isNewLogo: opp.Account?.Is_New_Logo__c,
         hasAccountPlan: !!opp.Account?.Account_Plan_s__c,
+        accountPlan: opp.Account?.Account_Plan_s__c,
+        customerType: opp.Account?.Customer_Type__c,
         opportunities: [],
-        highestStage: 0
+        highestStage: 0,
+        totalACV: 0, // CRITICAL: Initialize to 0
+        weightedACV: 0
       });
       if (opp.Account?.Is_New_Logo__c) newLogoCount++;
     }
     
     const account = accountMap.get(accountName);
     account.opportunities.push(opp);
+    account.totalACV += (opp.ACV__c || 0); // SUM the ACVs!
+    account.weightedACV += (opp.Finance_Weighted_ACV__c || 0);
     
     const stageNum = parseInt(opp.StageName.match(/Stage (\d)/)?.[1] || 0);
     account.highestStage = Math.max(account.highestStage, stageNum);
@@ -299,52 +305,95 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   </div>
 </div>
 
-<!-- TAB 3: ACCOUNT PLANS (Compact, Organized) -->
+<!-- TAB 3: ACCOUNT PLANS (Searchable, Expandable) -->
 <div id="account-plans" class="tab-content">
-  <div class="metrics" style="margin-bottom: 16px;">
+  <div class="metrics" style="margin-bottom: 12px;">
     <div class="metric">
       <div class="metric-label">With Plans</div>
       <div class="metric-value">${accountsWithPlans}</div>
     </div>
     <div class="metric">
-      <div class="metric-label">Missing Plans</div>
-      <div class="metric-value">${accountsWithoutPlans}</div>
+      <div class="metric-label">Need Plans (Stage 2+)</div>
+      <div class="metric-value">${Array.from(accountMap.values()).filter(a => !a.hasAccountPlan && a.highestStage >= 2).length}</div>
     </div>
   </div>
   
-  <div class="stage-section">
-    <div class="stage-title">Accounts (Top 20 by ACV)</div>
-    <div class="stage-subtitle">Green = Has Plan | Yellow = Missing Plan (Stage 2+)</div>
-    <div class="account-list">
-      ${Array.from(accountMap.values())
-        .sort((a, b) => b.totalACV - a.totalACV)
-        .slice(0, 20)
-        .map(acc => {
-          const oppCount = acc.opportunities.length;
-          const totalACV = acc.totalACV || 0;
-          const products = [...new Set(acc.opportunities.map(o => o.Product_Line__c).filter(p => p))];
-          const productList = products.length > 0 ? products.join(', ') : 'TBD';
-          const acvDisplay = totalACV >= 1000000 ? '$' + (totalACV / 1000000).toFixed(1) + 'M' : '$' + (totalACV / 1000).toFixed(0) + 'K';
-          
-          return `
-          <div class="account-item" style="background: ${acc.hasAccountPlan ? '#f0fdf4' : (acc.highestStage >= 2 ? '#fefce8' : '#fff')}; padding: 10px; border-radius: 4px; margin-bottom: 6px; border-left: 3px solid ${acc.hasAccountPlan ? '#10b981' : (acc.highestStage >= 2 ? '#f59e0b' : '#d1d5db')};">
-            <div style="display: flex; justify-content: space-between; align-items: start;">
-              <div>
-                <div class="account-name" style="font-size: 0.9375rem;">${acc.name}${acc.isNewLogo ? '<span class="badge badge-new">New</span>' : ''}</div>
-                <div style="font-size: 0.8125rem; color: #6b7280;">${acc.owner} • Stage ${acc.highestStage} • ${oppCount} opp${oppCount > 1 ? 's' : ''}</div>
-              </div>
-              <div style="text-align: right; font-size: 0.8125rem;">
-                <div style="font-weight: 600; color: #1f2937;">${acvDisplay}</div>
-                <div style="color: #6b7280;">${products.length} product${products.length > 1 ? 's' : ''}</div>
-              </div>
+  <input type="text" id="account-search" placeholder="Search accounts..." style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem; margin-bottom: 12px;">
+  
+  <div id="accounts-container">
+    ${Array.from(accountMap.values())
+      .sort((a, b) => b.totalACV - a.totalACV)
+      .slice(0, 25)
+      .map((acc, idx) => {
+        const oppCount = acc.opportunities.length;
+        const totalACV = acc.totalACV || 0;
+        const products = [...new Set(acc.opportunities.map(o => o.Product_Line__c).filter(p => p))];
+        const productList = products.join(', ') || 'TBD';
+        const acvDisplay = totalACV >= 1000000 ? '$' + (totalACV / 1000000).toFixed(1) + 'M' : totalACV >= 1000 ? '$' + (totalACV / 1000).toFixed(0) + 'K' : '$' + totalACV.toFixed(0);
+        const needsPlan = !acc.hasAccountPlan && acc.highestStage >= 2;
+        
+        return `
+        <details class="account-expandable" data-account="${acc.name.toLowerCase()}" style="background: ${needsPlan ? '#fefce8' : '#fff'}; border-left: 3px solid ${acc.hasAccountPlan ? '#10b981' : needsPlan ? '#f59e0b' : '#d1d5db'}; padding: 12px; border-radius: 4px; margin-bottom: 8px; cursor: pointer;">
+          <summary style="list-style: none; display: flex; justify-content: space-between; align-items: center;">
+            <div style="flex: 1;">
+              <div style="font-weight: 600; font-size: 0.9375rem; color: #1f2937;">${acc.name}${acc.isNewLogo ? '<span class="badge badge-new">New</span>' : ''}</div>
+              <div style="font-size: 0.8125rem; color: #6b7280; margin-top: 2px;">${acc.owner} • Stage ${acc.highestStage} • ${oppCount} opp${oppCount > 1 ? 's' : ''}</div>
             </div>
-            ${!acc.hasAccountPlan && acc.highestStage >= 2 ? '<div style="font-size: 0.75rem; color: #b45309; margin-top: 6px;">⚠️ Account Plan required</div>' : ''}
+            <div style="text-align: right;">
+              <div style="font-weight: 600; color: #1f2937;">${acvDisplay}</div>
+              <div style="font-size: 0.75rem; color: #6b7280;">${products.length} product${products.length > 1 ? 's' : ''}</div>
+            </div>
+          </summary>
+          
+          <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 0.8125rem;">
+            ${acc.hasAccountPlan ? `
+              <div style="background: #f0f9ff; padding: 10px; border-radius: 4px; margin-bottom: 8px;">
+                <strong style="color: #1e40af;">✓ Account Plan Exists</strong>
+                <div style="color: #1e40af; margin-top: 4px; font-size: 0.75rem; white-space: pre-wrap; max-height: 100px; overflow-y: auto;">${acc.accountPlan.substring(0, 200)}${acc.accountPlan.length > 200 ? '...' : ''}</div>
+              </div>
+            ` : needsPlan ? `
+              <div style="background: #fef3c7; padding: 10px; border-radius: 4px; margin-bottom: 8px; color: #92400e;">
+                <strong>⚠️ Account Plan Required (Stage 2+)</strong>
+              </div>
+            ` : ''}
+            
+            <div style="margin-top: 8px;">
+              <div style="color: #374151;"><strong>Products:</strong> ${productList}</div>
+              <div style="color: #374151; margin-top: 4px;"><strong>Customer Type:</strong> ${acc.customerType || 'Not set'}</div>
+              <div style="color: #374151; margin-top: 4px;"><strong>Opportunities:</strong></div>
+              ${acc.opportunities.map(o => `
+                <div style="font-size: 0.75rem; color: #6b7280; margin-left: 12px;">
+                  • ${cleanStageName(o.StageName)} - ${o.Product_Line__c || 'TBD'} - $${((o.ACV__c || 0) / 1000).toFixed(0)}K
+                </div>
+              `).join('')}
+            </div>
           </div>
-          `;
-        }).join('')}
-    </div>
+        </details>
+        `;
+      }).join('')}
   </div>
 </div>
+
+<style>
+details[open] summary { font-weight: 600; }
+.account-expandable:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+</style>
+
+<script>
+// Search functionality (inline for CSP)
+const searchInput = document.getElementById('account-search');
+const accountsContainer = document.getElementById('accounts-container');
+if (searchInput) {
+  searchInput.addEventListener('input', (e) => {
+    const search = e.target.value.toLowerCase();
+    const accounts = document.querySelectorAll('.account-expandable');
+    accounts.forEach(acc => {
+      const name = acc.getAttribute('data-account');
+      acc.style.display = name.includes(search) ? 'block' : 'none';
+    });
+  });
+}
+</script>
 
 <!-- No JavaScript needed - Pure CSS tabs work with CSP! -->
 
