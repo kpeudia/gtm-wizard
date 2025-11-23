@@ -175,9 +175,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 </div>
 
 <div class="tabs">
-  <button class="tab active" onclick="showTab('summary')">Summary</button>
-  <button class="tab" onclick="showTab('by-stage')">By Stage</button>
-  <button class="tab" onclick="showTab('account-plans')">Account Plans</button>
+  <button class="tab active" onclick="showTab('summary', this)">Summary</button>
+  <button class="tab" onclick="showTab('by-stage', this)">By Stage</button>
+  <button class="tab" onclick="showTab('account-plans', this)">Account Plans</button>
 </div>
 
 <!-- TAB 1: SUMMARY -->
@@ -315,14 +315,27 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 </div>
 
 <script>
-function showTab(tabName) {
-  // Hide all tabs
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+function showTab(tabName, clickedButton) {
+  // Hide all tab contents
+  document.querySelectorAll('.tab-content').forEach(content => {
+    content.classList.remove('active');
+  });
   
-  // Show selected tab
-  document.getElementById(tabName).classList.add('active');
-  event.target.classList.add('active');
+  // Deactivate all tab buttons
+  document.querySelectorAll('.tab').forEach(button => {
+    button.classList.remove('active');
+  });
+  
+  // Show selected tab content
+  const tabContent = document.getElementById(tabName);
+  if (tabContent) {
+    tabContent.classList.add('active');
+  }
+  
+  // Activate clicked button
+  if (clickedButton) {
+    clickedButton.classList.add('active');
+  }
 }
 </script>
 
