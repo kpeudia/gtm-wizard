@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Einstein Activity Data Gap - Assessment & Solution</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #000; background: #fff; padding: 35px; max-width: 1000px; margin: 0 auto; }
+h1 { color: #000; font-size: 1.8em; margin: 18px 0 12px 0; border-bottom: 2px solid #000; padding-bottom: 10px; }
+h2 { color: #000; font-size: 1.3em; margin: 22px 0 10px 0; font-weight: 600; }
+h3 { color: #000; font-size: 1.1em; margin: 16px 0 8px 0; font-weight: 600; }
+p { color: #000; margin: 8px 0; line-height: 1.6; }
+ul, ol { margin: 8px 0 12px 22px; }
+li { color: #000; margin: 4px 0; line-height: 1.5; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.9em; }
+th { background: #000; color: #fff; padding: 10px; text-align: left; font-weight: 600; }
+td { border: 1px solid #000; padding: 10px; }
+tr:nth-child(even) { background: #f5f5f5; }
+.problem-box { background: #fff3cd; padding: 15px; margin: 15px 0; border-left: 4px solid #ffc107; }
+.solution-box { background: #d4edda; padding: 15px; margin: 15px 0; border-left: 4px solid #28a745; }
+.critical { background: #f8d7da; padding: 15px; margin: 15px 0; border-left: 4px solid #dc3545; }
+code { background: #f0f0f0; padding: 2px 5px; border-radius: 2px; font-family: monospace; color: #000; font-size: 0.88em; }
+strong { font-weight: 600; }
+hr { border: none; border-top: 1px solid #000; margin: 20px 0; }
+.phase { background: #f9f9f9; padding: 12px; margin: 10px 0; border: 1px solid #000; }
+@media print { body { padding: 18px; font-size: 10pt; } }
+</style>
+</head>
+<body>
+
+<h1>Einstein Activity Capture - Data Gap Assessment</h1>
+<p><strong>Issue:</strong> Accounts created AFTER meetings scheduled show "No upcoming meetings"<br>
+<strong>Impact:</strong> Dashboard missing critical meeting context for many accounts<br>
+<strong>Assessment Date:</strong> November 20, 2025</p>
+
+<hr>
+
+<h2>Problem Analysis</h2>
+
+<div class="problem-box">
+<strong>Order of Operations Issue:</strong>
+
+<p><strong>Current Flow (Broken):</strong></p>
+<ol>
+<li>Sales team schedules meeting → Calendar event created</li>
+<li>Einstein Activity syncs → Event object created in Salesforce</li>
+<li>Event linked to Contact (Who = Todd Hartman)</li>
+<li>Event has NO Account link (AccountId = null) because account doesn't exist yet</li>
+<li>Later: Account "Best Buy" created in Salesforce</li>
+<li>Event still has no AccountId → Dashboard can't find meeting</li>
+</ol>
+
+<p><strong>Result:</strong> Best Buy shows "No upcoming meetings" even though Bi-Weekly Connect with Todd is scheduled.</p>
+</div>
+
+<h3>Root Causes</h3>
+
+<table>
+<tr><th>Cause</th><th>Impact</th><th>Frequency</th></tr>
+<tr>
+  <td>Meeting scheduled before account exists</td>
+  <td>Event.AccountId = null</td>
+  <td>High - most new logo meetings</td>
+</tr>
+<tr>
+  <td>Contact exists but not linked to Account</td>
+  <td>No way to retroactively link Event to Account</td>
+  <td>High - contacts created in isolation</td>
+</tr>
+<tr>
+  <td>Einstein doesn't auto-link Events to Accounts</td>
+  <td>Requires manual association in SF</td>
+  <td>Always - Einstein limitation</td>
+</tr>
+<tr>
+  <td>No retroactive sync after Account creation</td>
+  <td>Historical Events orphaned forever</td>
+  <td>Always - no backfill mechanism</td>
+</tr>
+</table>
+
+<h3>Data Gaps Identified</h3>
+
+<ul>
+<li><strong>Orphaned Events:</strong> Events with Contact but no Account</li>
+<li><strong>Unlinked Contacts:</strong> Contacts not associated with any Account</li>
+<li><strong>Missing AccountId:</strong> Events that should link to existing Accounts but don't</li>
+<li><strong>Discovery Problem:</strong> Can't find relevant meetings for newly created accounts</li>
+</ul>
+
+<h2>Solution Architecture</h2>
+
+<div class="solution-box">
+<strong>Multi-Phase Approach:</strong> Backfill historical data + Prevent future gaps + Ongoing sync
+</div>
+
+<h3>Phase 1: Immediate Backfill (One-Time Fix)</h3>
+
+<div class="phase">
+<strong>Goal:</strong> Link existing Events to Accounts retroactively
+
+<p><strong>Process:</strong></p>
+<ol>
+<li><strong>Find orphaned Events</strong> - Events with Contact but no AccountId</li>
+<li><strong>Match Contact to Account</strong> - Use Contact's company name or email domain</li>
+<li><strong>Update Event.AccountId</strong> - Bulk update to link Events to Accounts</li>
+<li><strong>Validate</strong> - Verify dashboard shows meetings after update</li>
+</ol>
+
+<p><strong>Implementation:</strong></p>
+<code>
+Query: SELECT Id, WhoId, Who.Account.Id, Subject, ActivityDate
+FROM Event
+WHERE AccountId = null AND WhoId != null
+</code>
+
+<p>For each Event:</p>
+<ul>
+<li>If Who (Contact) has Account → Set Event.AccountId = Contact.AccountId</li>
+<li>If Contact has no Account → Match Contact.Email domain to Account.Website domain</li>
+<li>Update Event records in batch</li>
+</ul>
+
+<p><strong>Estimated Time:</strong> 2-3 hours for script + testing<br>
+<strong>Impact:</strong> 80%+ of orphaned Events linked to Accounts<br>
+<strong>Risk:</strong> Low - read Contact.AccountId, write Event.AccountId only</p>
+</div>
+
+<h3>Phase 2: Contact-Account Linking (Foundation Fix)</h3>
+
+<div class="phase">
+<strong>Goal:</strong> Ensure all Contacts are linked to Accounts
+
+<p><strong>Process:</strong></p>
+<ol>
+<li><strong>Audit</strong> - Find Contacts with no AccountId</li>
+<li><strong>Match</strong> - Use email domain (@bestbuy.com → Best Buy account)</li>
+<li><strong>Link</strong> - Set Contact.AccountId</li>
+<li><strong>Cascade</strong> - Einstein then auto-links future Events</li>
+</ol>
+
+<p><strong>Matching Strategy:</strong></p>
+<table>
+<tr><th>Contact Email</th><th>Matching Logic</th><th>Account</th></tr>
+<tr><td>todd@bestbuy.com</td><td>Domain = bestbuy.com → Account.Website</td><td>Best Buy</td></tr>
+<tr><td>john@acme.com</td><td>Domain = acme.com → Search accounts</td><td>Acme Corp</td></tr>
+<tr><td>No email</td><td>Manual review required</td><td>Flag for BL</td></tr>
+</table>
+
+<p><strong>Estimated Time:</strong> 3-4 hours for matching logic + validation<br>
+<strong>Impact:</strong> Future Events auto-link when Contact linked to Account<br>
+<strong>Risk:</strong> Medium - wrong matches possible, needs validation</p>
+</div>
+
+<h3>Phase 3: Weekly Sync Process (Ongoing Maintenance)</h3>
+
+<div class="phase">
+<strong>Goal:</strong> Automated weekly sync to catch new accounts and link Events
+
+<p><strong>Schedule:</strong> Every Friday at 6pm (after account creation, before weekend)</p>
+
+<p><strong>Sync Process:</strong></p>
+<ol>
+<li><strong>Find new Accounts</strong> - Created this week</li>
+<li><strong>Search for related Events</strong> - Events with Contacts matching account</li>
+<li><strong>Link Events to Account</strong> - Update Event.AccountId</li>
+<li><strong>Report</strong> - Slack notification: "Linked 12 meetings to 5 new accounts"</li>
+</ol>
+
+<p><strong>Implementation:</strong> Node-cron job in GTM-Brain</p>
+<code>
+cron.schedule('0 18 * * 5', async () => {
+  // Run weekly Event-Account linking
+  await linkEventsToNewAccounts();
+});
+</code>
+
+<p><strong>Estimated Time:</strong> 2 hours for cron job + notification<br>
+<strong>Impact:</strong> Self-sustaining, accounts stay up-to-date automatically<br>
+<strong>Risk:</strong> Low - automated, logged, reversible</p>
+</div>
+
+<h3>Phase 4: Proactive Prevention (Best Practice)</h3>
+
+<div class="phase">
+<strong>Goal:</strong> Change workflow so Accounts created BEFORE meetings scheduled
+
+<p><strong>Process Change:</strong></p>
+<ol>
+<li>BDR/EA schedules meeting with prospect</li>
+<li><strong>FIRST:</strong> Create Account in Salesforce via GTM-Brain: <code>@gtm-brain create Best Buy and assign to BL</code></li>
+<li><strong>THEN:</strong> Send calendar invite</li>
+<li>Einstein syncs meeting → Event auto-links to Account (because Account exists)</li>
+<li>Dashboard immediately shows meeting</li>
+</ol>
+
+<p><strong>Benefits:</strong></p>
+<ul>
+<li>No data gaps</li>
+<li>No retroactive linking needed</li>
+<li>Dashboard always accurate</li>
+<li>Less manual cleanup</li>
+</ul>
+
+<p><strong>Estimated Time:</strong> 30 min team training<br>
+<strong>Impact:</strong> Eliminates 90% of future gaps<br>
+<strong>Risk:</strong> None - process improvement</p>
+</div>
+
+<h2>Recommended Implementation Priority</h2>
+
+<table>
+<tr><th>Phase</th><th>When</th><th>Effort</th><th>Impact</th><th>Priority</th></tr>
+<tr><td>Phase 4: Process Change</td><td>Immediate</td><td>30min</td><td>High - prevents future gaps</td><td><strong>1. DO NOW</strong></td></tr>
+<tr><td>Phase 1: Backfill</td><td>This week</td><td>2-3h</td><td>High - fixes current accounts</td><td><strong>2. THIS WEEK</strong></td></tr>
+<tr><td>Phase 2: Contact Linking</td><td>Next week</td><td>3-4h</td><td>Medium - improves matching</td><td><strong>3. NEXT WEEK</strong></td></tr>
+<tr><td>Phase 3: Weekly Sync</td><td>Week 2</td><td>2h</td><td>Medium - automation</td><td><strong>4. AUTOMATE</strong></td></tr>
+</table>
+
+<h2>Phase 1 Implementation Details (Backfill Script)</h2>
+
+<h3>Step 1: Audit Current State</h3>
+
+<p><strong>Query to identify orphaned Events:</strong></p>
+<code style="display: block; padding: 10px; background: #f5f5f5; margin: 10px 0;">
+SELECT Id, Subject, ActivityDate, WhoId, Who.Email, Who.Name, AccountId
+FROM Event
+WHERE AccountId = null
+  AND WhoId != null
+  AND ActivityDate >= LAST_N_DAYS:180
+ORDER BY ActivityDate DESC
+</code>
+
+<p><strong>Expected Results:</strong> 50-200 Events with Contacts but no Accounts</p>
+
+<h3>Step 2: Match Events to Accounts</h3>
+
+<p><strong>Matching Logic (in priority order):</strong></p>
+
+<table>
+<tr><th>Method</th><th>How It Works</th><th>Confidence</th></tr>
+<tr>
+  <td>Contact.AccountId exists</td>
+  <td>If Contact already linked to Account, use that</td>
+  <td>100% - Direct link</td>
+</tr>
+<tr>
+  <td>Email domain matching</td>
+  <td>todd@bestbuy.com → Search accounts for "bestbuy"</td>
+  <td>95% - Very reliable</td>
+</tr>
+<tr>
+  <td>Contact company name</td>
+  <td>Contact.Account.Name → Search accounts</td>
+  <td>90% - Usually accurate</td>
+</tr>
+<tr>
+  <td>Event subject parsing</td>
+  <td>"Best Buy - Discovery Call" → Search for "Best Buy"</td>
+  <td>70% - Risky, needs validation</td>
+</tr>
+<tr>
+  <td>Manual review</td>
+  <td>Can't auto-match → Flag for BL review</td>
+  <td>100% - Human verified</td>
+</tr>
+</table>
+
+<h3>Step 3: Bulk Update Events</h3>
+
+<p><strong>Safety Measures:</strong></p>
+<ul>
+<li>Generate preview report before updating anything</li>
+<li>BL reviews matches (especially <90% confidence)</li>
+<li>Update in batches of 50 (rollback if issues)</li>
+<li>Log all updates (who, what, when)</li>
+<li>Verify in dashboard after each batch</li>
+</ul>
+
+<h3>Step 4: Validation</h3>
+
+<p><strong>Success Criteria:</strong></p>
+<ul>
+<li>Best Buy shows: Last Meeting Nov 21, Next Meeting Dec 15</li>
+<li>80%+ of active accounts have meeting data</li>
+<li>No incorrect account associations (verified by BLs)</li>
+<li>Dashboard useful for business context</li>
+</ul>
+
+<h2>Weekly Sync Implementation (Phase 3)</h2>
+
+<h3>Automated Linking Logic</h3>
+
+<code style="display: block; padding: 10px; background: #f5f5f5; margin: 10px 0; white-space: pre-wrap;">
+// Weekly Friday 6pm sync
+cron.schedule('0 18 * * 5', async () => {
+  // 1. Get accounts created this week
+  const newAccounts = await query(\`
+    SELECT Id, Name, Website, Owner.Name
+    FROM Account
+    WHERE CreatedDate >= LAST_N_DAYS:7
+  \`);
+  
+  // 2. For each new account, find related Events
+  for (const account of newAccounts.records) {
+    // Search Events by contact email domain matching account
+    const domain = account.Website?.replace('www.', '');
+    
+    const orphanedEvents = await query(\`
+      SELECT Id, Subject, ActivityDate
+      FROM Event
+      WHERE AccountId = null
+        AND Who.Email LIKE '%@${domain}%'
+    \`);
+    
+    // 3. Link Events to Account
+    if (orphanedEvents.records.length > 0) {
+      const updates = orphanedEvents.records.map(e => ({
+        Id: e.Id,
+        AccountId: account.Id
+      }));
+      
+      await conn.sobject('Event').update(updates);
+      
+      // 4. Notify BL
+      await slackNotify(\`✅ Linked ${updates.length} meetings to ${account.Name}\`);
+    }
+  }
+});
+</code>
+
+<h3>Monitoring & Alerts</h3>
+
+<ul>
+<li><strong>Success notification:</strong> "Weekly sync complete: Linked 15 meetings to 5 accounts"</li>
+<li><strong>Issue alert:</strong> "10 Events couldn't be auto-linked - manual review needed"</li>
+<li><strong>Metrics tracking:</strong> % of accounts with meeting data over time</li>
+</ul>
+
+<h2>Contact-Account Linking Strategy (Phase 2)</h2>
+
+<div class="critical">
+<strong>Critical Issue:</strong> Many Contacts exist with no AccountId. This breaks Einstein Activity linking.
+</div>
+
+<h3>Contact Audit Process</h3>
+
+<p><strong>Find unlinked Contacts:</strong></p>
+<code style="display: block; padding: 10px; background: #f5f5f5; margin: 10px 0;">
+SELECT Id, Name, Email, Account.Id, Account.Name
+FROM Contact
+WHERE AccountId = null
+  AND Email != null
+  AND LastActivityDate >= LAST_N_DAYS:180
+</code>
+
+<p><strong>Expected:</strong> 100-300 unlinked Contacts</p>
+
+<h3>Auto-Linking Logic</h3>
+
+<ol>
+<li><strong>Email domain extraction:</strong> todd.hartman@bestbuy.com → "bestbuy.com"</li>
+<li><strong>Account search:</strong> Find Account where Website LIKE '%bestbuy%' OR Name LIKE '%Best Buy%'</li>
+<li><strong>Confidence scoring:</strong>
+  <ul>
+    <li>Exact domain match (bestbuy.com = bestbuy.com): 100%</li>
+    <li>Name in email (todd@best-buy.com, account "Best Buy"): 95%</li>
+    <li>Fuzzy match: 70%</li>
+  </ul>
+</li>
+<li><strong>Update if >90% confidence, flag if <90%</strong></li>
+</ol>
+
+<h3>Manual Review Process</h3>
+
+<p><strong>For low-confidence matches:</strong></p>
+<ul>
+<li>Generate CSV: Contact Name, Email, Suggested Account, Confidence</li>
+<li>BL reviews and approves/rejects</li>
+<li>Import approved matches</li>
+<li>Updates cascade to Events automatically</li>
+</ul>
+
+<h2>Process Change Recommendations</h2>
+
+<div class="solution-box">
+<strong>Best Practice Workflow (Prevents All Future Gaps):</strong>
+
+<p><strong>OLD (Broken) Workflow:</strong></p>
+<ol>
+<li>BDR/EA schedules meeting with prospect</li>
+<li>Meeting happens</li>
+<li>Later: BL creates Account in Salesforce</li>
+<li>Result: Orphaned Events, no meeting context</li>
+</ol>
+
+<p><strong>NEW (Correct) Workflow:</strong></p>
+<ol>
+<li>BDR identifies prospect for meeting</li>
+<li><strong>BDR uses GTM-Brain:</strong> <code>@gtm-brain create Best Buy and assign to BL</code></li>
+<li>Account created immediately (with enrichment, assignment)</li>
+<li>BDR/EA schedules meeting, invites Contact</li>
+<li>Einstein syncs → Event.AccountId auto-populated</li>
+<li>Dashboard immediately shows meeting</li>
+</ol>
+
+<p><strong>Benefits:</strong></p>
+<ul>
+<li>Zero data gaps</li>
+<li>Dashboard always accurate</li>
+<li>No manual cleanup needed</li>
+<li>Better data quality from start</li>
+</ul>
+</div>
+
+<h3>Training & Adoption</h3>
+
+<p><strong>What BDRs/EAs need to know:</strong></p>
+<ul>
+<li>"Before scheduling first meeting, create account in Salesforce"</li>
+<li>Use GTM-Brain for fast account creation (30 seconds vs 5 minutes manual)</li>
+<li>Auto-assignment ensures correct BL ownership</li>
+<li>Meetings then link automatically</li>
+</ul>
+
+<p><strong>Training Delivery:</strong></p>
+<ul>
+<li>15-minute team session (record it)</li>
+<li>Update meeting scheduling SOP</li>
+<li>Add to BDR onboarding checklist</li>
+<li>Monitor compliance weekly</li>
+</ul>
+
+<h2>Immediate Action Plan</h2>
+
+<h3>This Week</h3>
+
+<ol>
+<li><strong>Monday:</strong> Announce process change to team (create accounts first)</li>
+<li><strong>Tuesday:</strong> Build Contact-Account matching script</li>
+<li><strong>Wednesday:</strong> Run audit, generate match report for BL review</li>
+<li><strong>Thursday:</strong> BLs review and approve matches</li>
+<li><strong>Friday:</strong> Execute backfill, link Events to Accounts</li>
+<li><strong>Friday 6pm:</strong> Validate dashboard shows meetings, deploy weekly sync</li>
+</ol>
+
+<h3>Success Metrics</h3>
+
+<table>
+<tr><th>Metric</th><th>Current</th><th>Target (Week 1)</th><th>Target (Month 1)</th></tr>
+<tr><td>Accounts with meeting data</td><td>~20%</td><td>80%</td><td>95%</td></tr>
+<tr><td>Orphaned Events</td><td>~200</td><td><50</td><td><10</td></tr>
+<tr><td>Unlinked Contacts</td><td>~300</td><td><100</td><td><20</td></tr>
+<tr><td>Dashboard usefulness</td><td>Limited</td><td>High</td><td>Critical tool</td></tr>
+</table>
+
+<h2>Technical Implementation Notes</h2>
+
+<h3>Event Object Fields Available</h3>
+
+<table>
+<tr><th>Field</th><th>Description</th><th>Use Case</th></tr>
+<tr><td>AccountId</td><td>Link to Account</td><td>Primary linking field (what we need)</td></tr>
+<tr><td>WhoId</td><td>Link to Contact</td><td>Use to find Contact's Account</td></tr>
+<tr><td>ActivityDate</td><td>Date of event</td><td>Last/next meeting dates</td></tr>
+<tr><td>Subject</td><td>Meeting title</td><td>Display in dashboard</td></tr>
+<tr><td>Type</td><td>Meeting, Call, Email</td><td>Filter to meetings only</td></tr>
+<tr><td>Description</td><td>Meeting notes</td><td>Future: Show in dashboard detail</td></tr>
+</table>
+
+<h3>Contact Object Linking</h3>
+
+<table>
+<tr><th>Field</th><th>Use</th></tr>
+<tr><td>Contact.AccountId</td><td>Direct link to Account (if set)</td></tr>
+<tr><td>Contact.Email</td><td>Extract domain for matching</td></tr>
+<tr><td>Contact.Account.Name</td><td>Account name if linked</td></tr>
+</table>
+
+<h3>Safety & Rollback</h3>
+
+<p><strong>Before any bulk update:</strong></p>
+<ul>
+<li>Export current Event data (backup)</li>
+<li>Test on 10 Events first</li>
+<li>Verify in dashboard</li>
+<li>If correct, proceed with bulk</li>
+<li>If wrong, rollback and adjust logic</li>
+</ul>
+
+<p><strong>Rollback procedure:</strong></p>
+<ul>
+<li>Clear Event.AccountId for incorrectly linked Events</li>
+<li>Re-run with corrected matching logic</li>
+<li>All updates logged and reversible</li>
+</ul>
+
+<h2>Expected Outcomes</h2>
+
+<div class="solution-box">
+<p><strong>After Phase 1 (Backfill):</strong></p>
+<ul>
+<li>Best Buy shows: Last Meeting Nov 21, Next Meeting Dec 15 - Bi-Weekly Connect</li>
+<li>80% of accounts have meeting context</li>
+<li>Dashboard immediately more useful</li>
+</ul>
+
+<p><strong>After Phase 2 (Contact Linking):</strong></p>
+<ul>
+<li>Contacts properly associated with Accounts</li>
+<li>Future Events auto-link correctly</li>
+<li>Fewer orphaned Events going forward</li>
+</ul>
+
+<p><strong>After Phase 3 (Weekly Sync):</strong></p>
+<ul>
+<li>New accounts auto-linked to existing Events</li>
+<li>Self-sustaining process</li>
+<li>Data quality maintained automatically</li>
+</ul>
+
+<p><strong>After Phase 4 (Process Change):</strong></p>
+<ul>
+<li>No new data gaps created</li>
+<li>Best practice workflow established</li>
+<li>Team using GTM-Brain for account creation</li>
+</ul>
+</div>
+
+<h2>Risks & Mitigation</h2>
+
+<table>
+<tr><th>Risk</th><th>Mitigation</th></tr>
+<tr><td>Wrong Event-Account links</td><td>BL review before bulk update, confidence thresholds</td></tr>
+<tr><td>Contact privacy concerns</td><td>Only use business email domains, no personal emails</td></tr>
+<tr><td>Salesforce API limits</td><td>Batch updates, run during off-hours, rate limiting</td></tr>
+<tr><td>Team doesn't adopt new workflow</td><td>Training, monitoring, gentle reminders, show value</td></tr>
+<tr><td>Script breaks in production</td><td>Dry-run mode, extensive logging, manual verification</td></tr>
+</table>
+
+<h2>Immediate Next Steps</h2>
+
+<p><strong>For You (Next 30 Minutes):</strong></p>
+<ol>
+<li>Announce to team: "Create accounts BEFORE scheduling meetings"</li>
+<li>Share GTM-Brain command: <code>@gtm-brain create [Company] and assign to BL</code></li>
+<li>Explain why: "So meetings show up in dashboard automatically"</li>
+</ol>
+
+<p><strong>For Me (Next 2-3 Hours):</strong></p>
+<ol start="4">
+<li>Build Contact-Account matching script</li>
+<li>Run audit on orphaned Events</li>
+<li>Generate match report for your review</li>
+<li>You approve matches</li>
+<li>Execute backfill</li>
+<li>Validate dashboard shows meetings</li>
+</ol>
+
+<p><strong>For Ongoing (This Month):</strong></p>
+<ol start="10">
+<li>Implement weekly sync cron job</li>
+<li>Monitor data quality metrics</li>
+<li>Refine matching logic based on results</li>
+<li>Achieve 95% accounts with meeting data</li>
+</ol>
+
+<h2>Conclusion</h2>
+
+<p><strong>The Problem:</strong> Order of operations (meeting → account) creates data gaps that Einstein can't fix automatically.</p>
+
+<p><strong>The Solution:</strong> Four-phase approach addressing historical gaps, ongoing sync, and workflow improvement.</p>
+
+<p><strong>The Outcome:</strong> Dashboard becomes significantly more valuable when every account shows last/next meeting context.</p>
+
+<p><strong>Quick Win:</strong> Process change (Phase 4) prevents 90% of future gaps with zero code - just team training.</p>
+
+<p><strong>Full Fix:</strong> Backfill (Phase 1) + Contact linking (Phase 2) + Weekly sync (Phase 3) = Self-sustaining accurate data.</p>
+
+<div class="solution-box" style="margin-top: 30px;">
+<p><strong>Ready to proceed?</strong></p>
+<p>Say the word and I'll build the backfill script (2-3 hours). Or start with process change announcement (30 minutes) and we'll backfill after.</p>
+</div>
+
+<hr>
+
+<p style="text-align: center; color: #666; font-size: 0.88em;">
+<strong>Strategic data quality assessment</strong><br>
+Einstein Activity Capture | GTM-Brain Dashboard Enhancement | November 2025
+</p>
+
+</body>
+</html>
+
