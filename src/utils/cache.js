@@ -5,6 +5,9 @@ class CacheManager {
   constructor() {
     this.client = null;
     this.isConnected = false;
+    // In-memory fallback when Redis unavailable (Finding 2.1)
+    this.memoryCache = new Map();
+    this.memoryCacheStats = { hits: 0, misses: 0 };
   }
 
   async initialize() {
@@ -67,8 +70,14 @@ class CacheManager {
   }
 
   async get(key) {
+    // Use in-memory cache if Redis not connected
     if (!this.isConnected) {
-      logger.warn('Redis not connected, skipping cache get');
+      const cached = this.memoryCache.get(key);
+      if (cached && Date.now() - cached.timestamp < 60000) { // 60s TTL
+        this.memoryCacheStats.hits++;
+        return cached.value;
+      }
+      this.memoryCacheStats.misses++;
       return null;
     }
 
@@ -83,9 +92,18 @@ class CacheManager {
   }
 
   async set(key, value, ttlSeconds = 3600) {
+    // Use in-memory cache if Redis not connected
     if (!this.isConnected) {
-      logger.warn('Redis not connected, skipping cache set');
-      return false;
+      this.memoryCache.set(key, {
+        value,
+        timestamp: Date.now()
+      });
+      // Limit memory cache size to prevent memory leaks
+      if (this.memoryCache.size > 100) {
+        const firstKey = this.memoryCache.keys().next().value;
+        this.memoryCache.delete(firstKey);
+      }
+      return true;
     }
 
     try {
