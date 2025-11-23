@@ -3321,61 +3321,45 @@ async function handleAccountStatusDashboard(userId, channelId, client, threadTs)
 }
 
 /**
- * Handle Unknown Queries - Ask for clarification
+ * Handle Unknown Queries - Organized suggestions by category
  */
 async function handleUnknownQuery(parsedIntent, userId, channelId, client, threadTs) {
   try {
     const extractedWords = parsedIntent.entities.extractedWords || [];
-    const originalMessage = parsedIntent.originalMessage;
     
-    let response = `🤔 I'm not sure I understand that query.\n\n`;
+    let response = `I didn't understand that query.\n\n`;
+    response += `*What I can help with (by category):*\n\n`;
     
-    if (extractedWords.length > 0) {
-      response += `I noticed you mentioned: *${extractedWords.join(', ')}*\n\n`;
-      response += `Are you asking about:\n`;
-      
-      // Smart suggestions based on extracted words
-      const suggestions = [];
-      
-      // Check if words might relate to accounts
-      if (extractedWords.some(w => ['company', 'customer', 'client', 'vendor'].includes(w))) {
-        suggestions.push('• Account information? Try: "who owns [company name]"');
-      }
-      
-      // Check if words might relate to pipeline
-      if (extractedWords.some(w => ['sales', 'revenue', 'money', 'value', 'worth'].includes(w))) {
-        suggestions.push('• Pipeline data? Try: "show me the pipeline"');
-      }
-      
-      // Check if words might relate to reports
-      if (extractedWords.some(w => ['report', 'summary', 'stats', 'numbers', 'metrics'].includes(w))) {
-        suggestions.push('• A report? Try: "send pipeline excel report"');
-      }
-      
-      // Check if words might relate to contracts
-      if (extractedWords.some(w => ['document', 'agreement', 'signed', 'signature'].includes(w))) {
-        suggestions.push('• Contracts? Try: "show contracts for [company]"');
-      }
-      
-      if (suggestions.length > 0) {
-        response += suggestions.join('\n');
-      } else {
-        response += `• Pipeline queries: "show me late stage deals"\n`;
-        response += `• Account lookups: "who owns Intel?"\n`;
-        response += `• Contract queries: "contracts for Cargill"\n`;
-        response += `• Reports: "send pipeline excel"`;
-      }
-    } else {
-      // Generic help
-      response += `*I can help with:*\n`;
-      response += `• Account ownership: "who owns [company]?"\n`;
-      response += `• Pipeline queries: "show me late stage contracting"\n`;
-      response += `• LOI/ARR tracking: "what LOIs signed last week?"\n`;
-      response += `• Contract queries: "contracts for [company]"\n`;
-      response += `• Account plans: "what's the account plan for [company]?"\n`;
-      response += `• Excel reports: "send pipeline excel report"\n\n`;
-      response += `Try rephrasing your question, or ask "hello" for more examples.`;
-    }
+    response += `*Account Information*\n`;
+    response += `• "who owns [Company]?" - Find account owner\n`;
+    response += `• "does [Company] exist?" - Check if account in Salesforce\n`;
+    response += `• "what's the account plan for [Company]?" - View strategic plan\n\n`;
+    
+    response += `*Pipeline & Deals*\n`;
+    response += `• "late stage contracting" - Stage 4 contracting accounts\n`;
+    response += `• "mid stage deals" - Stage 2-3 opportunities\n`;
+    response += `• "show me the pipeline" - All active opportunities\n`;
+    response += `• "weighted pipeline" - Gross vs weighted view\n\n`;
+    
+    response += `*Bookings & Revenue*\n`;
+    response += `• "what LOIs signed last week?" - Recent bookings\n`;
+    response += `• "show ARR deals" - Recurring revenue opportunities\n`;
+    response += `• "how many customers?" - Customer count\n\n`;
+    
+    response += `*Contracts & Documents*\n`;
+    response += `• "contracts for [Company]" - PDFs and agreements\n`;
+    response += `• "LOI contracts" - Letter of intent contracts\n\n`;
+    
+    response += `*Reports & Dashboard*\n`;
+    response += `• "send pipeline excel report" - Generate Excel\n`;
+    response += `• "gtm" or "dashboard" - Account status dashboard\n\n`;
+    
+    response += `*Account Management*\n`;
+    response += `• "create [Company] and assign to BL" - Auto-create account\n`;
+    response += `• "add account plan for [Company]:" - Save strategic plan\n`;
+    response += `• "add to customer history: [Company]" - Save meeting notes\n\n`;
+    
+    response += `Ask "hello" for full capability list.`;
     
     await client.chat.postMessage({
       channel: channelId,
@@ -3383,13 +3367,13 @@ async function handleUnknownQuery(parsedIntent, userId, channelId, client, threa
       thread_ts: threadTs
     });
     
-    logger.info(`❓ Unknown query from ${userId}: "${originalMessage}"`);
+    logger.info(`❓ Unknown query from ${userId}: "${parsedIntent.originalMessage}"`);
     
   } catch (error) {
     logger.error('Failed to handle unknown query:', error);
     await client.chat.postMessage({
       channel: channelId,
-      text: `I'm not sure how to help with that. Try asking "hello" for examples of what I can do!`,
+      text: `I'm not sure how to help. Ask "hello" for examples!`,
       thread_ts: threadTs
     });
   }
