@@ -552,7 +552,7 @@ Business Context:
         timestamp: Date.now()
       };
     }
-    
+
     // Handle ownership and business lead questions - PRIORITY INTENT
     if (message.includes('who owns') || message.includes('who is the owner') || 
         message.includes('who\'s the owner') || message.includes('whos the owner') ||

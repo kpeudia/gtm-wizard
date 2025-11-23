@@ -667,7 +667,7 @@ async function handleCustomerBrainNote(message, userId, channelId, client, threa
       });
       return;
     }
-    
+
     // This is the ONLY place we get account name - nowhere else!
     const accountName = triggerMatch[1].trim();
     
@@ -700,7 +700,7 @@ async function handleCustomerBrainNote(message, userId, channelId, client, threa
     const businessLeads = ['Julie Stefanich', 'Himanshu Agarwal', 'Asad Hussain', 'Ananth Cherukupally', 'David Van Ryk', 'John Cobb', 'Jon Cobb', 'Olivia Jung'];
     const blMatch = accountResult.records.find(r => businessLeads.includes(r.Owner?.Name));
     const account = blMatch || accountResult.records[0];
-    
+
     logger.info(`Customer Brain: Found account ${account.Name} (searched for: ${accountName})`);
 
     // STEP 4: Format the note with date and user
@@ -1100,7 +1100,7 @@ function formatPipelineAccountList(queryResult, parsedIntent) {
   response += `${records.length} opportunities across ${accounts.length} accounts\n`;
   response += `Total value: ${formatCurrency(totalAmount)}\n\n`;
   response += `*Companies:*\n${accountNames}`;
-  
+
   return response;
 }
 

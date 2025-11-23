@@ -59,15 +59,15 @@ async function generateAccountDashboard() {
     else if (account.highestStage >= 3) late.push(account);
   });
   
-  // Calculate totals
+  // Calculate metrics (matching v0 dashboard style)
   const totalPipeline = result.records.reduce((sum, o) => sum + (o.ACV__c || 0), 0);
   const weightedPipeline = result.records.reduce((sum, o) => sum + (o.Finance_Weighted_ACV__c || 0), 0);
+  const avgDealSize = totalPipeline / result.records.length;
   
-  // Stage counts
-  const stage1Count = result.records.filter(o => o.StageName === 'Stage 1 - Discovery').length;
-  const stage2Count = result.records.filter(o => o.StageName === 'Stage 2 - SQO').length;
-  const stage3Count = result.records.filter(o => o.StageName === 'Stage 3 - Pilot').length;
-  const stage4Count = result.records.filter(o => o.StageName === 'Stage 4 - Proposal').length;
+  // Calculate QoQ changes (mock for now - would need historical data)
+  const totalChange = 12.8;
+  const weightedChange = 8.4;
+  const dealSizeChange = -3.2;
   
   // Generate HTML - inspired by your v0 dashboard
   const html = `<!DOCTYPE html>
