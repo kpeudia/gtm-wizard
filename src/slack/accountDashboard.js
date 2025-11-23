@@ -46,46 +46,58 @@ async function generateAccountDashboard() {
   const accountIds = [...new Set(accountData.records.map(o => o.Account?.Id).filter(id => id))];
   const accountIdList = accountIds.map(id => `'${id}'`).join(',');
   
-  // Query Einstein Activity Events using AccountId (not WhatId)
+  // Query Einstein Activity Events - get individual events per account
   let meetingData = new Map();
   try {
     if (accountIds.length > 0) {
-      // Last meeting per account using AccountId
-      const lastMeetingQuery = `SELECT AccountId, MAX(StartDateTime) LastMeeting
+      // Get last meeting for each account (most recent past event)
+      const lastMeetingQuery = `SELECT Id, AccountId, ActivityDate, Subject, Type
                                 FROM Event
-                                WHERE StartDateTime < ${new Date().toISOString()}
+                                WHERE ActivityDate < TODAY
                                   AND AccountId IN (${accountIdList})
-                                GROUP BY AccountId`;
+                                ORDER BY ActivityDate DESC`;
       
-      // Next meeting per account
-      const nextMeetingQuery = `SELECT AccountId, MIN(StartDateTime) NextMeeting, Subject
+      // Get next meeting for each account (nearest future event)
+      const nextMeetingQuery = `SELECT Id, AccountId, ActivityDate, Subject, Type
                                 FROM Event
-                                WHERE StartDateTime >= ${new Date().toISOString()}
+                                WHERE ActivityDate >= TODAY
                                   AND AccountId IN (${accountIdList})
-                                GROUP BY AccountId, Subject`;
+                                ORDER BY ActivityDate ASC`;
       
       const lastMeetings = await query(lastMeetingQuery, true);
       const nextMeetings = await query(nextMeetingQuery, true);
       
-      // Map by AccountId (not WhatId!)
-      lastMeetings.records.forEach(m => {
-        if (m.AccountId) {
-          if (!meetingData.has(m.AccountId)) meetingData.set(m.AccountId, {});
-          meetingData.get(m.AccountId).lastMeeting = m.LastMeeting;
-        }
-      });
+      // Process last meetings - take first (most recent) per account
+      const processedLast = new Set();
+      if (lastMeetings && lastMeetings.records) {
+        lastMeetings.records.forEach(m => {
+          if (m.AccountId && !processedLast.has(m.AccountId)) {
+            if (!meetingData.has(m.AccountId)) meetingData.set(m.AccountId, {});
+            meetingData.get(m.AccountId).lastMeeting = m.ActivityDate;
+            meetingData.get(m.AccountId).lastMeetingSubject = m.Subject;
+            meetingData.get(m.AccountId).lastMeetingType = m.Type;
+            processedLast.add(m.AccountId);
+          }
+        });
+      }
       
-      nextMeetings.records.forEach(m => {
-        if (m.AccountId) {
-          if (!meetingData.has(m.AccountId)) meetingData.set(m.AccountId, {});
-          meetingData.get(m.AccountId).nextMeeting = m.NextMeeting;
-          meetingData.get(m.AccountId).nextMeetingSubject = m.Subject;
-        }
-      });
+      // Process next meetings - take first (nearest) per account
+      const processedNext = new Set();
+      if (nextMeetings && nextMeetings.records) {
+        nextMeetings.records.forEach(m => {
+          if (m.AccountId && !processedNext.has(m.AccountId)) {
+            if (!meetingData.has(m.AccountId)) meetingData.set(m.AccountId, {});
+            meetingData.get(m.AccountId).nextMeeting = m.ActivityDate;
+            meetingData.get(m.AccountId).nextMeetingSubject = m.Subject;
+            meetingData.get(m.AccountId).nextMeetingType = m.Type;
+            processedNext.add(m.AccountId);
+          }
+        });
+      }
     }
   } catch (e) {
-    // If Event queries fail, continue without meeting data
-    console.error('Meeting query failed:', e);
+    // Einstein Activity not available
+    console.error('Event query error:', e.message);
   }
   
   // Group by account and CALCULATE totalACV properly
@@ -365,13 +377,17 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
         const acvDisplay = totalACV >= 1000000 ? '$' + (totalACV / 1000000).toFixed(1) + 'M' : totalACV >= 1000 ? '$' + (totalACV / 1000).toFixed(0) + 'K' : '$' + totalACV.toFixed(0);
         const needsPlan = !acc.hasAccountPlan && acc.highestStage >= 2;
         
-        // Meeting data from Einstein Activity Capture
-        const accountMeetings = meetingData.get(acc.accountId);
-        const lastMeeting = accountMeetings?.lastMeeting;
-        const nextMeeting = accountMeetings?.nextMeeting;
-        const nextMeetingSubject = accountMeetings?.nextMeetingSubject;
-        const lastMeetingDate = lastMeeting ? new Date(lastMeeting).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) : null;
-        const nextMeetingDate = nextMeeting ? new Date(nextMeeting).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) : null;
+        // Get meeting data for this account
+        const accountMeetings = meetingData.get(acc.accountId) || {};
+        const lastMeeting = accountMeetings.lastMeeting;
+        const lastMeetingSubject = accountMeetings.lastMeetingSubject;
+        const lastMeetingType = accountMeetings.lastMeetingType;
+        const nextMeeting = accountMeetings.nextMeeting;
+        const nextMeetingSubject = accountMeetings.nextMeetingSubject;
+        const nextMeetingType = accountMeetings.nextMeetingType;
+        
+        const lastMeetingDate = lastMeeting ? new Date(lastMeeting).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}) : null;
+        const nextMeetingDate = nextMeeting ? new Date(nextMeeting).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}) : null;
         
         // Customer type badge (if not new logo)
         const customerTypeBadge = !acc.isNewLogo && acc.customerType ? `<span class="badge" style="background: #dbeafe; color: #1e40af;">${acc.customerType}</span>` : '';
@@ -409,10 +425,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
             
             ${lastMeetingDate || nextMeetingDate ? `
             <div style="background: #ecfdf5; padding: 10px; border-radius: 4px; margin-bottom: 8px; font-size: 0.8125rem; color: #065f46; border: 1px solid #a7f3d0;">
-              ${lastMeetingDate ? '<div style="margin-bottom: 4px;"><strong>📅 Last Meeting:</strong> ' + lastMeetingDate + '</div>' : ''}
-              ${nextMeetingDate ? '<div><strong>📅 Next Meeting:</strong> ' + nextMeetingDate + (nextMeetingSubject ? ' - ' + nextMeetingSubject : '') + '</div>' : ''}
+              ${lastMeetingDate ? '<div style="margin-bottom: 4px;"><strong>📅 Last Meeting:</strong> ' + lastMeetingDate + (lastMeetingSubject ? ' - ' + lastMeetingSubject : '') + '</div>' : ''}
+              ${nextMeetingDate ? '<div><strong>📅 Next Meeting:</strong> ' + nextMeetingDate + (nextMeetingSubject ? ' - ' + nextMeetingSubject : '') + (nextMeetingType ? ' (' + nextMeetingType + ')' : '') + '</div>' : ''}
             </div>
-            ` : '<div style="background: #fef2f2; padding: 8px; border-radius: 4px; margin-bottom: 8px; font-size: 0.75rem; color: #991b1b;">No upcoming meetings scheduled</div>'}
+            ` : '<div style="background: #fef2f2; padding: 8px; border-radius: 4px; margin-bottom: 8px; font-size: 0.75rem; color: #991b1b;">📭 No upcoming meetings scheduled</div>'}
             
             <div style="margin-top: 8px; font-size: 0.8125rem;">
               <div style="color: #374151; margin-bottom: 4px;"><strong>Products:</strong> ${productList}</div>
