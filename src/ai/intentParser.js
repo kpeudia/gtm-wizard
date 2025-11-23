@@ -1317,6 +1317,27 @@ Business Context:
       };
     }
 
+    // FINAL FALLBACK: If we got here with default pipeline_summary and no entities,
+    // it means nothing matched - return unknown_query instead
+    if (intent === 'pipeline_summary' && Object.keys(entities).length === 0) {
+      // Extract words for helpful suggestions
+      const words = message.toLowerCase()
+        .replace(/[?!.,]/g, '')
+        .split(/\s+/)
+        .filter(w => w.length > 3 && !['what', 'when', 'where', 'show', 'tell', 'with', 'this', 'that', 'from', 'have'].includes(w));
+      
+      return {
+        intent: 'unknown_query',
+        entities: { extractedWords: words.slice(0, 5) },
+        followUp: false,
+        confidence: 0.3,
+        explanation: 'Query not understood',
+        originalMessage: userMessage,
+        timestamp: Date.now()
+      };
+    }
+    
+    // Only return pipeline_summary if we have some entities or matched a pattern
     return {
       intent,
       entities,
