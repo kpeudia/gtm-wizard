@@ -134,10 +134,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .header h1 { font-size: 1.5rem; font-weight: 700; color: #1f2937; margin-bottom: 4px; }
 .header p { font-size: 0.875rem; color: #6b7280; }
 .tabs { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; }
-.tab { background: #fff; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 500; cursor: pointer; white-space: nowrap; color: #6b7280; }
-.tab.active { background: #8e99e1; color: #fff; }
+.tab { background: #fff; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 500; cursor: pointer; white-space: nowrap; color: #6b7280; transition: all 0.2s; }
+.tab:hover { background: #e5e7eb; }
+#tab-summary:checked ~ .tabs label[for="tab-summary"],
+#tab-by-stage:checked ~ .tabs label[for="tab-by-stage"],
+#tab-account-plans:checked ~ .tabs label[for="tab-account-plans"] { background: #8e99e1; color: #fff; }
 .tab-content { display: none; }
-.tab-content.active { display: block; }
+#tab-summary:checked ~ #summary,
+#tab-by-stage:checked ~ #by-stage,
+#tab-account-plans:checked ~ #account-plans { display: block; }
 .metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
 .metric { background: #fff; padding: 16px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 .metric-label { font-size: 0.75rem; color: #6b7280; font-weight: 500; margin-bottom: 4px; }
@@ -174,14 +179,19 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <p>Real-time pipeline overview • Updated ${new Date().toLocaleTimeString()}</p>
 </div>
 
+<!-- Pure CSS Tabs (No JavaScript - CSP Safe) -->
+<input type="radio" name="tabs" id="tab-summary" checked style="display: none;">
+<input type="radio" name="tabs" id="tab-by-stage" style="display: none;">
+<input type="radio" name="tabs" id="tab-account-plans" style="display: none;">
+
 <div class="tabs">
-  <button class="tab active" data-tab="summary">Summary</button>
-  <button class="tab" data-tab="by-stage">By Stage</button>
-  <button class="tab" data-tab="account-plans">Account Plans</button>
+  <label for="tab-summary" class="tab">Summary</label>
+  <label for="tab-by-stage" class="tab">By Stage</label>
+  <label for="tab-account-plans" class="tab">Account Plans</label>
 </div>
 
 <!-- TAB 1: SUMMARY -->
-<div id="summary" class="tab-content active">
+<div id="summary" class="tab-content">
   <div class="metrics">
     <div class="metric">
       <div class="metric-label">Total Pipeline</div>
@@ -314,49 +324,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   }).join('')}
 </div>
 
-<script>
-// Wait for DOM to load
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('Dashboard loaded, initializing tabs...');
-  
-  // Get all tab buttons
-  const tabButtons = document.querySelectorAll('.tab');
-  
-  console.log('Found', tabButtons.length, 'tab buttons');
-  
-  // Add click handlers
-  tabButtons.forEach(button => {
-    button.addEventListener('click', function() {
-      const tabName = this.getAttribute('data-tab');
-      console.log('Tab clicked:', tabName);
-      
-      // Hide all tab contents
-      document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
-      });
-      
-      // Deactivate all tab buttons
-      document.querySelectorAll('.tab').forEach(btn => {
-        btn.classList.remove('active');
-      });
-      
-      // Show selected tab
-      const tabContent = document.getElementById(tabName);
-      if (tabContent) {
-        tabContent.classList.add('active');
-        console.log('Showing tab:', tabName);
-      } else {
-        console.error('Tab not found:', tabName);
-      }
-      
-      // Activate clicked button
-      this.classList.add('active');
-    });
-  });
-  
-  console.log('Tab initialization complete');
-});
-</script>
+<!-- No JavaScript needed - Pure CSS tabs work with CSP! -->
 
 </body>
 </html>`;
