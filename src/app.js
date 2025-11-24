@@ -157,6 +157,9 @@ class GTMBrainApp {
     // Account Status Dashboard endpoint (clean web view)
     this.expressApp.get('/dashboard', async (req, res) => {
       try {
+        // Set CSP headers to allow inline scripts for dashboard
+        res.setHeader('Content-Security-Policy', "script-src 'self' 'unsafe-inline'");
+        
         const { generateAccountDashboard } = require('./slack/accountDashboard');
         const html = await generateAccountDashboard();
         res.send(html);

@@ -418,11 +418,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
         // Customer type badge (if not new logo)
         const customerTypeBadge = !acc.isNewLogo && acc.customerType ? `<span class="badge" style="background: #dbeafe; color: #1e40af;">${acc.customerType}</span>` : '';
         
-        // Simple plan indicator (not noisy)
-        const planIcon = acc.hasAccountPlan ? '📋' : (needsPlan ? '⚠️' : '');
+        // Subtle plan indicator (emoji only, no background fill)
+        const planIcon = acc.hasAccountPlan ? '📋' : '';
         
         return `
-        <details class="account-expandable" data-account="${acc.name.toLowerCase()}" data-index="${idx}" style="display: ${idx < 10 ? 'block' : 'none'}; background: #fff; border-left: 3px solid ${acc.highestStage >= 3 ? '#10b981' : acc.highestStage === 2 ? '#3b82f6' : '#f59e0b'}; padding: 12px; border-radius: 6px; margin-bottom: 8px; cursor: pointer; border: 1px solid #e5e7eb;">
+        <details class="account-expandable" data-account="${acc.name.toLowerCase()}" data-index="${idx}" style="display: ${idx < 10 ? 'block' : 'none'}; background: #fff; border-left: 3px solid ${acc.highestStage >= 3 ? '#10b981' : acc.highestStage === 2 ? '#3b82f6' : '#f59e0b'}; padding: 12px; border-radius: 6px; margin-bottom: 6px; cursor: pointer; border: 1px solid #e5e7eb;">
           <summary style="list-style: none; display: flex; justify-content: space-between; align-items: center;">
             <div style="flex: 1;">
               <div style="font-weight: 600; font-size: 0.9375rem; color: #1f2937;">
@@ -488,20 +488,52 @@ details[open] summary { font-weight: 600; }
 </style>
 
 <script>
-// Search functionality - WORKING version
-function filterAccounts(searchValue) {
-  const search = searchValue.toLowerCase().trim();
-  const accounts = document.querySelectorAll('.account-expandable');
+// Search functionality with relevance sorting
+document.addEventListener('DOMContentLoaded', function() {
+  const searchInput = document.getElementById('account-search');
+  const matchCount = document.getElementById('match-count');
+  const allAccounts = document.querySelectorAll('.account-expandable');
   
-  accounts.forEach(acc => {
-    const name = acc.getAttribute('data-account') || '';
-    if (name.includes(search)) {
-      acc.style.display = 'block';
-    } else {
-      acc.style.display = 'none';
+  if (!searchInput) return;
+  
+  searchInput.addEventListener('input', function() {
+    const search = this.value.toLowerCase().trim();
+    
+    if (!search) {
+      // No search - show first 10 only (random selection already sorted by ACV)
+      allAccounts.forEach((acc, idx) => {
+        acc.style.display = idx < 10 ? 'block' : 'none';
+      });
+      matchCount.textContent = \`Showing top 10 accounts (type to search all \${allAccounts.length})\`;
+      return;
     }
+    
+    // Find matches with relevance scoring
+    const matches = [];
+    allAccounts.forEach((acc) => {
+      const name = acc.getAttribute('data-account') || '';
+      if (name.includes(search)) {
+        // Exact start match = 100, contains = 50
+        const score = name.startsWith(search) ? 100 : 50;
+        matches.push({ element: acc, score, name });
+      }
+    });
+    
+    // Sort by score (best matches first)
+    matches.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.name.localeCompare(b.name);
+    });
+    
+    // Hide all accounts
+    allAccounts.forEach(acc => acc.style.display = 'none');
+    
+    // Show matches
+    matches.forEach(m => m.element.style.display = 'block');
+    
+    matchCount.textContent = \`\${matches.length} account\${matches.length !== 1 ? 's' : ''} found\`;
   });
-}
+});
 </script>
 
 
