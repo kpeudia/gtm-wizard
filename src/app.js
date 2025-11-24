@@ -154,6 +154,14 @@ class GTMBrainApp {
       });
     });
 
+    // Eudia Logo endpoint
+    this.expressApp.get('/logo', (req, res) => {
+      const fs = require('fs');
+      const path = require('path');
+      const logoPath = path.join(__dirname, 'assets', 'Eudia_Logo.jpg');
+      res.sendFile(logoPath);
+    });
+
     // Account Status Dashboard endpoint (clean web view)
     this.expressApp.get('/dashboard', async (req, res) => {
       try {
