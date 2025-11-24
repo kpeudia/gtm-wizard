@@ -46,57 +46,81 @@ async function generateAccountDashboard() {
   const accountIds = [...new Set(accountData.records.map(o => o.Account?.Id).filter(id => id))];
   const accountIdList = accountIds.map(id => `'${id}'`).join(',');
   
-  // Query Einstein Activity Events - get individual events per account
+  // Query Einstein Activity Events WITH Contact details
   let meetingData = new Map();
   try {
     if (accountIds.length > 0) {
-      // Get last meeting for each account (most recent past event)
-      const lastMeetingQuery = `SELECT Id, AccountId, ActivityDate, Subject, Type
+      // Get meetings WITH attendee details (Who = Contact)
+      const lastMeetingQuery = `SELECT Id, AccountId, ActivityDate, Subject, Type, Who.Name, Who.Title, Who.Email
                                 FROM Event
                                 WHERE ActivityDate < TODAY
                                   AND AccountId IN (${accountIdList})
-                                ORDER BY ActivityDate DESC`;
+                                ORDER BY ActivityDate DESC
+                                LIMIT 500`;
       
-      // Get next meeting for each account (nearest future event)
-      const nextMeetingQuery = `SELECT Id, AccountId, ActivityDate, Subject, Type
+      const nextMeetingQuery = `SELECT Id, AccountId, ActivityDate, Subject, Type, Who.Name, Who.Title, Who.Email
                                 FROM Event
                                 WHERE ActivityDate >= TODAY
                                   AND AccountId IN (${accountIdList})
-                                ORDER BY ActivityDate ASC`;
+                                ORDER BY ActivityDate ASC
+                                LIMIT 500`;
       
       const lastMeetings = await query(lastMeetingQuery, true);
       const nextMeetings = await query(nextMeetingQuery, true);
       
-      // Process last meetings - take first (most recent) per account
+      // Process last meetings - group by account, collect contacts
       const processedLast = new Set();
       if (lastMeetings && lastMeetings.records) {
         lastMeetings.records.forEach(m => {
-          if (m.AccountId && !processedLast.has(m.AccountId)) {
-            if (!meetingData.has(m.AccountId)) meetingData.set(m.AccountId, {});
-            meetingData.get(m.AccountId).lastMeeting = m.ActivityDate;
-            meetingData.get(m.AccountId).lastMeetingSubject = m.Subject;
-            meetingData.get(m.AccountId).lastMeetingType = m.Type;
-            processedLast.add(m.AccountId);
+          if (m.AccountId) {
+            if (!meetingData.has(m.AccountId)) meetingData.set(m.AccountId, { contacts: new Set() });
+            const accountData = meetingData.get(m.AccountId);
+            
+            // Store last meeting (first = most recent)
+            if (!processedLast.has(m.AccountId)) {
+              accountData.lastMeeting = m.ActivityDate;
+              accountData.lastMeetingSubject = m.Subject;
+              processedLast.add(m.AccountId);
+            }
+            
+            // Collect all meeting contacts (legal titles priority)
+            if (m.Who?.Title) {
+              const title = m.Who.Title;
+              const isLegalTitle = /chief legal|general counsel|legal counsel|vp legal|legal director|associate general counsel|agc|clो|gc/i.test(title);
+              if (isLegalTitle) {
+                accountData.contacts.add(\`\${m.Who.Name} (\${title})\`);
+              }
+            }
           }
         });
       }
       
-      // Process next meetings - take first (nearest) per account
+      // Process next meetings
       const processedNext = new Set();
       if (nextMeetings && nextMeetings.records) {
         nextMeetings.records.forEach(m => {
-          if (m.AccountId && !processedNext.has(m.AccountId)) {
-            if (!meetingData.has(m.AccountId)) meetingData.set(m.AccountId, {});
-            meetingData.get(m.AccountId).nextMeeting = m.ActivityDate;
-            meetingData.get(m.AccountId).nextMeetingSubject = m.Subject;
-            meetingData.get(m.AccountId).nextMeetingType = m.Type;
-            processedNext.add(m.AccountId);
+          if (m.AccountId) {
+            if (!meetingData.has(m.AccountId)) meetingData.set(m.AccountId, { contacts: new Set() });
+            const accountData = meetingData.get(m.AccountId);
+            
+            if (!processedNext.has(m.AccountId)) {
+              accountData.nextMeeting = m.ActivityDate;
+              accountData.nextMeetingSubject = m.Subject;
+              processedNext.add(m.AccountId);
+            }
+            
+            if (m.Who?.Title) {
+              const title = m.Who.Title;
+              const isLegalTitle = /chief legal|general counsel|legal counsel|vp legal|legal director|associate general counsel|agc|clo|gc/i.test(title);
+              if (isLegalTitle) {
+                accountData.contacts.add(\`\${m.Who.Name} (\${title})\`);
+              }
+            }
           }
         });
       }
     }
   } catch (e) {
-    // Einstein Activity not available
     console.error('Event query error:', e.message);
   }
   
@@ -363,13 +387,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     </div>
   </div>
   
-  <input type="text" id="account-search" placeholder="Search accounts..." style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem; margin-bottom: 12px;" oninput="filterAccounts(this.value)">
+  <input type="text" id="account-search" placeholder="🔍 Search accounts..." style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; margin-bottom: 16px;" onkeyup="filterAccountList(this.value)">
   
-  <div id="accounts-container" data-all-accounts='${JSON.stringify(Array.from(accountMap.values()).sort((a, b) => b.totalACV - a.totalACV).slice(0, 25).map(acc => acc.name))}'>
+  <div id="accounts-list">
     ${Array.from(accountMap.values())
       .sort((a, b) => b.totalACV - a.totalACV)
-      .slice(0, 25)
-      .map((acc, idx) => {
+
+        .map((acc, idx) => {
         const oppCount = acc.opportunities.length;
         const totalACV = acc.totalACV || 0;
         const products = [...new Set(acc.opportunities.map(o => o.Product_Line__c).filter(p => p))];
@@ -377,14 +401,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
         const acvDisplay = totalACV >= 1000000 ? '$' + (totalACV / 1000000).toFixed(1) + 'M' : totalACV >= 1000 ? '$' + (totalACV / 1000).toFixed(0) + 'K' : '$' + totalACV.toFixed(0);
         const needsPlan = !acc.hasAccountPlan && acc.highestStage >= 2;
         
-        // Get meeting data for this account
+        // Get meeting data + legal contacts for this account
         const accountMeetings = meetingData.get(acc.accountId) || {};
         const lastMeeting = accountMeetings.lastMeeting;
         const lastMeetingSubject = accountMeetings.lastMeetingSubject;
-        const lastMeetingType = accountMeetings.lastMeetingType;
         const nextMeeting = accountMeetings.nextMeeting;
         const nextMeetingSubject = accountMeetings.nextMeetingSubject;
-        const nextMeetingType = accountMeetings.nextMeetingType;
+        const legalContacts = accountMeetings.contacts ? Array.from(accountMeetings.contacts) : [];
         
         const lastMeetingDate = lastMeeting ? new Date(lastMeeting).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}) : null;
         const nextMeetingDate = nextMeeting ? new Date(nextMeeting).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}) : null;
@@ -393,7 +416,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
         const customerTypeBadge = !acc.isNewLogo && acc.customerType ? `<span class="badge" style="background: #dbeafe; color: #1e40af;">${acc.customerType}</span>` : '';
         
         return `
-        <details class="account-expandable" data-account="${acc.name.toLowerCase()}" style="background: ${needsPlan ? '#fefce8' : '#fff'}; border-left: 3px solid ${acc.hasAccountPlan ? '#10b981' : needsPlan ? '#f59e0b' : '#d1d5db'}; padding: 12px; border-radius: 4px; margin-bottom: 8px; cursor: pointer;">
+        <details class="account-expandable" data-account="${acc.name.toLowerCase()}" data-index="${idx}" style="display: ${idx < 10 ? 'block' : 'none'}; background: ${needsPlan ? '#fefce8' : '#fff'}; border-left: 3px solid ${acc.hasAccountPlan ? '#10b981' : needsPlan ? '#f59e0b' : '#d1d5db'}; padding: 12px; border-radius: 4px; margin-bottom: 8px; cursor: pointer;">
           <summary style="list-style: none; display: flex; justify-content: space-between; align-items: center;">
             <div style="flex: 1;">
               <div style="font-weight: 600; font-size: 0.9375rem; color: #1f2937;">
@@ -429,6 +452,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
               ${nextMeetingDate ? '<div><strong>📅 Next Meeting:</strong> ' + nextMeetingDate + (nextMeetingSubject ? ' - ' + nextMeetingSubject : '') + (nextMeetingType ? ' (' + nextMeetingType + ')' : '') + '</div>' : ''}
             </div>
             ` : '<div style="background: #fef2f2; padding: 8px; border-radius: 4px; margin-bottom: 8px; font-size: 0.75rem; color: #991b1b;">📭 No upcoming meetings scheduled</div>'}
+            
+            ${legalContacts.length > 0 ? `
+            <div style="background: #ede9fe; padding: 8px; border-radius: 4px; margin-bottom: 8px; font-size: 0.75rem; color: #5b21b6;">
+              <strong>Legal Contacts:</strong> ${legalContacts.join(', ')}
+            </div>
+            ` : ''}
             
             <div style="margin-top: 8px; font-size: 0.8125rem;">
               <div style="color: #374151; margin-bottom: 4px;"><strong>Products:</strong> ${productList}</div>
@@ -469,7 +498,38 @@ function filterAccounts(searchValue) {
 }
 </script>
 
-<!-- No JavaScript needed - Pure CSS tabs work with CSP! -->
+<script nonce="DASHBOARD-NONCE">
+// Search filtering - WORKING version
+function filterAccountList(searchValue) {
+  const search = searchValue.toLowerCase().trim();
+  const allAccounts = document.querySelectorAll('.account-expandable');
+  
+  if (!search) {
+    // No search - show first 10
+    allAccounts.forEach((acc, idx) => {
+      acc.style.display = idx < 10 ? 'block' : 'none';
+    });
+    return;
+  }
+  
+  // Search - calculate relevance score and show matches
+  const matches = [];
+  allAccounts.forEach((acc, idx) => {
+    const name = acc.getAttribute('data-account') || '';
+    if (name.includes(search)) {
+      const score = name.startsWith(search) ? 100 : (name.indexOf(search) === 0 ? 90 : 50);
+      matches.push({ element: acc, score, index: idx });
+    }
+  });
+  
+  // Sort by relevance (best match first)
+  matches.sort((a, b) => b.score - a.score);
+  
+  // Hide all, show matches
+  allAccounts.forEach(acc => acc.style.display = 'none');
+  matches.forEach(m => m.element.style.display = 'block');
+}
+</script>
 
 </body>
 </html>`;
