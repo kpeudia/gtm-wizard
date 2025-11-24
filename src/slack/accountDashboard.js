@@ -516,10 +516,11 @@ ${early.slice(0, 5).map((acc, idx) => {
   <div class="stage-section">
     <div class="stage-title">Stage Overview</div>
     <table style="width: 100%; font-size: 0.875rem; margin-top: 12px;">
-      <tr style="background: #f9fafb; font-weight: 600;"><td>Stage</td><td>Opps</td><td>Total ACV</td><td>Weighted</td></tr>
+<tr style="background: #f9fafb; font-weight: 600;"><td>Stage</td><td>Opps</td><td>Total ACV</td><td>Weighted</td></tr>
       ${Object.entries(stageBreakdown).map(([stage, data]) => `
         <tr><td>${cleanStageName(stage)}</td><td>${data.count}</td><td>$${(data.totalACV / 1000000).toFixed(2)}M</td><td>$${(data.weightedACV / 1000000).toFixed(2)}M</td></tr>
       `).join('')}
+      <tr style="background: #1f2937; color: #fff; font-weight: 700;"><td>TOTAL</td><td>${totalDeals}</td><td>$${(totalGross / 1000000).toFixed(2)}M</td><td>$${(totalWeighted / 1000000).toFixed(2)}M</td></tr>
     </table>
   </div>
   
@@ -530,6 +531,7 @@ ${early.slice(0, 5).map((acc, idx) => {
       ${Object.entries(blBreakdown).sort((a, b) => b[1].totalACV - a[1].totalACV).map(([bl, data]) => `
         <tr><td>${bl}</td><td>${data.count}</td><td>$${(data.totalACV / 1000000).toFixed(2)}M</td><td>$${(data.weightedACV / 1000000).toFixed(2)}M</td></tr>
       `).join('')}
+      <tr style="background: #1f2937; color: #fff; font-weight: 700;"><td>TOTAL</td><td>${Object.values(blBreakdown).reduce((sum, data) => sum + data.count, 0)}</td><td>$${(Object.values(blBreakdown).reduce((sum, data) => sum + data.totalACV, 0) / 1000000).toFixed(2)}M</td><td>$${(Object.values(blBreakdown).reduce((sum, data) => sum + data.weightedACV, 0) / 1000000).toFixed(2)}M</td></tr>
     </table>
   </div>
   
@@ -540,6 +542,7 @@ ${early.slice(0, 5).map((acc, idx) => {
       ${Object.entries(productBreakdown).sort((a, b) => b[1].totalACV - a[1].totalACV).map(([product, data]) => `
         <tr><td>${product}</td><td>${data.count}</td><td>$${(data.totalACV / 1000000).toFixed(2)}M</td><td>$${(data.weightedACV / 1000000).toFixed(2)}M</td></tr>
       `).join('')}
+      <tr style="background: #1f2937; color: #fff; font-weight: 700;"><td>TOTAL</td><td>${Object.values(productBreakdown).reduce((sum, data) => sum + data.count, 0)}</td><td>$${(Object.values(productBreakdown).reduce((sum, data) => sum + data.totalACV, 0) / 1000000).toFixed(2)}M</td><td>$${(Object.values(productBreakdown).reduce((sum, data) => sum + data.weightedACV, 0) / 1000000).toFixed(2)}M</td></tr>
     </table>
   </div>
 </div>
