@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GTM-Brain Quick Reference</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f7fe; padding: 16px; }
+.container { max-width: 1000px; margin: 0 auto; }
+.header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 32px; border-radius: 12px; margin-bottom: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+.header h1 { font-size: 2rem; font-weight: 700; margin-bottom: 6px; }
+.header p { font-size: 1rem; opacity: 0.95; }
+.section-title { font-size: 1.25rem; font-weight: 600; color: #1f2937; margin-bottom: 12px; padding-left: 4px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 24px; }
+details { background: white; border-left: 3px solid #8e99e1; padding: 14px; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: all 0.2s; }
+details:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.08); transform: translateY(-1px); }
+details[open] { border-left-color: #667eea; }
+summary { list-style: none; font-weight: 600; font-size: 0.9375rem; color: #374151; cursor: pointer; user-select: none; }
+summary::-webkit-details-marker { display: none; }
+summary::before { content: '▶'; display: inline-block; margin-right: 8px; transition: transform 0.2s; font-size: 0.75rem; color: #8e99e1; }
+details[open] summary::before { transform: rotate(90deg); }
+.query-list { margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb; }
+.query { font-family: 'Monaco', 'Courier New', monospace; font-size: 0.8125rem; color: #1e40af; background: #f9fafb; padding: 6px 10px; border-radius: 4px; margin: 4px 0; display: block; border: 1px solid #e5e7eb; }
+.badge { display: inline-block; background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 600; margin-left: 6px; }
+.badge-action { background: #d1fae5; color: #065f46; }
+@media (max-width: 768px) { .tiles { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<div class="header">
+  <h1>GTM-Brain Quick Reference</h1>
+  <p>Click any tile to see available queries</p>
+</div>
+
+<div class="section-title">🏢 Account Intelligence</div>
+<div class="tiles">
+  <details>
+    <summary>Account Ownership</summary>
+    <div class="query-list">
+      <code class="query">who owns [company]?</code>
+      <code class="query">who's the owner of [company]</code>
+      <code class="query">[company] owner</code>
+      <code class="query">does [company] exist?</code>
+      <code class="query">do we have [company]?</code>
+      <code class="query">is [company] in salesforce?</code>
+    </div>
+  </details>
+
+  <details>
+    <summary>Account Context</summary>
+    <div class="query-list">
+      <code class="query">tell me about [company]</code>
+      <code class="query">what do we know about [company]?</code>
+      <code class="query">[company] context</code>
+      <code class="query">show me [company]'s history</code>
+    </div>
+  </details>
+
+  <details>
+    <summary>Accounts by Owner</summary>
+    <div class="query-list">
+      <code class="query">show me all [name]'s accounts</code>
+      <code class="query">what accounts does [name] own?</code>
+      <code class="query">[name]'s accounts</code>
+      <code class="query">accounts owned by [name]</code>
+    </div>
+  </details>
+</div>
+
+<div class="section-title">📊 Pipeline & Forecasting</div>
+<div class="tiles">
+  <details>
+    <summary>Stage Queries</summary>
+    <div class="query-list">
+      <code class="query">late stage pipeline</code>
+      <code class="query">show me late stage</code>
+      <code class="query">stage 4 opportunities</code>
+      <code class="query">stage 3 pipeline</code>
+      <code class="query">show me stage 2</code>
+      <code class="query">stage 1 opportunities</code>
+      <code class="query">early stage pipeline</code>
+      <code class="query">mid stage pipeline</code>
+    </div>
+  </details>
+
+  <details>
+    <summary>Weighted Pipeline</summary>
+    <div class="query-list">
+      <code class="query">weighted pipeline</code>
+      <code class="query">what's our weighted forecast?</code>
+      <code class="query">show me weighted late stage</code>
+      <code class="query">weighted pipeline for Q4</code>
+    </div>
+  </details>
+
+  <details>
+    <summary>Product Line Filtering</summary>
+    <div class="query-list">
+      <code class="query">contracting pipeline</code>
+      <code class="query">compliance pipeline</code>
+      <code class="query">M&A pipeline</code>
+      <code class="query">sigma pipeline</code>
+      <code class="query">cortex pipeline</code>
+      <code class="query">show me all contracting opportunities</code>
+    </div>
+  </details>
+
+  <details>
+    <summary>Revenue Type</summary>
+    <div class="query-list">
+      <code class="query">revenue pipeline</code>
+      <code class="query">booking pipeline</code>
+      <code class="query">project pipeline</code>
+    </div>
+  </details>
+
+  <details>
+    <summary>Time-Based</summary>
+    <div class="query-list">
+      <code class="query">what's closing this month?</code>
+      <code class="query">show me December LOIs</code>
+      <code class="query">Q4 pipeline</code>
+      <code class="query">pipeline created this week</code>
+      <code class="query">opportunities added this month</code>
+    </div>
+  </details>
+
+  <details>
+    <summary>Analytics</summary>
+    <div class="query-list">
+      <code class="query">conversion rates</code>
+      <code class="query">pipeline summary</code>
+      <code class="query">how many opportunities do we have?</code>
+    </div>
+  </details>
+</div>
+
+<div class="section-title">💼 Opportunity Queries</div>
+<div class="tiles">
+  <details>
+    <summary>Opportunities by Account</summary>
+    <div class="query-list">
+      <code class="query">show me all opportunities at [company]</code>
+      <code class="query">what opportunities does [company] have?</code>
+      <code class="query">[company] opportunities</code>
+      <code class="query">[company] opps</code>
+    </div>
+  </details>
+
+  <details>
+    <summary>ACV Queries</summary>
+    <div class="query-list">
+      <code class="query">what's the ACV for [company]?</code>
+      <code class="query">[company] ACV</code>
+      <code class="query">show me [company]'s total value</code>
+    </div>
+  </details>
+
+  <details>
+    <summary>LOI Dates</summary>
+    <div class="query-list">
+      <code class="query">when is [company]'s target LOI date?</code>
+      <code class="query">[company] LOI date</code>
+      <code class="query">show me all LOIs in [month]</code>
+      <code class="query">December LOI count</code>
+    </div>
+  </details>
+
+  <details>
+    <summary>Contracts</summary>
+    <div class="query-list">
+      <code class="query">show me all contracts</code>
+      <code class="query">contract count</code>
+      <code class="query">[company] contract</code>
+      <code class="query">download [company] contract</code>
+    </div>
+  </details>
+
+  <details>
+    <summary>New Pipeline</summary>
+    <div class="query-list">
+      <code class="query">what opportunities were created this week?</code>
+      <code class="query">show me pipeline added this week</code>
+      <code class="query">new opportunities this month</code>
+    </div>
+  </details>
+</div>
+
+<div class="section-title">📅 Meeting Intelligence</div>
+<div class="tiles">
+  <details>
+    <summary>Meeting History</summary>
+    <div class="query-list">
+      <code class="query">when was our last meeting with [company]?</code>
+      <code class="query">[company] last meeting</code>
+      <code class="query">show me [company]'s meeting history</code>
+      <code class="query">when do we meet [company] next?</code>
+    </div>
+  </details>
+
+  <details>
+    <summary>Contact Intelligence</summary>
+    <div class="query-list">
+      <code class="query">who have we met with at [company]?</code>
+      <code class="query">[company] legal contacts</code>
+      <code class="query">show me [company]'s decision makers</code>
+    </div>
+  </details>
+
+  <details>
+    <summary>Customer Brain / Notes</summary>
+    <div class="query-list">
+      <code class="query">add this to [company]'s customer brain: [notes]</code>
+      <code class="query">save to [company] brain: [notes]</code>
+      <code class="query">show me [company]'s customer brain</code>
+      <code class="query">what notes do we have on [company]?</code>
+    </div>
+  </details>
+
+  <details>
+    <summary>Post-Call Summaries</summary>
+    <div class="query-list">
+      <code class="query">summarize this call for [company]: [transcript]</code>
+      <code class="query">create post-call summary: [notes]</code>
+    </div>
+  </details>
+</div>
+
+<div class="section-title">⚙️ Workflow Automation <span class="badge">Restricted</span></div>
+<div class="tiles">
+  <details>
+    <summary>Account Creation <span class="badge">Keigan Only</span></summary>
+    <div class="query-list">
+      <code class="query">create [company] and assign to BL</code>
+      <code class="query">create account for [company]</code>
+      <code class="query">add [company] to salesforce</code>
+    </div>
+  </details>
+
+  <details>
+    <summary>Account Reassignment <span class="badge">Keigan Only</span></summary>
+    <div class="query-list">
+      <code class="query">reassign [company] to [name]</code>
+      <code class="query">transfer [company] to [name]</code>
+      <code class="query">change [company] owner to [name]</code>
+    </div>
+  </details>
+
+  <details>
+    <summary>Opportunity Creation <span class="badge">Keigan Only</span></summary>
+    <div class="query-list">
+      <code class="query">create an opp for [company]</code>
+      <code class="query">create opportunity: [details]</code>
+      <code class="query">add opportunity for [company]</code>
+    </div>
+  </details>
+
+  <details>
+    <summary>Account Plans <span class="badge">Keigan Only</span></summary>
+    <div class="query-list">
+      <code class="query">save account plan for [company]: [plan]</code>
+      <code class="query">update [company]'s account plan: [plan]</code>
+      <code class="query">show me [company]'s account plan</code>
+    </div>
+  </details>
+
+  <details>
+    <summary>Status Changes <span class="badge">Keigan Only</span></summary>
+    <div class="query-list">
+      <code class="query">move [company] to nurture</code>
+      <code class="query">close [company] as lost</code>
+    </div>
+  </details>
+</div>
+
+<div class="section-title">📈 Reporting & Exports</div>
+<div class="tiles">
+  <details>
+    <summary>Excel Exports</summary>
+    <div class="query-list">
+      <code class="query">generate pipeline report</code>
+      <code class="query">export late stage to excel</code>
+      <code class="query">create pipeline report</code>
+      <code class="query">give me an excel export</code>
+    </div>
+  </details>
+
+  <details>
+    <summary>Summaries</summary>
+    <div class="query-list">
+      <code class="query">pipeline summary</code>
+      <code class="query">show me weighted pipeline summary</code>
+      <code class="query">give me a pipeline overview</code>
+    </div>
+  </details>
+
+  <details>
+    <summary>Dashboard Access</summary>
+    <div class="query-list">
+      <code class="query">gtm</code>
+      <code class="query">show me the dashboard</code>
+      <code class="query">open account dashboard</code>
+    </div>
+  </details>
+</div>
+
+<div style="background: white; border-radius: 12px; padding: 24px; margin-top: 24px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+  <p style="font-size: 0.9375rem; color: #6b7280;">
+    <strong style="color: #1f2937;">Getting Started:</strong> Open Slack and type <code style="background: #f3f4f6; padding: 3px 8px; border-radius: 4px; color: #1e40af;">@gtm-brain [your question]</code>
+  </p>
+</div>
+
+</div>
+
+</body>
+</html>
+

@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GTM-Brain Complete Capability Reference</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f7fe; padding: 20px; line-height: 1.5; }
+.container { max-width: 1200px; margin: 0 auto; }
+.header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px; border-radius: 12px; margin-bottom: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+.header h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 8px; }
+.header p { font-size: 1.125rem; opacity: 0.95; }
+.section { background: white; border-radius: 12px; padding: 30px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+.section-title { font-size: 1.75rem; font-weight: 700; color: #1f2937; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+.section-icon { font-size: 2rem; }
+.section-subtitle { font-size: 1rem; color: #6b7280; margin-bottom: 20px; }
+.category { margin-bottom: 24px; }
+.category-title { font-size: 1.125rem; font-weight: 600; color: #374151; background: #f3f4f6; padding: 10px 16px; border-radius: 6px; margin-bottom: 12px; border-left: 4px solid #8e99e1; }
+.query-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.query-item { background: #fafbfc; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; transition: all 0.2s; }
+.query-item:hover { border-color: #8e99e1; background: #f9fafb; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+.query { font-family: 'Monaco', 'Courier New', monospace; font-size: 0.875rem; color: #1e40af; font-weight: 500; margin-bottom: 6px; }
+.query-desc { font-size: 0.8125rem; color: #6b7280; }
+.badge { display: inline-block; background: #dbeafe; color: #1e40af; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; margin-left: 8px; }
+.badge-action { background: #d1fae5; color: #065f46; }
+.badge-restricted { background: #fee2e2; color: #991b1b; }
+.badge-new { background: #fef3c7; color: #92400e; }
+.example-box { background: #f0f9ff; border-left: 3px solid #3b82f6; padding: 12px; border-radius: 4px; margin: 12px 0; font-size: 0.875rem; }
+.example-query { color: #1e40af; font-weight: 600; margin-bottom: 4px; }
+.example-response { color: #374151; margin-left: 12px; }
+.note { background: #fffbeb; border: 1px solid #fcd34d; padding: 12px; border-radius: 6px; font-size: 0.875rem; color: #78350f; margin-top: 12px; }
+.toc { background: white; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+.toc h2 { font-size: 1.25rem; font-weight: 600; color: #1f2937; margin-bottom: 16px; }
+.toc ul { list-style: none; }
+.toc li { padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
+.toc li:last-child { border-bottom: none; }
+.toc a { color: #3b82f6; text-decoration: none; font-weight: 500; }
+.toc a:hover { color: #1e40af; text-decoration: underline; }
+@media (max-width: 768px) { 
+  .header h1 { font-size: 1.75rem; }
+  .query-group { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<div class="header">
+  <h1>GTM-Brain Complete Reference</h1>
+  <p>Every question, action, and capability at your fingertips</p>
+</div>
+
+<div class="toc">
+  <h2>📑 Quick Navigation</h2>
+  <ul>
+    <li><a href="#account-intelligence">Account Intelligence</a> - Ownership, context, history</li>
+    <li><a href="#pipeline-forecasting">Pipeline & Forecasting</a> - Stage analysis, weighted forecasts</li>
+    <li><a href="#opportunity-queries">Opportunity Queries</a> - Deal details, LOI tracking, ACVs</li>
+    <li><a href="#meeting-intelligence">Meeting Intelligence</a> - Calendar sync, contacts, history</li>
+    <li><a href="#workflow-automation">Workflow Automation</a> - Create accounts, opps, reassign</li>
+    <li><a href="#reporting-exports">Reporting & Exports</a> - Excel, summaries, dashboard</li>
+    <li><a href="#dashboard-features">Dashboard Features</a> - Web interface capabilities</li>
+  </ul>
+</div>
+
+<!-- ACCOUNT INTELLIGENCE -->
+<div class="section" id="account-intelligence">
+  <div class="section-title">
+    <span class="section-icon">🏢</span>
+    Account Intelligence
+  </div>
+  <div class="section-subtitle">Find account ownership, context, meeting history, and relationship details</div>
+  
+  <div class="category">
+    <div class="category-title">Account Ownership</div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">who owns [company]?</div>
+        <div class="query-desc">Get current account owner</div>
+      </div>
+      <div class="query-item">
+        <div class="query">who's the owner of [company]</div>
+        <div class="query-desc">Alternate phrasing</div>
+      </div>
+      <div class="query-item">
+        <div class="query">[company] owner</div>
+        <div class="query-desc">Shortest form</div>
+      </div>
+      <div class="query-item">
+        <div class="query">does [company] exist?</div>
+        <div class="query-desc">Check if account exists in Salesforce</div>
+      </div>
+      <div class="query-item">
+        <div class="query">do we have [company]?</div>
+        <div class="query-desc">Account existence check</div>
+      </div>
+      <div class="query-item">
+        <div class="query">is [company] in salesforce?</div>
+        <div class="query-desc">Alternative existence check</div>
+      </div>
+    </div>
+    
+    <div class="example-box">
+      <div class="example-query">Example: who owns Boeing?</div>
+      <div class="example-response">→ Boeing is owned by Julie Stefanich. They have 2 active opportunities in Stage 3 - Pilot totaling $2.3M ACV.</div>
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="category-title">Account Context & Details</div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">tell me about [company]</div>
+        <div class="query-desc">Complete account overview with opps, meetings, notes</div>
+      </div>
+      <div class="query-item">
+        <div class="query">what do we know about [company]?</div>
+        <div class="query-desc">All documented context</div>
+      </div>
+      <div class="query-item">
+        <div class="query">[company] context</div>
+        <div class="query-desc">Account intelligence summary</div>
+      </div>
+      <div class="query-item">
+        <div class="query">show me [company]'s history</div>
+        <div class="query-desc">Historical account activity</div>
+      </div>
+    </div>
+    
+    <div class="example-box">
+      <div class="example-query">Example: tell me about Intel</div>
+      <div class="example-response">→ Intel (Owner: Julie Stefanich)<br>
+      • 3 active opportunities: Stage 4 ($5.2M), Stage 2 ($800K), Stage 1 ($450K)<br>
+      • Last meeting: Oct 31 with Sarah Chen (VP Legal)<br>
+      • Products: AI-Augmented Contracting, Compliance, Sigma<br>
+      • Customer Type: Revenue | Competitor: Thomson Reuters mentioned</div>
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="category-title">Bulk Account Queries</div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">show me all [name]'s accounts</div>
+        <div class="query-desc">List all accounts owned by person</div>
+      </div>
+      <div class="query-item">
+        <div class="query">what accounts does [name] own?</div>
+        <div class="query-desc">Account list by owner</div>
+      </div>
+      <div class="query-item">
+        <div class="query">[name]'s accounts</div>
+        <div class="query-desc">Quick account list</div>
+      </div>
+      <div class="query-item">
+        <div class="query">accounts owned by [name]</div>
+        <div class="query-desc">Alternative phrasing</div>
+      </div>
+    </div>
+    
+    <div class="example-box">
+      <div class="example-query">Example: show me all Julie's accounts</div>
+      <div class="example-response">→ Julie Stefanich owns 12 accounts with active pipeline:<br>
+      1. Intel - 3 opps, $6.45M total<br>
+      2. Boeing - 2 opps, $3.1M total<br>
+      3. Lockheed Martin - 1 opp, $1.2M total<br>
+      ...(+9 more)</div>
+    </div>
+  </div>
+</div>
+
+<!-- PIPELINE & FORECASTING -->
+<div class="section" id="pipeline-forecasting">
+  <div class="section-title">
+    <span class="section-icon">📊</span>
+    Pipeline & Forecasting
+  </div>
+  <div class="section-subtitle">Stage analysis, weighted forecasts, conversion insights, and pipeline health</div>
+  
+  <div class="category">
+    <div class="category-title">Stage-Based Queries</div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">late stage pipeline</div>
+        <div class="query-desc">Stage 3 + Stage 4 opportunities</div>
+      </div>
+      <div class="query-item">
+        <div class="query">show me late stage</div>
+        <div class="query-desc">Alternative phrasing</div>
+      </div>
+      <div class="query-item">
+        <div class="query">stage 4 opportunities</div>
+        <div class="query-desc">Proposal stage only</div>
+      </div>
+      <div class="query-item">
+        <div class="query">stage 3 pipeline</div>
+        <div class="query-desc">Pilot stage only</div>
+      </div>
+      <div class="query-item">
+        <div class="query">show me stage 2</div>
+        <div class="query-desc">SQO stage</div>
+      </div>
+      <div class="query-item">
+        <div class="query">stage 1 opportunities</div>
+        <div class="query-desc">Discovery stage</div>
+      </div>
+      <div class="query-item">
+        <div class="query">early stage pipeline</div>
+        <div class="query-desc">Stage 0 + Stage 1</div>
+      </div>
+      <div class="query-item">
+        <div class="query">mid stage pipeline</div>
+        <div class="query-desc">Stage 2 only</div>
+      </div>
+    </div>
+    
+    <div class="example-box">
+      <div class="example-query">Example: late stage pipeline</div>
+      <div class="example-response">→ Late Stage Pipeline (Stage 3+):<br>
+      • Stage 4 - Proposal: 8 opps, $12.4M gross, $8.7M weighted<br>
+      • Stage 3 - Pilot: 15 opps, $18.2M gross, $9.1M weighted<br>
+      Total: 23 opportunities, $30.6M gross, $17.8M weighted</div>
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="category-title">Weighted Pipeline & Forecasting</div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">weighted pipeline</div>
+        <div class="query-desc">Finance-weighted forecast (all stages)</div>
+      </div>
+      <div class="query-item">
+        <div class="query">what's our weighted forecast?</div>
+        <div class="query-desc">Same as weighted pipeline</div>
+      </div>
+      <div class="query-item">
+        <div class="query">show me weighted late stage</div>
+        <div class="query-desc">Weighted Stage 3+4 only</div>
+      </div>
+      <div class="query-item">
+        <div class="query">weighted pipeline for Q4</div>
+        <div class="query-desc">Quarterly weighted forecast</div>
+      </div>
+    </div>
+    
+    <div class="example-box">
+      <div class="example-query">Example: weighted pipeline</div>
+      <div class="example-response">→ Weighted Pipeline Summary:<br>
+      • Stage 4 (80%): $12.4M gross → $9.9M weighted<br>
+      • Stage 3 (50%): $18.2M gross → $9.1M weighted<br>
+      • Stage 2 (25%): $8.5M gross → $2.1M weighted<br>
+      • Stage 1 (10%): $4.2M gross → $420K weighted<br>
+      Total Weighted: $21.5M | Total Gross: $43.3M</div>
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="category-title">Product Line Filtering</div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">contracting pipeline</div>
+        <div class="query-desc">AI-Augmented Contracting product</div>
+      </div>
+      <div class="query-item">
+        <div class="query">compliance pipeline</div>
+        <div class="query-desc">Compliance product opportunities</div>
+      </div>
+      <div class="query-item">
+        <div class="query">M&A pipeline</div>
+        <div class="query-desc">Augmented-M&A product</div>
+      </div>
+      <div class="query-item">
+        <div class="query">sigma pipeline</div>
+        <div class="query-desc">Sigma product opportunities</div>
+      </div>
+      <div class="query-item">
+        <div class="query">cortex pipeline</div>
+        <div class="query-desc">Cortex product opportunities</div>
+      </div>
+      <div class="query-item">
+        <div class="query">show me all contracting opportunities</div>
+        <div class="query-desc">Alternative phrasing</div>
+      </div>
+    </div>
+    
+    <div class="example-box">
+      <div class="example-query">Example: compliance pipeline</div>
+      <div class="example-response">→ Compliance Pipeline:<br>
+      12 opportunities totaling $8.4M ACV<br>
+      • Stage 4: 3 opps ($3.2M)<br>
+      • Stage 3: 5 opps ($4.1M)<br>
+      • Stage 2: 4 opps ($1.1M)<br>
+      Weighted: $4.8M</div>
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="category-title">Revenue Type Filtering</div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">revenue pipeline <span class="badge-new badge">New</span></div>
+        <div class="query-desc">Revenue/ARR opportunities only</div>
+      </div>
+      <div class="query-item">
+        <div class="query">booking pipeline</div>
+        <div class="query-desc">One-time bookings</div>
+      </div>
+      <div class="query-item">
+        <div class="query">project pipeline</div>
+        <div class="query-desc">Project-based revenue</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="category-title">Time-Based Queries</div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">what's closing this month?</div>
+        <div class="query-desc">Opportunities with LOI this month</div>
+      </div>
+      <div class="query-item">
+        <div class="query">show me December LOIs</div>
+        <div class="query-desc">Target LOI date in specific month</div>
+      </div>
+      <div class="query-item">
+        <div class="query">Q4 pipeline</div>
+        <div class="query-desc">Opportunities targeting Q4 close</div>
+      </div>
+      <div class="query-item">
+        <div class="query">pipeline created this week</div>
+        <div class="query-desc">New opportunities added this week</div>
+      </div>
+      <div class="query-item">
+        <div class="query">opportunities added this month</div>
+        <div class="query-desc">New opps this month</div>
+      </div>
+    </div>
+    
+    <div class="example-box">
+      <div class="example-query">Example: what's closing this month?</div>
+      <div class="example-response">→ November Target LOI Dates (8 opportunities):<br>
+      1. Boeing - Contracting - $5.2M - Nov 15<br>
+      2. Intel - Compliance - $800K - Nov 22<br>
+      3. Lockheed - M&A - $1.2M - Nov 30<br>
+      ...(+5 more)<br>
+      Total: $12.8M closing this month</div>
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="category-title">Conversion & Analytics</div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">conversion rates</div>
+        <div class="query-desc">Stage-to-stage conversion analysis</div>
+      </div>
+      <div class="query-item">
+        <div class="query">pipeline summary</div>
+        <div class="query-desc">Overview with counts, ACVs, averages</div>
+      </div>
+      <div class="query-item">
+        <div class="query">how many opportunities do we have?</div>
+        <div class="query-desc">Total count by stage</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- OPPORTUNITY QUERIES -->
+<div class="section" id="opportunity-queries">
+  <div class="section-title">
+    <span class="section-icon">💼</span>
+    Opportunity Queries
+  </div>
+  <div class="section-subtitle">Deal details, LOI tracking, ACV summaries, and opportunity-specific data</div>
+  
+  <div class="category">
+    <div class="category-title">Opportunities by Account</div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">show me all opportunities at [company]</div>
+        <div class="query-desc">All opps for specific account</div>
+      </div>
+      <div class="query-item">
+        <div class="query">what opportunities does [company] have?</div>
+        <div class="query-desc">Alternative phrasing</div>
+      </div>
+      <div class="query-item">
+        <div class="query">[company] opportunities</div>
+        <div class="query-desc">Shortest form</div>
+      </div>
+      <div class="query-item">
+        <div class="query">[company] opps</div>
+        <div class="query-desc">Even shorter</div>
+      </div>
+    </div>
+    
+    <div class="example-box">
+      <div class="example-query">Example: show me all opportunities at Boeing</div>
+      <div class="example-response">→ Boeing has 3 active opportunities:<br>
+      1. AI-Augmented Contracting - Stage 4 - Proposal - $5.2M - LOI: Dec 15<br>
+      2. Compliance - Stage 2 - SQO - $800K - LOI: Mar 2025<br>
+      3. Sigma - Stage 1 - Discovery - $450K - LOI: TBD<br>
+      Total Pipeline: $6.45M</div>
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="category-title">ACV & Value Queries</div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">what's the ACV for [company]?</div>
+        <div class="query-desc">Total ACV across all opportunities</div>
+      </div>
+      <div class="query-item">
+        <div class="query">[company] ACV</div>
+        <div class="query-desc">Quick ACV lookup</div>
+      </div>
+      <div class="query-item">
+        <div class="query">show me [company]'s total value</div>
+        <div class="query-desc">Same as ACV query</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="category-title">LOI Date Tracking</div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">when is [company]'s target LOI date?</div>
+        <div class="query-desc">Get target close date</div>
+      </div>
+      <div class="query-item">
+        <div class="query">[company] LOI date</div>
+        <div class="query-desc">Quick LOI lookup</div>
+      </div>
+      <div class="query-item">
+        <div class="query">show me all LOIs in [month]</div>
+        <div class="query-desc">All opps targeting specific month</div>
+      </div>
+      <div class="query-item">
+        <div class="query">December LOI count</div>
+        <div class="query-desc">Count of opps closing in month</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="category-title">Contract Queries</div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">show me all contracts</div>
+        <div class="query-desc">Closed/won opportunities</div>
+      </div>
+      <div class="query-item">
+        <div class="query">contract count</div>
+        <div class="query-desc">Number of signed contracts</div>
+      </div>
+      <div class="query-item">
+        <div class="query">[company] contract</div>
+        <div class="query-desc">Specific account's signed contracts</div>
+      </div>
+      <div class="query-item">
+        <div class="query">download [company] contract</div>
+        <div class="query-desc">Get PDF of signed contract</div>
+      </div>
+    </div>
+    
+    <div class="note">
+      <strong>Note:</strong> Contract PDF downloads require ContentDocument access in Salesforce
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="category-title">New Pipeline Tracking</div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">what opportunities were created this week?</div>
+        <div class="query-desc">New opps added this week</div>
+      </div>
+      <div class="query-item">
+        <div class="query">show me pipeline added this week</div>
+        <div class="query-desc">New opportunities with values</div>
+      </div>
+      <div class="query-item">
+        <div class="query">new opportunities this month</div>
+        <div class="query-desc">Month-to-date new opps</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MEETING INTELLIGENCE -->
+<div class="section" id="meeting-intelligence">
+  <div class="section-title">
+    <span class="section-icon">📅</span>
+    Meeting Intelligence
+  </div>
+  <div class="section-subtitle">Calendar sync, meeting history, legal contacts, and relationship tracking</div>
+  
+  <div class="category">
+    <div class="category-title">Meeting History Queries</div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">when was our last meeting with [company]?</div>
+        <div class="query-desc">Most recent meeting date</div>
+      </div>
+      <div class="query-item">
+        <div class="query">[company] last meeting</div>
+        <div class="query-desc">Quick meeting lookup</div>
+      </div>
+      <div class="query-item">
+        <div class="query">show me [company]'s meeting history</div>
+        <div class="query-desc">All past meetings</div>
+      </div>
+      <div class="query-item">
+        <div class="query">when do we meet [company] next?</div>
+        <div class="query-desc">Upcoming meeting date</div>
+      </div>
+    </div>
+    
+    <div class="example-box">
+      <div class="example-query">Example: when was our last meeting with Intel?</div>
+      <div class="example-response">→ Last meeting with Intel: October 31, 2024<br>
+      Subject: "Q4 Compliance Review"<br>
+      Attendees included: Sarah Chen (VP Legal), Michael Torres (AGC)</div>
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="category-title">Contact Intelligence</div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">who have we met with at [company]?</div>
+        <div class="query-desc">List of legal contacts from meetings</div>
+      </div>
+      <div class="query-item">
+        <div class="query">[company] legal contacts</div>
+        <div class="query-desc">Extracted from Einstein Activity</div>
+      </div>
+      <div class="query-item">
+        <div class="query">show me [company]'s decision makers</div>
+        <div class="query-desc">Contacts with legal titles</div>
+      </div>
+    </div>
+    
+    <div class="note">
+      <strong>Einstein Activity Note:</strong> Meeting data is automatically synced from calendar. Legal contacts are extracted based on titles (CLO, GC, AGC, VP Legal, Legal Director, etc.)
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="category-title">Customer Brain / Notes</div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">add this to [company]'s customer brain: [notes] <span class="badge-action badge">Action</span></div>
+        <div class="query-desc">Save meeting notes to account</div>
+      </div>
+      <div class="query-item">
+        <div class="query">save to [company] brain: [notes] <span class="badge-action badge">Action</span></div>
+        <div class="query-desc">Alternative phrasing</div>
+      </div>
+      <div class="query-item">
+        <div class="query">show me [company]'s customer brain</div>
+        <div class="query-desc">Retrieve saved notes</div>
+      </div>
+      <div class="query-item">
+        <div class="query">what notes do we have on [company]?</div>
+        <div class="query-desc">View documented context</div>
+      </div>
+    </div>
+    
+    <div class="example-box">
+      <div class="example-query">Example: add this to Boeing's customer brain: Sarah mentioned they're evaluating 3 vendors including us. Decision expected by Dec 15. Key concern is integration with existing systems.</div>
+      <div class="example-response">→ ✅ Saved to Boeing's Customer Brain. This context will appear in future account queries.</div>
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="category-title">Post-Call AI Summaries</div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">summarize this call for [company]: [transcript] <span class="badge-action badge">Action</span></div>
+        <div class="query-desc">AI-structured meeting summary</div>
+      </div>
+      <div class="query-item">
+        <div class="query">create post-call summary: [notes] <span class="badge-action badge">Action</span></div>
+        <div class="query-desc">Structured summary with Socrates AI</div>
+      </div>
+    </div>
+    
+    <div class="note">
+      <strong>Socrates Integration:</strong> AI automatically extracts key takeaways, action items, concerns, and next steps, then saves to Salesforce
+    </div>
+  </div>
+</div>
+
+<!-- WORKFLOW AUTOMATION -->
+<div class="section" id="workflow-automation">
+  <div class="section-title">
+    <span class="section-icon">⚙️</span>
+    Workflow Automation <span class="badge-restricted badge">Restricted Access</span>
+  </div>
+  <div class="section-subtitle">Create accounts, opportunities, reassign ownership, and execute actions in Salesforce</div>
+  
+  <div class="note" style="margin-bottom: 20px;">
+    <strong>⚠️ Access Control:</strong> Write operations are restricted to authorized users only (currently Keigan). All actions are logged for audit trail.
+  </div>
+
+  <div class="category">
+    <div class="category-title">Account Creation <span class="badge-restricted badge">Keigan Only</span></div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">create [company] and assign to BL <span class="badge-action badge">Action</span></div>
+        <div class="query-desc">Auto-assigns based on geography + workload</div>
+      </div>
+      <div class="query-item">
+        <div class="query">create account for [company] <span class="badge-action badge">Action</span></div>
+        <div class="query-desc">Creates account with smart assignment</div>
+      </div>
+      <div class="query-item">
+        <div class="query">add [company] to salesforce <span class="badge-action badge">Action</span></div>
+        <div class="query-desc">Alternative phrasing</div>
+      </div>
+    </div>
+    
+    <div class="example-box">
+      <div class="example-query">Example: create Boeing and assign to BL</div>
+      <div class="example-response">→ ✅ Account created: Boeing<br>
+      • Assigned to: Julie Stefanich (West region, 8 accounts → best workload balance)<br>
+      • Duplicate check: Passed (no existing "Boeing" found)<br>
+      • Record ID: 001Hn00001X2Abc<br>
+      • Proper casing applied: BOEING → Boeing</div>
+    </div>
+    
+    <div class="note">
+      <strong>Features:</strong> Duplicate detection, proper company name casing, geographic assignment (West/Northeast/Midwest/Southwest/Southeast/International), workload balancing across Business Leads
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="category-title">Account Reassignment <span class="badge-restricted badge">Keigan Only</span></div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">reassign [company] to [name] <span class="badge-action badge">Action</span></div>
+        <div class="query-desc">Transfer account + all opportunities</div>
+      </div>
+      <div class="query-item">
+        <div class="query">transfer [company] to [name] <span class="badge-action badge">Action</span></div>
+        <div class="query-desc">Same as reassign</div>
+      </div>
+      <div class="query-item">
+        <div class="query">change [company] owner to [name] <span class="badge-action badge">Action</span></div>
+        <div class="query-desc">Alternative phrasing</div>
+      </div>
+    </div>
+    
+    <div class="example-box">
+      <div class="example-query">Example: reassign Intel to Himanshu</div>
+      <div class="example-response">→ ✅ Account reassigned:<br>
+      • Intel transferred from Julie Stefanich to Himanshu Agarwal<br>
+      • 3 opportunities also reassigned<br>
+      • Total pipeline transferred: $6.45M ACV</div>
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="category-title">Opportunity Creation <span class="badge-restricted badge">Keigan Only</span></div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">create an opp for [company] <span class="badge-action badge">Action</span></div>
+        <div class="query-desc">Smart defaults based on account</div>
+      </div>
+      <div class="query-item">
+        <div class="query">create opportunity: [details] <span class="badge-action badge">Action</span></div>
+        <div class="query-desc">Specify custom values</div>
+      </div>
+      <div class="query-item">
+        <div class="query">add opportunity for [company] <span class="badge-action badge">Action</span></div>
+        <div class="query-desc">Alternative phrasing</div>
+      </div>
+    </div>
+    
+    <div class="example-box">
+      <div class="example-query">Example: create an opp for Boeing</div>
+      <div class="example-response">→ Creating opportunity for Boeing...<br>
+      Smart defaults applied:<br>
+      • Account Owner: Julie Stefanich → Opportunity Owner: Julie Stefanich<br>
+      • Stage: Stage 1 - Discovery<br>
+      • Product Line: [You'll be prompted to select]<br>
+      • Revenue Type: [You'll be prompted: ARR, Booking, or Project]<br>
+      • ACV: [You'll specify]<br>
+      • Target LOI Date: [You'll specify]<br>
+      <br>✅ Opportunity created: Boeing - [Product] - Opp ID: 006Hn00002Y3Xyz</div>
+    </div>
+    
+    <div class="note">
+      <strong>Validation:</strong> All required fields validated, prevents duplicate opportunities, ensures data consistency, auto-calculates Finance_Weighted_ACV__c
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="category-title">Account Plan Management <span class="badge-restricted badge">Keigan Only</span></div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">save account plan for [company]: [plan] <span class="badge-action badge">Action</span></div>
+        <div class="query-desc">Store structured account plan</div>
+      </div>
+      <div class="query-item">
+        <div class="query">update [company]'s account plan: [plan] <span class="badge-action badge">Action</span></div>
+        <div class="query-desc">Update existing plan</div>
+      </div>
+      <div class="query-item">
+        <div class="query">show me [company]'s account plan</div>
+        <div class="query-desc">Retrieve saved plan</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="category-title">Opportunity Status Changes <span class="badge-restricted badge">Keigan Only</span></div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">move [company] to nurture <span class="badge-action badge">Action</span></div>
+        <div class="query-desc">Close opportunities as "Closed - Nurture"</div>
+      </div>
+      <div class="query-item">
+        <div class="query">close [company] as lost <span class="badge-action badge">Action</span></div>
+        <div class="query-desc">Mark opportunities as "Closed Lost"</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- REPORTING & EXPORTS -->
+<div class="section" id="reporting-exports">
+  <div class="section-title">
+    <span class="section-icon">📈</span>
+    Reporting & Exports
+  </div>
+  <div class="section-subtitle">Excel exports, pipeline summaries, and interactive dashboard access</div>
+  
+  <div class="category">
+    <div class="category-title">Excel Export Generation</div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">generate pipeline report</div>
+        <div class="query-desc">Full pipeline Excel export</div>
+      </div>
+      <div class="query-item">
+        <div class="query">export late stage to excel</div>
+        <div class="query-desc">Stage 3+4 opportunities only</div>
+      </div>
+      <div class="query-item">
+        <div class="query">create pipeline report</div>
+        <div class="query-desc">Alternative phrasing</div>
+      </div>
+      <div class="query-item">
+        <div class="query">give me an excel export</div>
+        <div class="query-desc">Full pipeline export</div>
+      </div>
+    </div>
+    
+    <div class="example-box">
+      <div class="example-query">Example: generate pipeline report</div>
+      <div class="example-response">→ ✅ Pipeline report generated!<br>
+      [Download: pipeline_report_2024-11-24.xlsx]<br>
+      <br>Includes:<br>
+      • 47 opportunities sorted by Stage (Stage 4 first)<br>
+      • Columns: Account, Owner, Stage, Product, ACV, Weighted ACV, Target LOI, Revenue Type<br>
+      • Ready for board meetings and QBRs</div>
+    </div>
+    
+    <div class="note">
+      <strong>Export Features:</strong> Sorted Stage 4 first (highest priority), includes all key fields, formatted for presentations, auto-generated filename with timestamp
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="category-title">Pipeline Summaries</div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">pipeline summary</div>
+        <div class="query-desc">Text-based overview with key metrics</div>
+      </div>
+      <div class="query-item">
+        <div class="query">show me weighted pipeline summary</div>
+        <div class="query-desc">Weighted forecast breakdown</div>
+      </div>
+      <div class="query-item">
+        <div class="query">give me a pipeline overview</div>
+        <div class="query-desc">High-level summary</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="category-title">Dashboard Access</div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">gtm</div>
+        <div class="query-desc">Opens interactive web dashboard</div>
+      </div>
+      <div class="query-item">
+        <div class="query">show me the dashboard</div>
+        <div class="query-desc">Returns dashboard link</div>
+      </div>
+      <div class="query-item">
+        <div class="query">open account dashboard</div>
+        <div class="query-desc">Same as "gtm"</div>
+      </div>
+    </div>
+    
+    <div class="example-box">
+      <div class="example-query">Example: gtm</div>
+      <div class="example-response">→ 📊 Account Status Dashboard:<br>
+      https://gtm-wizard.onrender.com/dashboard<br>
+      <br>Updated live with current pipeline data</div>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD FEATURES -->
+<div class="section" id="dashboard-features">
+  <div class="section-title">
+    <span class="section-icon">🖥️</span>
+    Dashboard Features <span class="badge-new badge">Recently Enhanced</span>
+  </div>
+  <div class="section-subtitle">Interactive web interface for visual pipeline exploration and account search</div>
+  
+  <div class="category">
+    <div class="category-title">Summary Tab</div>
+    <ul style="margin-left: 20px; color: #374151;">
+      <li><strong>Real-time Metrics:</strong> Total pipeline, weighted amounts, account counts, average deal size</li>
+      <li><strong>Stage Groupings:</strong> Accounts organized by Late Stage (3+4), Mid Stage (2), Early Stage (0-1)</li>
+      <li><strong>Expandable Account Cards:</strong> Click any account to see:
+        <ul style="margin-top: 6px;">
+          <li>Customer type badge (Revenue, Pilot, LOI, New Logo)</li>
+          <li>Product breakdown</li>
+          <li>Full opportunity list with stages and values</li>
+        </ul>
+      </li>
+      <li><strong>Show More Buttons:</strong> Click "+X more" to expand full account lists beyond top 5</li>
+    </ul>
+  </div>
+
+  <div class="category">
+    <div class="category-title">Account Plans Tab <span class="badge-new badge">New Features</span></div>
+    <ul style="margin-left: 20px; color: #374151;">
+      <li><strong>Search Bar:</strong> Instant search across all accounts with relevance sorting</li>
+      <li><strong>Smart Badges:</strong> Visual customer type indicators
+        <ul style="margin-top: 6px;">
+          <li><span class="badge badge-revenue">Revenue</span> Blue badge for ARR customers</li>
+          <li><span class="badge badge-pilot">Pilot</span> Yellow badge for pilot accounts</li>
+          <li><span class="badge badge-loi">LOI</span> Indigo badge for LOI stage</li>
+          <li><span class="badge badge-new">New</span> Green badge for new logos</li>
+        </ul>
+      </li>
+      <li><strong>Expandable Details:</strong> Click any account to view:
+        <ul style="margin-top: 6px;">
+          <li>📋 Account plan content (if exists)</li>
+          <li>📅 Last and next meeting dates with subjects</li>
+          <li>👥 Legal contacts extracted from calendar</li>
+          <li>📦 Product line breakdown</li>
+          <li>💼 Complete opportunity details</li>
+        </ul>
+      </li>
+      <li><strong>Show All Accounts:</strong> Click "+X more accounts" to expand beyond top 10</li>
+    </ul>
+  </div>
+
+  <div class="category">
+    <div class="category-title">By Stage Tab</div>
+    <ul style="margin-left: 20px; color: #374151;">
+      <li><strong>Stage Overview Table:</strong> Pipeline breakdown by stage with opp counts, total ACV, and weighted amounts</li>
+      <li><strong>Business Lead Breakdown:</strong> Pipeline distribution across all BLs with metrics</li>
+      <li><strong>Product Analysis:</strong> Pipeline by product line (Contracting, Compliance, M&A, Sigma, Cortex)</li>
+      <li><strong>Sortable Data:</strong> All tables sorted by total ACV (highest first)</li>
+    </ul>
+  </div>
+
+  <div class="category">
+    <div class="category-title">Interactive Features</div>
+    <div class="query-group">
+      <div class="query-item">
+        <div class="query">Search Accounts</div>
+        <div class="query-desc">Type in search bar for instant filtering</div>
+      </div>
+      <div class="query-item">
+        <div class="query">Expand Account Details</div>
+        <div class="query-desc">Click any account card to see full info</div>
+      </div>
+      <div class="query-item">
+        <div class="query">Show More</div>
+        <div class="query-desc">Click "+X more" buttons to reveal all accounts</div>
+      </div>
+      <div class="query-item">
+        <div class="query">Switch Tabs</div>
+        <div class="query-desc">Click Summary/By Stage/Account Plans tabs</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="category-title">Mobile Optimization</div>
+    <div class="note">
+      Dashboard is fully responsive and works on mobile devices. All interactive features (search, expand, show more) function on touchscreens.
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+  <h2 style="color: white; border: none; margin-bottom: 12px;">🚀 Getting Started</h2>
+  <p style="font-size: 1.125rem; margin-bottom: 16px;">Just open Slack and type <code style="background: rgba(255,255,255,0.2); color: white; padding: 4px 8px; border-radius: 4px;">@gtm-brain [your question]</code></p>
+  <p style="font-size: 0.9375rem; opacity: 0.9;">No training required. Ask questions in plain English. Get instant answers from live Salesforce data.</p>
+  <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.2); margin: 20px 0;">
+  <p style="font-size: 0.875rem; opacity: 0.8; margin-bottom: 0;">Questions about GTM-Brain? Message the RevOps team or <code style="background: rgba(255,255,255,0.2); color: white; padding: 2px 6px; border-radius: 3px;">@gtm-brain</code> in Slack</p>
+</div>
+
+</div>
+
+</body>
+</html>
+

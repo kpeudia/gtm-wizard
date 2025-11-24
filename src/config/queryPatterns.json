@@ -1,0 +1,294 @@
+{
+  "version": "2.0",
+  "lastUpdated": "2024-11-24",
+  "patterns": [
+    {
+      "id": "account_ownership",
+      "intent": "account_ownership",
+      "category": "account_intelligence",
+      "patterns": [
+        "who owns {company}",
+        "who's the owner of {company}",
+        "{company} owner",
+        "who is {company}'s owner"
+      ],
+      "entities": ["company"],
+      "requiredFields": ["Account.OwnerId", "Account.Owner.Name"],
+      "complexity": "simple",
+      "estimatedTime": "2s"
+    },
+    {
+      "id": "account_exists",
+      "intent": "account_exists",
+      "category": "account_intelligence",
+      "patterns": [
+        "does {company} exist",
+        "do we have {company}",
+        "is {company} in salesforce"
+      ],
+      "entities": ["company"],
+      "requiredFields": ["Account.Id", "Account.Name"],
+      "complexity": "simple",
+      "estimatedTime": "1s"
+    },
+    {
+      "id": "account_context",
+      "intent": "account_context",
+      "category": "account_intelligence",
+      "patterns": [
+        "tell me about {company}",
+        "what do we know about {company}",
+        "{company} context",
+        "show me {company}'s history"
+      ],
+      "entities": ["company"],
+      "requiredFields": [
+        "Account.Owner.Name",
+        "Opportunity.StageName",
+        "Opportunity.ACV__c",
+        "Event.ActivityDate",
+        "Account.Customer_Brain__c"
+      ],
+      "complexity": "complex",
+      "estimatedTime": "5s"
+    },
+    {
+      "id": "late_stage_pipeline",
+      "intent": "late_stage_pipeline",
+      "category": "pipeline_forecasting",
+      "patterns": [
+        "late stage pipeline",
+        "show me late stage",
+        "stage 3 and 4",
+        "proposal and pilot"
+      ],
+      "entities": [],
+      "requiredFields": [
+        "Opportunity.StageName",
+        "Opportunity.ACV__c",
+        "Opportunity.Finance_Weighted_ACV__c"
+      ],
+      "filters": {
+        "StageName": ["Stage 3 - Pilot", "Stage 4 - Proposal"]
+      },
+      "complexity": "medium",
+      "estimatedTime": "3s"
+    },
+    {
+      "id": "weighted_pipeline",
+      "intent": "weighted_pipeline",
+      "category": "pipeline_forecasting",
+      "patterns": [
+        "weighted pipeline",
+        "what's our weighted forecast",
+        "show me weighted late stage",
+        "finance forecast"
+      ],
+      "entities": [],
+      "requiredFields": [
+        "Opportunity.StageName",
+        "Opportunity.Finance_Weighted_ACV__c"
+      ],
+      "aggregations": ["SUM", "GROUP BY"],
+      "complexity": "medium",
+      "estimatedTime": "3s"
+    },
+    {
+      "id": "product_pipeline",
+      "intent": "product_pipeline",
+      "category": "pipeline_forecasting",
+      "patterns": [
+        "{product} pipeline",
+        "show me all {product} opportunities",
+        "{product} deals"
+      ],
+      "entities": ["product"],
+      "requiredFields": [
+        "Opportunity.Product_Line__c",
+        "Opportunity.ACV__c"
+      ],
+      "validProducts": [
+        "AI-Augmented Contracting",
+        "Augmented-M&A",
+        "Compliance",
+        "sigma",
+        "Cortex"
+      ],
+      "complexity": "medium",
+      "estimatedTime": "3s"
+    },
+    {
+      "id": "account_opportunities",
+      "intent": "account_opportunities",
+      "category": "opportunity_queries",
+      "patterns": [
+        "show me all opportunities at {company}",
+        "what opportunities does {company} have",
+        "{company} opportunities",
+        "{company} opps"
+      ],
+      "entities": ["company"],
+      "requiredFields": [
+        "Opportunity.Name",
+        "Opportunity.StageName",
+        "Opportunity.ACV__c",
+        "Opportunity.Target_LOI_Date__c"
+      ],
+      "complexity": "medium",
+      "estimatedTime": "3s"
+    },
+    {
+      "id": "loi_date",
+      "intent": "loi_date",
+      "category": "opportunity_queries",
+      "patterns": [
+        "when is {company}'s target LOI date",
+        "{company} LOI date",
+        "show me all LOIs in {month}",
+        "what's closing this month"
+      ],
+      "entities": ["company", "month"],
+      "requiredFields": ["Opportunity.Target_LOI_Date__c"],
+      "complexity": "simple",
+      "estimatedTime": "2s"
+    },
+    {
+      "id": "last_meeting",
+      "intent": "last_meeting",
+      "category": "meeting_intelligence",
+      "patterns": [
+        "when was our last meeting with {company}",
+        "{company} last meeting",
+        "show me {company}'s meeting history",
+        "when do we meet {company} next"
+      ],
+      "entities": ["company"],
+      "requiredFields": [
+        "Event.AccountId",
+        "Event.ActivityDate",
+        "Event.Subject"
+      ],
+      "complexity": "medium",
+      "estimatedTime": "3s"
+    },
+    {
+      "id": "contacts",
+      "intent": "contacts",
+      "category": "meeting_intelligence",
+      "patterns": [
+        "who have we met with at {company}",
+        "{company} legal contacts",
+        "show me {company}'s decision makers"
+      ],
+      "entities": ["company"],
+      "requiredFields": [
+        "Event.Who.Name",
+        "Event.Who.Title"
+      ],
+      "filters": {
+        "legalTitles": ["CLO", "GC", "AGC", "VP Legal", "Legal Director"]
+      },
+      "complexity": "complex",
+      "estimatedTime": "4s"
+    },
+    {
+      "id": "create_account",
+      "intent": "create_account",
+      "category": "workflow_automation",
+      "patterns": [
+        "create {company} and assign to BL",
+        "create account for {company}",
+        "add {company} to salesforce"
+      ],
+      "entities": ["company"],
+      "requiredPermission": "write",
+      "restrictedTo": ["U094AQE9V7D"],
+      "complexity": "complex",
+      "estimatedTime": "5s",
+      "modifies": ["Account"]
+    },
+    {
+      "id": "create_opportunity",
+      "intent": "create_opportunity",
+      "category": "workflow_automation",
+      "patterns": [
+        "create an opp for {company}",
+        "create opportunity: {details}",
+        "add opportunity for {company}"
+      ],
+      "entities": ["company", "details"],
+      "requiredPermission": "write",
+      "restrictedTo": ["U094AQE9V7D"],
+      "complexity": "complex",
+      "estimatedTime": "8s",
+      "modifies": ["Opportunity"]
+    },
+    {
+      "id": "export_pipeline",
+      "intent": "export_pipeline",
+      "category": "reporting_exports",
+      "patterns": [
+        "generate pipeline report",
+        "export late stage to excel",
+        "create pipeline report",
+        "give me an excel export"
+      ],
+      "entities": [],
+      "requiredFields": [
+        "Opportunity.Account.Name",
+        "Opportunity.Owner.Name",
+        "Opportunity.StageName",
+        "Opportunity.Product_Line__c",
+        "Opportunity.ACV__c"
+      ],
+      "complexity": "complex",
+      "estimatedTime": "10s",
+      "outputFormat": "xlsx"
+    }
+  ],
+  "entityExtractors": {
+    "company": {
+      "type": "regex",
+      "pattern": "\\b[A-Z][a-zA-Z0-9\\s&'-]+\\b",
+      "minLength": 2,
+      "maxLength": 50
+    },
+    "product": {
+      "type": "enum",
+      "values": ["contracting", "compliance", "m&a", "sigma", "cortex"],
+      "aliases": {
+        "contracting": ["AI-Augmented Contracting", "augmented contracting"],
+        "m&a": ["Augmented-M&A", "mergers and acquisitions"]
+      }
+    },
+    "month": {
+      "type": "datetime",
+      "formats": ["MMMM", "MM", "MMM YYYY"]
+    }
+  },
+  "businessRules": {
+    "writeOperations": {
+      "enabled": true,
+      "auditLog": true,
+      "requireConfirmation": true,
+      "allowedUsers": ["U094AQE9V7D"]
+    },
+    "rateLimit": {
+      "queriesPerMinute": 10,
+      "queriesPerHour": 100,
+      "queriesPerDay": 500
+    },
+    "caching": {
+      "enabled": true,
+      "ttl": 120,
+      "excludePatterns": ["create_*", "update_*"]
+    }
+  },
+  "monitoring": {
+    "trackUsage": true,
+    "calculateROI": true,
+    "alertOnFailureRate": 0.1,
+    "alertOnLatency": 5000
+  }
+}
+
