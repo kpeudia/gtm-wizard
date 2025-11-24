@@ -254,6 +254,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .opp-pill { display: inline-block; background: #8e99e1; color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; margin: 4px 4px 0 0; }
 .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 600; margin-left: 6px; }
 .badge-new { background: #d1fae5; color: #065f46; }
+.badge-revenue { background: #dbeafe; color: #1e40af; }
+.badge-pilot { background: #fef3c7; color: #92400e; }
+.badge-loi { background: #e0e7ff; color: #3730a3; }
+.badge-other { background: #f3f4f6; color: #374151; }
 .plan-status { margin-bottom: 16px; padding: 12px; background: #f9fafb; border-radius: 6px; }
 .plan-stat { display: inline-block; margin-right: 20px; }
 .plan-stat-value { font-weight: 700; font-size: 1.25rem; color: #1f2937; }
@@ -303,40 +307,138 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   
   <div class="stage-section">
     <div class="stage-title">Late Stage (${late.length})</div>
-    <div class="account-list">
-      ${late.slice(0, 5).map(acc => `
-        <div class="account-item">
-          <div class="account-name">${acc.name}${acc.isNewLogo ? '<span class="badge badge-new">New</span>' : ''}</div>
-          <div class="account-owner">${acc.owner} • ${acc.opportunities.length} opp${acc.opportunities.length > 1 ? 's' : ''}</div>
-        </div>
-      `).join('')}
-      ${late.length > 5 ? `<div class="account-item" style="color: #6b7280;">+${late.length - 5} more...</div>` : ''}
+    <div class="account-list" id="late-stage-list">
+${late.slice(0, 5).map((acc, idx) => {
+        let badge = '';
+        if (acc.isNewLogo) {
+          badge = '<span class="badge badge-new">New</span>';
+        } else if (acc.customerType) {
+          const type = acc.customerType.toLowerCase();
+          if (type.includes('revenue') || type === 'arr') {
+            badge = '<span class="badge badge-revenue">Revenue</span>';
+          } else if (type.includes('pilot')) {
+            badge = '<span class="badge badge-pilot">Pilot</span>';
+          } else if (type.includes('loi')) {
+            badge = '<span class="badge badge-loi">LOI</span>';
+          } else {
+            badge = '<span class="badge badge-other">' + acc.customerType + '</span>';
+          }
+        }
+        
+        const acvDisplay = acc.totalACV >= 1000000 
+          ? '$' + (acc.totalACV / 1000000).toFixed(1) + 'M' 
+          : acc.totalACV >= 1000 
+            ? '$' + (acc.totalACV / 1000).toFixed(0) + 'K' 
+            : '$' + acc.totalACV.toFixed(0);
+        
+        const accountMeetings = meetingData.get(acc.accountId) || {};
+        const lastMeetingDate = accountMeetings.lastMeeting ? new Date(accountMeetings.lastMeeting).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) : null;
+        const products = [...new Set(acc.opportunities.map(o => o.Product_Line__c).filter(p => p))];
+        const productList = products.join(', ') || 'TBD';
+        
+        return '<details class="summary-expandable" style="display: ' + (idx < 5 ? 'block' : 'none') + '; background: #fff; border-left: 3px solid #10b981; padding: 10px; border-radius: 6px; margin-bottom: 6px; cursor: pointer; border: 1px solid #e5e7eb;">' +
+          '<summary style="list-style: none; font-size: 0.875rem;">' +
+            '<div class="account-name">' + acc.name + ' ' + badge + '</div>' +
+            '<div class="account-owner">' + acc.owner + ' • ' + acc.opportunities.length + ' opp' + (acc.opportunities.length > 1 ? 's' : '') + ' • ' + acvDisplay + '</div>' +
+          '</summary>' +
+          '<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e5e7eb; font-size: 0.8125rem;">' +
+            '<div style="color: #374151; margin-bottom: 4px;"><strong>Products:</strong> ' + productList + '</div>' +
+            '<div style="color: #374151; margin-top: 6px;"><strong>Opportunities (' + acc.opportunities.length + '):</strong></div>' +
+            acc.opportunities.map(o => '<div style="font-size: 0.75rem; color: #6b7280; margin-left: 12px; margin-top: 2px;">• ' + cleanStageName(o.StageName) + ' - ' + (o.Product_Line__c || 'TBD') + ' - $' + ((o.ACV__c || 0) / 1000).toFixed(0) + 'K</div>').join('') +
+          '</div>' +
+        '</details>';
+      }).join('')}
+      ${late.length > 5 ? `<div id="show-more-late" class="account-item" style="color: #1e40af; font-weight: 600; cursor: pointer; text-align: center; padding: 8px; background: #eff6ff; border-radius: 6px; margin-top: 4px;">+${late.length - 5} more... (click to expand)</div>` : ''}
     </div>
   </div>
   
   <div class="stage-section">
     <div class="stage-title">Mid Stage (${mid.length})</div>
-    <div class="account-list">
-      ${mid.slice(0, 5).map(acc => `
-        <div class="account-item">
-          <div class="account-name">${acc.name}${acc.isNewLogo ? '<span class="badge badge-new">New</span>' : ''}</div>
-          <div class="account-owner">${acc.owner}</div>
-        </div>
-      `).join('')}
-      ${mid.length > 5 ? `<div class="account-item" style="color: #6b7280;">+${mid.length - 5} more...</div>` : ''}
+    <div class="account-list" id="mid-stage-list">
+${mid.slice(0, 5).map((acc, idx) => {
+        let badge = '';
+        if (acc.isNewLogo) {
+          badge = '<span class="badge badge-new">New</span>';
+        } else if (acc.customerType) {
+          const type = acc.customerType.toLowerCase();
+          if (type.includes('revenue') || type === 'arr') {
+            badge = '<span class="badge badge-revenue">Revenue</span>';
+          } else if (type.includes('pilot')) {
+            badge = '<span class="badge badge-pilot">Pilot</span>';
+          } else if (type.includes('loi')) {
+            badge = '<span class="badge badge-loi">LOI</span>';
+          } else {
+            badge = '<span class="badge badge-other">' + acc.customerType + '</span>';
+          }
+        }
+        
+        const acvDisplay = acc.totalACV >= 1000000 
+          ? '$' + (acc.totalACV / 1000000).toFixed(1) + 'M' 
+          : acc.totalACV >= 1000 
+            ? '$' + (acc.totalACV / 1000).toFixed(0) + 'K' 
+            : '$' + acc.totalACV.toFixed(0);
+        
+        const products = [...new Set(acc.opportunities.map(o => o.Product_Line__c).filter(p => p))];
+        const productList = products.join(', ') || 'TBD';
+        
+        return '<details class="summary-expandable" style="display: ' + (idx < 5 ? 'block' : 'none') + '; background: #fff; border-left: 3px solid #3b82f6; padding: 10px; border-radius: 6px; margin-bottom: 6px; cursor: pointer; border: 1px solid #e5e7eb;">' +
+          '<summary style="list-style: none; font-size: 0.875rem;">' +
+            '<div class="account-name">' + acc.name + ' ' + badge + '</div>' +
+            '<div class="account-owner">' + acc.owner + ' • ' + acc.opportunities.length + ' opp' + (acc.opportunities.length > 1 ? 's' : '') + ' • ' + acvDisplay + '</div>' +
+          '</summary>' +
+          '<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e5e7eb; font-size: 0.8125rem;">' +
+            '<div style="color: #374151; margin-bottom: 4px;"><strong>Products:</strong> ' + productList + '</div>' +
+            '<div style="color: #374151; margin-top: 6px;"><strong>Opportunities (' + acc.opportunities.length + '):</strong></div>' +
+            acc.opportunities.map(o => '<div style="font-size: 0.75rem; color: #6b7280; margin-left: 12px; margin-top: 2px;">• ' + cleanStageName(o.StageName) + ' - ' + (o.Product_Line__c || 'TBD') + ' - $' + ((o.ACV__c || 0) / 1000).toFixed(0) + 'K</div>').join('') +
+          '</div>' +
+        '</details>';
+      }).join('')}
+      ${mid.length > 5 ? `<div id="show-more-mid" class="account-item" style="color: #1e40af; font-weight: 600; cursor: pointer; text-align: center; padding: 8px; background: #eff6ff; border-radius: 6px; margin-top: 4px;">+${mid.length - 5} more... (click to expand)</div>` : ''}
     </div>
   </div>
   
   <div class="stage-section">
     <div class="stage-title">Early Stage (${early.length})</div>
-    <div class="account-list">
-      ${early.slice(0, 5).map(acc => `
-        <div class="account-item">
-          <div class="account-name">${acc.name}${acc.isNewLogo ? '<span class="badge badge-new">New</span>' : ''}</div>
-          <div class="account-owner">${acc.owner}</div>
-        </div>
-      `).join('')}
-      ${early.length > 5 ? `<div class="account-item" style="color: #6b7280;">+${early.length - 5} more...</div>` : ''}
+    <div class="account-list" id="early-stage-list">
+${early.slice(0, 5).map((acc, idx) => {
+        let badge = '';
+        if (acc.isNewLogo) {
+          badge = '<span class="badge badge-new">New</span>';
+        } else if (acc.customerType) {
+          const type = acc.customerType.toLowerCase();
+          if (type.includes('revenue') || type === 'arr') {
+            badge = '<span class="badge badge-revenue">Revenue</span>';
+          } else if (type.includes('pilot')) {
+            badge = '<span class="badge badge-pilot">Pilot</span>';
+          } else if (type.includes('loi')) {
+            badge = '<span class="badge badge-loi">LOI</span>';
+          } else {
+            badge = '<span class="badge badge-other">' + acc.customerType + '</span>';
+          }
+        }
+        
+        const acvDisplay = acc.totalACV >= 1000000 
+          ? '$' + (acc.totalACV / 1000000).toFixed(1) + 'M' 
+          : acc.totalACV >= 1000 
+            ? '$' + (acc.totalACV / 1000).toFixed(0) + 'K' 
+            : '$' + acc.totalACV.toFixed(0);
+        
+        const products = [...new Set(acc.opportunities.map(o => o.Product_Line__c).filter(p => p))];
+        const productList = products.join(', ') || 'TBD';
+        
+        return '<details class="summary-expandable" style="display: ' + (idx < 5 ? 'block' : 'none') + '; background: #fff; border-left: 3px solid #f59e0b; padding: 10px; border-radius: 6px; margin-bottom: 6px; cursor: pointer; border: 1px solid #e5e7eb;">' +
+          '<summary style="list-style: none; font-size: 0.875rem;">' +
+            '<div class="account-name">' + acc.name + ' ' + badge + '</div>' +
+            '<div class="account-owner">' + acc.owner + ' • ' + acc.opportunities.length + ' opp' + (acc.opportunities.length > 1 ? 's' : '') + ' • ' + acvDisplay + '</div>' +
+          '</summary>' +
+          '<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e5e7eb; font-size: 0.8125rem;">' +
+            '<div style="color: #374151; margin-bottom: 4px;"><strong>Products:</strong> ' + productList + '</div>' +
+            '<div style="color: #374151; margin-top: 6px;"><strong>Opportunities (' + acc.opportunities.length + '):</strong></div>' +
+            acc.opportunities.map(o => '<div style="font-size: 0.75rem; color: #6b7280; margin-left: 12px; margin-top: 2px;">• ' + cleanStageName(o.StageName) + ' - ' + (o.Product_Line__c || 'TBD') + ' - $' + ((o.ACV__c || 0) / 1000).toFixed(0) + 'K</div>').join('') +
+          '</div>' +
+        '</details>';
+      }).join('')}
+      ${early.length > 5 ? `<div id="show-more-early" class="account-item" style="color: #1e40af; font-weight: 600; cursor: pointer; text-align: center; padding: 8px; background: #eff6ff; border-radius: 6px; margin-top: 4px;">+${early.length - 5} more... (click to expand)</div>` : ''}
     </div>
   </div>
 </div>
@@ -382,28 +484,176 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   </div>
   
   <div class="stage-section">
-    <div class="stage-title">Top 10 Accounts (by ACV)</div>
+    <div class="stage-title">All Accounts (${accountMap.size})</div>
+    <input type="text" id="account-search" placeholder="Search accounts..." style="width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 0.875rem; margin-bottom: 12px;">
+    <div id="match-count" style="font-size: 0.75rem; color: #6b7280; margin-bottom: 8px;">Showing top 10 accounts (type to search all ${accountMap.size})</div>
     <div class="account-list">
 ${Array.from(accountMap.values())
         .sort((a, b) => b.totalACV - a.totalACV)
-        .slice(0, 10)
-        .map(acc => {
+        .map((acc, idx) => {
           const planIcon = acc.hasAccountPlan ? '📋 ' : '';
           const lastDate = meetingData.get(acc.accountId)?.lastMeeting 
             ? new Date(meetingData.get(acc.accountId).lastMeeting).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) 
             : null;
-          const customerType = !acc.isNewLogo && acc.customerType ? '[' + acc.customerType + ']' : '';
           
-          return '<div class="account-item">' +
-            '<div class="account-name">' + planIcon + acc.name + ' ' + (acc.isNewLogo ? '<span class="badge badge-new">New</span>' : customerType) + '</div>' +
-            '<div class="account-owner">' + acc.owner + ' • Stage ' + acc.highestStage + ' • ' + acc.opportunities.length + ' opp' + (acc.opportunities.length > 1 ? 's' : '') + (lastDate ? ' • Last: ' + lastDate : '') + '</div>' +
-          '</div>';
+          // Determine badge type based on customer type
+          let badge = '';
+          if (acc.isNewLogo) {
+            badge = '<span class="badge badge-new">New</span>';
+          } else if (acc.customerType) {
+            const type = acc.customerType.toLowerCase();
+            if (type.includes('revenue') || type === 'arr') {
+              badge = '<span class="badge badge-revenue">Revenue</span>';
+            } else if (type.includes('pilot')) {
+              badge = '<span class="badge badge-pilot">Pilot</span>';
+            } else if (type.includes('loi')) {
+              badge = '<span class="badge badge-loi">LOI</span>';
+            } else {
+              badge = '<span class="badge badge-other">' + acc.customerType + '</span>';
+            }
+          }
+          
+          const acvDisplay = acc.totalACV >= 1000000 
+            ? '$' + (acc.totalACV / 1000000).toFixed(1) + 'M' 
+            : acc.totalACV >= 1000 
+              ? '$' + (acc.totalACV / 1000).toFixed(0) + 'K' 
+              : '$' + acc.totalACV.toFixed(0);
+          
+          const accountMeetings = meetingData.get(acc.accountId) || {};
+          const lastMeeting = accountMeetings.lastMeeting;
+          const lastMeetingSubject = accountMeetings.lastMeetingSubject;
+          const nextMeeting = accountMeetings.nextMeeting;
+          const nextMeetingSubject = accountMeetings.nextMeetingSubject;
+          const legalContacts = accountMeetings.contacts ? Array.from(accountMeetings.contacts) : [];
+          
+          const lastMeetingDate = lastMeeting ? new Date(lastMeeting).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) : null;
+          const nextMeetingDate = nextMeeting ? new Date(nextMeeting).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) : null;
+          
+          const products = [...new Set(acc.opportunities.map(o => o.Product_Line__c).filter(p => p))];
+          const productList = products.join(', ') || 'TBD';
+          
+          return '<details class="account-expandable" data-account="' + acc.name.toLowerCase() + '" style="display: ' + (idx < 10 ? 'block' : 'none') + '; background: #fff; border-left: 3px solid ' + (acc.highestStage >= 3 ? '#10b981' : acc.highestStage === 2 ? '#3b82f6' : '#f59e0b') + '; padding: 12px; border-radius: 6px; margin-bottom: 8px; cursor: pointer; border: 1px solid #e5e7eb;">' +
+            '<summary style="list-style: none; display: flex; justify-content: space-between; align-items: center;">' +
+              '<div style="flex: 1;">' +
+                '<div style="font-weight: 600; font-size: 0.9375rem; color: #1f2937;">' +
+                  planIcon + acc.name + ' ' + badge +
+                '</div>' +
+                '<div style="font-size: 0.8125rem; color: #6b7280; margin-top: 2px;">' +
+                  acc.owner + ' • Stage ' + acc.highestStage + ' • ' + acc.opportunities.length + ' opp' + (acc.opportunities.length > 1 ? 's' : '') + (lastMeetingDate ? ' • Last: ' + lastMeetingDate : '') +
+                '</div>' +
+              '</div>' +
+              '<div style="text-align: right;">' +
+                '<div style="font-weight: 600; color: #1f2937;">' + acvDisplay + '</div>' +
+                '<div style="font-size: 0.75rem; color: #6b7280;">' + products.length + ' product' + (products.length > 1 ? 's' : '') + '</div>' +
+              '</div>' +
+            '</summary>' +
+            '<div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 0.8125rem;">' +
+              (acc.hasAccountPlan ? '<div style="background: #f0f9ff; padding: 10px; border-radius: 4px; margin-bottom: 8px;"><strong style="color: #1e40af;">✓ Account Plan</strong><div style="color: #1e40af; margin-top: 4px; font-size: 0.75rem; white-space: pre-wrap; max-height: 100px; overflow-y: auto;">' + (acc.accountPlan ? acc.accountPlan.substring(0, 200) + (acc.accountPlan.length > 200 ? '...' : '') : '') + '</div></div>' : '') +
+              (lastMeetingDate || nextMeetingDate ? '<div style="background: #ecfdf5; padding: 10px; border-radius: 4px; margin-bottom: 8px; font-size: 0.8125rem; color: #065f46;">' + (lastMeetingDate ? '<div style="margin-bottom: 4px;"><strong>📅 Last Meeting:</strong> ' + lastMeetingDate + (lastMeetingSubject ? ' - ' + lastMeetingSubject : '') + '</div>' : '') + (nextMeetingDate ? '<div><strong>📅 Next Meeting:</strong> ' + nextMeetingDate + (nextMeetingSubject ? ' - ' + nextMeetingSubject : '') + '</div>' : '') + '</div>' : '<div style="background: #fef2f2; padding: 8px; border-radius: 4px; margin-bottom: 8px; font-size: 0.75rem; color: #991b1b;">📭 No meetings scheduled</div>') +
+              (legalContacts.length > 0 ? '<div style="background: #ede9fe; padding: 8px; border-radius: 4px; margin-bottom: 8px; font-size: 0.75rem; color: #5b21b6;"><strong>Legal Contacts:</strong> ' + legalContacts.join(', ') + '</div>' : '') +
+              '<div style="margin-top: 8px; font-size: 0.8125rem;">' +
+                '<div style="color: #374151; margin-bottom: 4px;"><strong>Products:</strong> ' + productList + '</div>' +
+                (acc.customerType ? '<div style="color: #374151; margin-bottom: 4px;"><strong>Customer Type:</strong> ' + acc.customerType + '</div>' : '') +
+                '<div style="color: #374151; margin-top: 6px;"><strong>Opportunities (' + acc.opportunities.length + '):</strong></div>' +
+                acc.opportunities.map(o => '<div style="font-size: 0.75rem; color: #6b7280; margin-left: 12px; margin-top: 2px;">• ' + cleanStageName(o.StageName) + ' - ' + (o.Product_Line__c || 'TBD') + ' - $' + ((o.ACV__c || 0) / 1000).toFixed(0) + 'K</div>').join('') +
+              '</div>' +
+            '</div>' +
+          '</details>';
         }).join('')}
-      <div class="account-item" style="color: #6b7280; font-style: italic;">+${accountMap.size - 10} more accounts</div>
+      <div id="show-more-accounts" class="account-item" style="color: #1e40af; font-weight: 600; cursor: pointer; text-align: center; padding: 12px; background: #eff6ff; border-radius: 6px; margin-top: 8px;">+${accountMap.size - 10} more accounts (click to show all)</div>
     </div>
   </div>
 </div>
 
+
+<script>
+// Account Plans tab - Search functionality
+document.addEventListener('DOMContentLoaded', function() {
+  const searchInput = document.getElementById('account-search');
+  const matchCount = document.getElementById('match-count');
+  const allAccounts = document.querySelectorAll('.account-expandable');
+  const showMoreBtn = document.getElementById('show-more-accounts');
+  
+  if (searchInput && allAccounts.length > 0) {
+    searchInput.addEventListener('input', function() {
+      const search = this.value.toLowerCase().trim();
+      
+      if (!search) {
+        // No search - show first 10 only
+        allAccounts.forEach((acc, idx) => {
+          acc.style.display = idx < 10 ? 'block' : 'none';
+        });
+        if (showMoreBtn) showMoreBtn.style.display = allAccounts.length > 10 ? 'block' : 'none';
+        matchCount.textContent = 'Showing top 10 accounts (type to search all ' + allAccounts.length + ')';
+        return;
+      }
+      
+      // Find matches
+      const matches = [];
+      allAccounts.forEach((acc) => {
+        const name = acc.getAttribute('data-account') || '';
+        if (name.includes(search)) {
+          const score = name.startsWith(search) ? 100 : 50;
+          matches.push({ element: acc, score });
+        }
+      });
+      
+      // Sort by score
+      matches.sort((a, b) => b.score - a.score);
+      
+      // Hide all
+      allAccounts.forEach(acc => acc.style.display = 'none');
+      
+      // Show matches
+      matches.forEach(m => m.element.style.display = 'block');
+      
+      if (showMoreBtn) showMoreBtn.style.display = 'none';
+      matchCount.textContent = matches.length + ' account' + (matches.length !== 1 ? 's' : '') + ' found';
+    });
+  }
+  
+  // Show more accounts button
+  if (showMoreBtn) {
+    showMoreBtn.addEventListener('click', function() {
+      allAccounts.forEach(acc => acc.style.display = 'block');
+      this.style.display = 'none';
+      matchCount.textContent = 'Showing all ' + allAccounts.length + ' accounts';
+    });
+  }
+  
+  // Summary tab - Show more buttons
+  const showMoreLate = document.getElementById('show-more-late');
+  const showMoreMid = document.getElementById('show-more-mid');
+  const showMoreEarly = document.getElementById('show-more-early');
+  
+  if (showMoreLate) {
+    showMoreLate.addEventListener('click', function() {
+      const lateList = document.getElementById('late-stage-list');
+      const allLate = lateList.querySelectorAll('.summary-expandable');
+      allLate.forEach(acc => acc.style.display = 'block');
+      this.style.display = 'none';
+    });
+  }
+  
+  if (showMoreMid) {
+    showMoreMid.addEventListener('click', function() {
+      const midList = document.getElementById('mid-stage-list');
+      const allMid = midList.querySelectorAll('.summary-expandable');
+      allMid.forEach(acc => acc.style.display = 'block');
+      this.style.display = 'none';
+    });
+  }
+  
+  if (showMoreEarly) {
+    showMoreEarly.addEventListener('click', function() {
+      const earlyList = document.getElementById('early-stage-list');
+      const allEarly = earlyList.querySelectorAll('.summary-expandable');
+      allEarly.forEach(acc => acc.style.display = 'block');
+      this.style.display = 'none';
+    });
+  }
+});
+</script>
 
 </body>
 </html>`;
