@@ -86,9 +86,9 @@ async function generateAccountDashboard() {
             // Collect all meeting contacts (legal titles priority)
             if (m.Who?.Title) {
               const title = m.Who.Title;
-              const isLegalTitle = /chief legal|general counsel|legal counsel|vp legal|legal director|associate general counsel|agc|clो|gc/i.test(title);
+              const isLegalTitle = /chief legal|general counsel|legal counsel|vp legal|legal director|associate general counsel|agc|clo|gc/i.test(title);
               if (isLegalTitle) {
-                accountData.contacts.add(\`\${m.Who.Name} (\${title})\`);
+                accountData.contacts.add(m.Who.Name + ' (' + title + ')');
               }
             }
           }
@@ -113,7 +113,7 @@ async function generateAccountDashboard() {
               const title = m.Who.Title;
               const isLegalTitle = /chief legal|general counsel|legal counsel|vp legal|legal director|associate general counsel|agc|clo|gc/i.test(title);
               if (isLegalTitle) {
-                accountData.contacts.add(\`\${m.Who.Name} (\${title})\`);
+                accountData.contacts.add(m.Who.Name + ' (' + title + ')');
               }
             }
           }
