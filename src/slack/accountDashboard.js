@@ -308,11 +308,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 </head>
 <body>
 
-<div style="padding: 24px 20px 12px 20px;">
-  <img src="/logo" alt="Eudia" style="max-width: 200px; max-height: 60px; margin-bottom: 16px; display: block;">
-</div>
-
 <div class="header">
+  <img src="/logo" alt="Eudia" style="max-width: 200px; max-height: 60px; margin-bottom: 20px; display: block;">
   <h1>Account Status Dashboard</h1>
   <p>Real-time pipeline overview • Updated ${new Date().toLocaleTimeString()}</p>
 </div>
