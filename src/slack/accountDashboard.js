@@ -557,7 +557,7 @@ ${early.slice(0, 5).map((acc, idx) => {
     <input type="text" id="account-search" placeholder="Search accounts..." style="width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 0.875rem; margin-bottom: 12px;">
     <div id="match-count" style="font-size: 0.75rem; color: #6b7280; margin-bottom: 8px;">Showing top 10 accounts (type to search all ${accountMap.size})</div>
     <div class="account-list">
-${Array.from(accountMap.values())
+      ${Array.from(accountMap.values())
         .sort((a, b) => b.totalACV - a.totalACV)
         .map((acc, idx) => {
           const planIcon = acc.hasAccountPlan ? '📋 ' : '';
@@ -596,19 +596,19 @@ ${Array.from(accountMap.values())
               ? '$' + (acc.totalACV / 1000).toFixed(0) + 'K' 
               : '$' + acc.totalACV.toFixed(0);
           
-          const accountMeetings = meetingData.get(acc.accountId) || {};
-          const lastMeeting = accountMeetings.lastMeeting;
-          const lastMeetingSubject = accountMeetings.lastMeetingSubject;
-          const nextMeeting = accountMeetings.nextMeeting;
-          const nextMeetingSubject = accountMeetings.nextMeetingSubject;
-          const legalContacts = accountMeetings.contacts ? Array.from(accountMeetings.contacts) : [];
-          
+        const accountMeetings = meetingData.get(acc.accountId) || {};
+        const lastMeeting = accountMeetings.lastMeeting;
+        const lastMeetingSubject = accountMeetings.lastMeetingSubject;
+        const nextMeeting = accountMeetings.nextMeeting;
+        const nextMeetingSubject = accountMeetings.nextMeetingSubject;
+        const legalContacts = accountMeetings.contacts ? Array.from(accountMeetings.contacts) : [];
+        
           const lastMeetingDate = lastMeeting ? new Date(lastMeeting).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) : null;
           const nextMeetingDate = nextMeeting ? new Date(nextMeeting).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) : null;
           
           const products = [...new Set(acc.opportunities.map(o => o.Product_Line__c).filter(p => p))];
           const productList = products.join(', ') || 'TBD';
-          
+        
           return '<details class="account-expandable" data-account="' + acc.name.toLowerCase() + '" style="display: ' + (idx < 10 ? 'block' : 'none') + '; background: #fff; border-left: 3px solid ' + (acc.highestStage >= 3 ? '#10b981' : acc.highestStage === 2 ? '#3b82f6' : '#f59e0b') + '; padding: 12px; border-radius: 6px; margin-bottom: 8px; cursor: pointer; border: 1px solid #e5e7eb;">' +
             '<summary style="list-style: none; display: flex; justify-content: space-between; align-items: center;">' +
               '<div style="flex: 1;">' +
