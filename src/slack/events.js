@@ -270,8 +270,9 @@ Ask me anything about your pipeline, accounts, or deals!`;
           `Name LIKE '%${escapeQuotes(normalizedSearch)}%'` // Contains
         ].filter((v, i, a) => a.indexOf(v) === i); // Remove duplicates
         
-        // Smart query with fuzzy matching
-        soql = `SELECT Id, Name, Owner.Name, Owner.Email, Industry, Prior_Account_Owner_Name__c
+        // Smart query with fuzzy matching - include Account Plan and Customer Brain
+        soql = `SELECT Id, Name, Owner.Name, Owner.Email, Industry, Prior_Account_Owner_Name__c, 
+                       Account_Plan_s__c, Customer_Brain__c
                 FROM Account 
                 WHERE (${searchConditions.join(' OR ')})
                 ORDER BY Name
@@ -997,9 +998,10 @@ async function formatAccountLookup(queryResult, parsedIntent) {
     if (primaryResult.Industry) response += `Industry: ${primaryResult.Industry}`;
   }
 
-  // NEW: If showOpportunities flag is set, fetch and display opportunities
+  // NEW: If showOpportunities flag is set, fetch and display comprehensive context
   if (parsedIntent.entities.showOpportunities && primaryResult.Id) {
     try {
+      // Fetch opportunities
       const oppQuery = `SELECT Name, StageName, ACV__c, Product_Line__c, Target_LOI_Date__c
                         FROM Opportunity
                         WHERE AccountId = '${primaryResult.Id}' AND IsClosed = false
@@ -1017,6 +1019,61 @@ async function formatAccountLookup(queryResult, parsedIntent) {
       } else {
         response += `\n\n_No active opportunities found._`;
       }
+      
+      // Fetch meeting history from Events
+      const meetingQuery = `SELECT ActivityDate, Subject, Type
+                            FROM Event
+                            WHERE AccountId = '${primaryResult.Id}'
+                            ORDER BY ActivityDate DESC
+                            LIMIT 5`;
+      
+      try {
+        const meetingResult = await query(meetingQuery);
+        
+        if (meetingResult && meetingResult.records && meetingResult.records.length > 0) {
+          // Get last and next meeting
+          const now = new Date();
+          const pastMeetings = meetingResult.records.filter(m => new Date(m.ActivityDate) < now);
+          const futureMeetings = meetingResult.records.filter(m => new Date(m.ActivityDate) >= now);
+          
+          response += `\n\n*Meeting History:*\n`;
+          
+          if (pastMeetings.length > 0) {
+            const lastMeeting = pastMeetings[0];
+            const lastDate = new Date(lastMeeting.ActivityDate).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'});
+            response += `• Last Meeting: ${lastDate}`;
+            if (lastMeeting.Subject) response += ` - ${lastMeeting.Subject}`;
+            response += `\n`;
+          }
+          
+          if (futureMeetings.length > 0) {
+            const nextMeeting = futureMeetings[futureMeetings.length - 1];
+            const nextDate = new Date(nextMeeting.ActivityDate).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'});
+            response += `• Next Meeting: ${nextDate}`;
+            if (nextMeeting.Subject) response += ` - ${nextMeeting.Subject}`;
+            response += `\n`;
+          }
+          
+          if (pastMeetings.length === 0 && futureMeetings.length === 0) {
+            response += `• No meetings scheduled\n`;
+          }
+        }
+      } catch (meetingError) {
+        console.log('Meeting fetch failed (may not have permissions):', meetingError.message);
+      }
+      
+      // Show Account Plan if exists
+      if (primaryResult.Account_Plan_s__c && primaryResult.Account_Plan_s__c.trim().length > 0) {
+        const planPreview = primaryResult.Account_Plan_s__c.substring(0, 300);
+        response += `\n\n*Account Plan:*\n${planPreview}${primaryResult.Account_Plan_s__c.length > 300 ? '...' : ''}`;
+      }
+      
+      // Show Customer Brain notes if exist
+      if (primaryResult.Customer_Brain__c && primaryResult.Customer_Brain__c.trim().length > 0) {
+        const brainPreview = primaryResult.Customer_Brain__c.substring(0, 300);
+        response += `\n\n*Customer Brain Notes:*\n${brainPreview}${primaryResult.Customer_Brain__c.length > 300 ? '...' : ''}`;
+      }
+      
     } catch (error) {
       console.error('Error fetching opportunities:', error);
       response += `\n\n_Unable to fetch opportunities._`;
