@@ -553,6 +553,73 @@ Business Context:
       };
     }
 
+    // NEW: "what do we know about [Company]?" - Extend account_lookup to show full context
+    if (message.match(/what do (?:we|you) know about|tell me (?:everything )?about|info(?:rmation)? about/i) && !message.includes('yourself')) {
+      const companyMatch = message.match(/(?:about)\s+(.+?)(?:\?|$)/i);
+      
+      if (companyMatch && companyMatch[1]) {
+        intent = 'account_lookup';
+        entities.accounts = [companyMatch[1].trim()];
+        entities.includeAccount = true;
+        entities.showOpportunities = true;
+        
+        return {
+          intent: 'account_lookup',
+          entities,
+          followUp: false,
+          confidence: 0.92,
+          explanation: 'Account context - full information',
+          originalMessage: userMessage,
+          timestamp: Date.now()
+        };
+      }
+    }
+
+    // NEW: "what opportunities does [Company] have?"
+    if (message.match(/what.*opportunities.*does|opportunities.*(?:for|at)|show.*opportunities.*(?:for|at)/i)) {
+      const companyMatch = message.match(/opportunities.*?does\s+(.+?)\s+have/i) ||
+                          message.match(/(?:for|at)\s+(.+?)(?:\?|$)/i);
+      
+      if (companyMatch && companyMatch[1]) {
+        intent = 'account_lookup';
+        entities.accounts = [companyMatch[1].trim()];
+        entities.includeAccount = true;
+        entities.showOpportunities = true;
+        
+        return {
+          intent: 'account_lookup',
+          entities,
+          followUp: false,
+          confidence: 0.9,
+          explanation: 'Show opportunities for account',
+          originalMessage: userMessage,
+          timestamp: Date.now()
+        };
+      }
+    }
+
+    // NEW: "[Name]'s accounts" or "what accounts does [Name] own?"
+    if (message.match(/(\w+)'s accounts|what accounts does (\w+)|show (?:me )?(\w+)'s accounts/i)) {
+      const ownerMatch = message.match(/(\w+)'s accounts/i) ||
+                        message.match(/accounts does (\w+)/i) ||
+                        message.match(/show (?:me )?(\w+)'s accounts/i);
+      
+      if (ownerMatch && ownerMatch[1]) {
+        intent = 'owner_accounts_list';
+        entities.ownerName = ownerMatch[1].trim();
+        
+        return {
+          intent: 'owner_accounts_list',
+          entities,
+          followUp: false,
+          confidence: 0.9,
+          explanation: 'List accounts owned by person',
+          originalMessage: userMessage,
+          timestamp: Date.now()
+        };
+      }
+    }
+
     // Handle ownership and business lead questions - PRIORITY INTENT
     if (message.includes('who owns') || message.includes('who is the owner') || 
         message.includes('who\'s the owner') || message.includes('whos the owner') ||

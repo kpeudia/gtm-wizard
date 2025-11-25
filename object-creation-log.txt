@@ -490,3 +490,6 @@ Results saved: creation-results.json
 10:13:24 [32minfo[39m: ✅ Initial Salesforce authentication successful {
   "service": "gtm-brain-bot"
 }
+11:43:23 [33mwarn[39m: Redis not connected, skipping cache get {
+  "service": "gtm-brain-bot"
+}

@@ -285,6 +285,10 @@ Ask me anything about your pipeline, accounts, or deals!`;
         });
         return;
       }
+    } else if (parsedIntent.intent === 'owner_accounts_list') {
+      // Handle "[Name]'s accounts" type queries
+      await handleOwnerAccountsList(parsedIntent.entities, userId, channelId, client, threadTs);
+      return;
     } else if (parsedIntent.intent === 'account_stage_lookup') {
       // Handle "What accounts are in Stage 2?" type queries
       if (parsedIntent.entities.stages && parsedIntent.entities.stages.length > 0) {
