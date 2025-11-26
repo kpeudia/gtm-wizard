@@ -46,13 +46,14 @@ async function generateAccountDashboard() {
   };
   
   // Use SAME logic as weighted pipeline query (from events.js)
+  // FIXED: Include ALL stages (0-4) to match SF report totals
   const pipelineQuery = `SELECT StageName,
                                 SUM(ACV__c) GrossAmount,
                                 SUM(Finance_Weighted_ACV__c) WeightedAmount,
                                 COUNT(Id) DealCount
                          FROM Opportunity
                          WHERE IsClosed = false 
-                           AND StageName IN ('Stage 1 - Discovery', 'Stage 2 - SQO', 'Stage 3 - Pilot', 'Stage 4 - Proposal')
+                           AND StageName IN ('Stage 0 - Qualifying', 'Stage 1 - Discovery', 'Stage 2 - SQO', 'Stage 3 - Pilot', 'Stage 4 - Proposal')
                          GROUP BY StageName`;
   
   const pipelineData = await query(pipelineQuery, true);
@@ -71,12 +72,13 @@ async function generateAccountDashboard() {
   const avgDealSize = totalDeals > 0 ? totalGross / totalDeals : 0;
   
   // Query accounts with opportunities AND get Account IDs
+  // FIXED: Include ALL stages (0-4) to match SF report totals
   const accountQuery = `SELECT Account.Id, Account.Name, Account.Owner.Name, Account.Is_New_Logo__c,
                                Account.Account_Plan_s__c, Account.Customer_Type__c,
                                Name, StageName, ACV__c, Finance_Weighted_ACV__c, Product_Line__c
                         FROM Opportunity
                         WHERE IsClosed = false
-                          AND StageName IN ('Stage 1 - Discovery', 'Stage 2 - SQO', 'Stage 3 - Pilot', 'Stage 4 - Proposal')
+                          AND StageName IN ('Stage 0 - Qualifying', 'Stage 1 - Discovery', 'Stage 2 - SQO', 'Stage 3 - Pilot', 'Stage 4 - Proposal')
                         ORDER BY StageName DESC, Account.Name`;
   
   const accountData = await query(accountQuery, true);
@@ -209,11 +211,13 @@ async function generateAccountDashboard() {
   const accountsWithoutPlans = accountMap.size - accountsWithPlans;
   
   // For "By Stage" tab - group by stage for detailed breakdown
+  // FIXED: Include Stage 0 to match all opportunities
   const stageBreakdown = {
     'Stage 4 - Proposal': { accounts: [], totalACV: 0, weightedACV: 0, count: 0 },
     'Stage 3 - Pilot': { accounts: [], totalACV: 0, weightedACV: 0, count: 0 },
     'Stage 2 - SQO': { accounts: [], totalACV: 0, weightedACV: 0, count: 0 },
-    'Stage 1 - Discovery': { accounts: [], totalACV: 0, weightedACV: 0, count: 0 }
+    'Stage 1 - Discovery': { accounts: [], totalACV: 0, weightedACV: 0, count: 0 },
+    'Stage 0 - Qualifying': { accounts: [], totalACV: 0, weightedACV: 0, count: 0 }
   };
   
   pipelineData.records.forEach(r => {
