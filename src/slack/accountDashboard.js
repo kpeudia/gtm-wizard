@@ -354,7 +354,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <div class="stage-section">
     <div class="stage-title">Late Stage (${late.length})</div>
     <div class="account-list" id="late-stage-list">
-${late.slice(0, 5).map((acc, idx) => {
+${late.map((acc, idx) => {
         let badge = '';
         if (acc.isNewLogo) {
           badge = '<span class="badge badge-new">New</span>';
@@ -409,7 +409,7 @@ ${late.slice(0, 5).map((acc, idx) => {
   <div class="stage-section">
     <div class="stage-title">Mid Stage (${mid.length})</div>
     <div class="account-list" id="mid-stage-list">
-${mid.slice(0, 5).map((acc, idx) => {
+${mid.map((acc, idx) => {
         let badge = '';
         if (acc.isNewLogo) {
           badge = '<span class="badge badge-new">New</span>';
@@ -462,7 +462,7 @@ ${mid.slice(0, 5).map((acc, idx) => {
   <div class="stage-section">
     <div class="stage-title">Early Stage (${early.length})</div>
     <div class="account-list" id="early-stage-list">
-${early.slice(0, 5).map((acc, idx) => {
+${early.map((acc, idx) => {
         let badge = '';
         if (acc.isNewLogo) {
           badge = '<span class="badge badge-new">New</span>';
