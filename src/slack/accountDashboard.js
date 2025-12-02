@@ -228,28 +228,49 @@ async function generateAccountDashboard() {
     }
   });
   
-  // Group by BL (using actual Finance_Weighted_ACV__c field)
+  // Group by BL with stage breakdown
   const blBreakdown = {};
+  const stageOrder = ['Stage 4 - Proposal', 'Stage 3 - Pilot', 'Stage 2 - SQO', 'Stage 1 - Discovery', 'Stage 0 - Qualifying'];
   accountData.records.forEach(opp => {
     const blName = opp.Account?.Owner?.Name || 'Unassigned';
+    const stage = opp.StageName || 'Unknown';
     if (!blBreakdown[blName]) {
-      blBreakdown[blName] = { totalACV: 0, weightedACV: 0, count: 0 };
+      blBreakdown[blName] = { 
+        totalACV: 0, weightedACV: 0, count: 0,
+        byStage: {}
+      };
+      stageOrder.forEach(s => blBreakdown[blName].byStage[s] = { count: 0, acv: 0, weighted: 0 });
     }
     blBreakdown[blName].totalACV += (opp.ACV__c || 0);
     blBreakdown[blName].weightedACV += (opp.Finance_Weighted_ACV__c || 0);
     blBreakdown[blName].count++;
+    if (blBreakdown[blName].byStage[stage]) {
+      blBreakdown[blName].byStage[stage].count++;
+      blBreakdown[blName].byStage[stage].acv += (opp.ACV__c || 0);
+      blBreakdown[blName].byStage[stage].weighted += (opp.Finance_Weighted_ACV__c || 0);
+    }
   });
   
-  // Group by product
+  // Group by product with stage breakdown
   const productBreakdown = {};
   accountData.records.forEach(opp => {
     const product = opp.Product_Line__c || 'Undetermined';
+    const stage = opp.StageName || 'Unknown';
     if (!productBreakdown[product]) {
-      productBreakdown[product] = { totalACV: 0, weightedACV: 0, count: 0 };
+      productBreakdown[product] = { 
+        totalACV: 0, weightedACV: 0, count: 0,
+        byStage: {}
+      };
+      stageOrder.forEach(s => productBreakdown[product].byStage[s] = { count: 0, acv: 0, weighted: 0 });
     }
     productBreakdown[product].totalACV += (opp.ACV__c || 0);
     productBreakdown[product].weightedACV += (opp.Finance_Weighted_ACV__c || 0);
     productBreakdown[product].count++;
+    if (productBreakdown[product].byStage[stage]) {
+      productBreakdown[product].byStage[stage].count++;
+      productBreakdown[product].byStage[stage].acv += (opp.ACV__c || 0);
+      productBreakdown[product].byStage[stage].weighted += (opp.Finance_Weighted_ACV__c || 0);
+    }
   });
   
   // Generate mobile-optimized tabbed HTML
@@ -528,24 +549,54 @@ ${early.map((acc, idx) => {
   
   <div class="stage-section">
     <div class="stage-title">Business Lead Overview</div>
-    <table style="width: 100%; font-size: 0.875rem; margin-top: 12px;">
-<tr style="background: #f9fafb; font-weight: 600;"><td>BL</td><td style="text-align: center;">Opps</td><td style="text-align: center;">Total ACV</td><td style="text-align: center;">Weighted</td></tr>
+    <div style="margin-top: 12px;">
       ${Object.entries(blBreakdown).sort((a, b) => b[1].totalACV - a[1].totalACV).map(([bl, data]) => `
-        <tr><td>${bl}</td><td style="text-align: center;">${data.count}</td><td style="text-align: center;">$${(data.totalACV / 1000000).toFixed(2)}M</td><td style="text-align: center;">$${(data.weightedACV / 1000000).toFixed(2)}M</td></tr>
+        <details style="background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 8px; overflow: hidden;">
+          <summary style="padding: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #f9fafb;">
+            <span style="font-weight: 600;">${bl}</span>
+            <span style="font-size: 0.875rem; color: #6b7280;">${data.count} opps • <strong style="color: #1f2937;">$${(data.totalACV / 1000000).toFixed(2)}M</strong> • W: $${(data.weightedACV / 1000000).toFixed(2)}M</span>
+          </summary>
+          <div style="padding: 12px; border-top: 1px solid #e5e7eb;">
+            <table style="width: 100%; font-size: 0.8125rem;">
+              <tr style="background: #f3f4f6;"><td style="padding: 4px 8px; font-weight: 600;">Stage</td><td style="text-align: center; padding: 4px;">Opps</td><td style="text-align: center; padding: 4px;">ACV</td><td style="text-align: center; padding: 4px;">Wtd</td></tr>
+              ${['Stage 4 - Proposal', 'Stage 3 - Pilot', 'Stage 2 - SQO', 'Stage 1 - Discovery', 'Stage 0 - Qualifying'].filter(s => data.byStage[s]?.count > 0).map(stage => `
+                <tr><td style="padding: 4px 8px; font-size: 0.75rem;">${cleanStageName(stage)}</td><td style="text-align: center; padding: 4px;">${data.byStage[stage].count}</td><td style="text-align: center; padding: 4px;">$${(data.byStage[stage].acv / 1000000).toFixed(2)}M</td><td style="text-align: center; padding: 4px;">$${(data.byStage[stage].weighted / 1000000).toFixed(2)}M</td></tr>
+              `).join('')}
+            </table>
+          </div>
+        </details>
       `).join('')}
-      <tr style="background: #e5e7eb; font-weight: 700;"><td>TOTAL</td><td style="text-align: center;">${Object.values(blBreakdown).reduce((sum, data) => sum + data.count, 0)}</td><td style="text-align: center;">$${(Object.values(blBreakdown).reduce((sum, data) => sum + data.totalACV, 0) / 1000000).toFixed(2)}M</td><td style="text-align: center;">$${(Object.values(blBreakdown).reduce((sum, data) => sum + data.weightedACV, 0) / 1000000).toFixed(2)}M</td></tr>
-    </table>
+    </div>
+    <div style="background: #e5e7eb; padding: 12px; border-radius: 6px; margin-top: 8px; display: flex; justify-content: space-between; font-weight: 700;">
+      <span>TOTAL</span>
+      <span>${Object.values(blBreakdown).reduce((sum, data) => sum + data.count, 0)} opps • $${(Object.values(blBreakdown).reduce((sum, data) => sum + data.totalACV, 0) / 1000000).toFixed(2)}M • W: $${(Object.values(blBreakdown).reduce((sum, data) => sum + data.weightedACV, 0) / 1000000).toFixed(2)}M</span>
+    </div>
   </div>
   
   <div class="stage-section">
     <div class="stage-title">Products by Stage</div>
-    <table style="width: 100%; font-size: 0.875rem; margin-top: 12px;">
-<tr style="background: #f9fafb; font-weight: 600;"><td>Product</td><td style="text-align: center;">Opps</td><td style="text-align: center;">Total ACV</td><td style="text-align: center;">Weighted</td></tr>
+    <div style="margin-top: 12px;">
       ${Object.entries(productBreakdown).sort((a, b) => b[1].totalACV - a[1].totalACV).map(([product, data]) => `
-        <tr><td>${product}</td><td style="text-align: center;">${data.count}</td><td style="text-align: center;">$${(data.totalACV / 1000000).toFixed(2)}M</td><td style="text-align: center;">$${(data.weightedACV / 1000000).toFixed(2)}M</td></tr>
+        <details style="background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 8px; overflow: hidden;">
+          <summary style="padding: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #f9fafb;">
+            <span style="font-weight: 600;">${product}</span>
+            <span style="font-size: 0.875rem; color: #6b7280;">${data.count} opps • <strong style="color: #1f2937;">$${(data.totalACV / 1000000).toFixed(2)}M</strong> • W: $${(data.weightedACV / 1000000).toFixed(2)}M</span>
+          </summary>
+          <div style="padding: 12px; border-top: 1px solid #e5e7eb;">
+            <table style="width: 100%; font-size: 0.8125rem;">
+              <tr style="background: #f3f4f6;"><td style="padding: 4px 8px; font-weight: 600;">Stage</td><td style="text-align: center; padding: 4px;">Opps</td><td style="text-align: center; padding: 4px;">ACV</td><td style="text-align: center; padding: 4px;">Wtd</td></tr>
+              ${['Stage 4 - Proposal', 'Stage 3 - Pilot', 'Stage 2 - SQO', 'Stage 1 - Discovery', 'Stage 0 - Qualifying'].filter(s => data.byStage[s]?.count > 0).map(stage => `
+                <tr><td style="padding: 4px 8px; font-size: 0.75rem;">${cleanStageName(stage)}</td><td style="text-align: center; padding: 4px;">${data.byStage[stage].count}</td><td style="text-align: center; padding: 4px;">$${(data.byStage[stage].acv / 1000000).toFixed(2)}M</td><td style="text-align: center; padding: 4px;">$${(data.byStage[stage].weighted / 1000000).toFixed(2)}M</td></tr>
+              `).join('')}
+            </table>
+          </div>
+        </details>
       `).join('')}
-      <tr style="background: #e5e7eb; font-weight: 700;"><td>TOTAL</td><td style="text-align: center;">${Object.values(productBreakdown).reduce((sum, data) => sum + data.count, 0)}</td><td style="text-align: center;">$${(Object.values(productBreakdown).reduce((sum, data) => sum + data.totalACV, 0) / 1000000).toFixed(2)}M</td><td style="text-align: center;">$${(Object.values(productBreakdown).reduce((sum, data) => sum + data.weightedACV, 0) / 1000000).toFixed(2)}M</td></tr>
-    </table>
+    </div>
+    <div style="background: #e5e7eb; padding: 12px; border-radius: 6px; margin-top: 8px; display: flex; justify-content: space-between; font-weight: 700;">
+      <span>TOTAL</span>
+      <span>${Object.values(productBreakdown).reduce((sum, data) => sum + data.count, 0)} opps • $${(Object.values(productBreakdown).reduce((sum, data) => sum + data.totalACV, 0) / 1000000).toFixed(2)}M • W: $${(Object.values(productBreakdown).reduce((sum, data) => sum + data.weightedACV, 0) / 1000000).toFixed(2)}M</span>
+    </div>
   </div>
 </div>
 

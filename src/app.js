@@ -167,6 +167,10 @@ class GTMBrainApp {
       try {
         // Set CSP headers to allow inline scripts for dashboard
         res.setHeader('Content-Security-Policy', "script-src 'self' 'unsafe-inline'");
+        // Prevent caching - always fetch fresh data from Salesforce
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         
         const { generateAccountDashboard } = require('./slack/accountDashboard');
         const html = await generateAccountDashboard();
