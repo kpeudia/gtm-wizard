@@ -702,7 +702,7 @@ async function handleCustomerBrainNote(message, userId, channelId, client, threa
     }
 
     // Find best match (prefer business lead)
-    const businessLeads = ['Julie Stefanich', 'Himanshu Agarwal', 'Asad Hussain', 'Ananth Cherukupally', 'David Van Ryk', 'John Cobb', 'Jon Cobb', 'Olivia Jung'];
+    const businessLeads = ['Julie Stefanich', 'Himanshu Agarwal', 'Asad Hussain', 'Ananth Cherukupally', 'David Van Ryk', 'John Cobb', 'Jon Cobb', 'Olivia Jung', 'Justin Hills'];
     const blMatch = accountResult.records.find(r => businessLeads.includes(r.Owner?.Name));
     const account = blMatch || accountResult.records[0];
 
@@ -947,7 +947,7 @@ async function formatAccountLookup(queryResult, parsedIntent) {
   }
 
   const records = queryResult.records;
-  const businessLeads = ['Julie Stefanich', 'Himanshu Agarwal', 'Asad Hussain', 'Ananth Cherukupally', 'David Van Ryk', 'John Cobb', 'Jon Cobb', 'Olivia Jung'];
+  const businessLeads = ['Julie Stefanich', 'Himanshu Agarwal', 'Asad Hussain', 'Ananth Cherukupally', 'David Van Ryk', 'John Cobb', 'Jon Cobb', 'Olivia Jung', 'Justin Hills'];
   const unassignedHolders = ['Keigan Pesenti', 'Emmit Hood', 'Emmitt Hood', 'Mark Runyon', 'Derreck Chu', 'Sarah Rakhine'];
   
   const searchTerm = parsedIntent.entities.accounts[0].toLowerCase();
@@ -2479,7 +2479,7 @@ async function handleAccountExistenceCheck(entities, userId, channelId, client, 
     }
     
     // Account EXISTS
-    const businessLeads = ['Julie Stefanich', 'Himanshu Agarwal', 'Asad Hussain', 'Ananth Cherukupally', 'David Van Ryk', 'John Cobb', 'Jon Cobb', 'Olivia Jung'];
+    const businessLeads = ['Julie Stefanich', 'Himanshu Agarwal', 'Asad Hussain', 'Ananth Cherukupally', 'David Van Ryk', 'John Cobb', 'Jon Cobb', 'Olivia Jung', 'Justin Hills'];
     const account = result.records[0];
     const isBL = businessLeads.includes(account.Owner?.Name);
     
@@ -3486,7 +3486,8 @@ async function handleOwnerAccountsList(entities, userId, channelId, client, thre
       'david': 'David Van Ryk',
       'john': 'John Cobb',
       'jon': 'Jon Cobb',
-      'olivia': 'Olivia Jung'
+      'olivia': 'Olivia Jung',
+      'justin': 'Justin Hills'
     };
     
     const fullName = ownerMap[ownerName.toLowerCase()] || ownerName;
@@ -3503,7 +3504,7 @@ async function handleOwnerAccountsList(entities, userId, channelId, client, thre
     if (!result || result.totalSize === 0) {
       await client.chat.postMessage({
         channel: channelId,
-        text: `No accounts found for "${fullName}".\n\nTry:\n• "Julie's accounts"\n• "Himanshu's accounts"\n• "Asad's accounts"`,
+        text: `No accounts found for "${fullName}".\n\nTry:\n• "Julie's accounts"\n• "Justin's accounts"\n• "Asad's accounts"`,
         thread_ts: threadTs
       });
       return;

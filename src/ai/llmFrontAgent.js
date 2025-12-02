@@ -171,7 +171,7 @@ Respond ONLY with JSON:
         return 'Which account would you like to reassign?';
       }
       if (!understanding.params.newOwner) {
-        return `Got it - reassigning ${understanding.params.companyName}. Who should I assign it to? (Julie Stefanich, Himanshu Agarwal, etc.)`;
+        return `Got it - reassigning ${understanding.params.companyName}. Who should I assign it to? (Julie Stefanich, Himanshu Agarwal, Justin Hills, etc.)`;
       }
     }
     

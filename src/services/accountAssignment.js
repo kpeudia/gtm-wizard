@@ -8,7 +8,7 @@ const logger = require('../utils/logger');
 
 // Business Lead Mapping
 const BL_ASSIGNMENTS = {
-  westCoast: ['Himanshu Agarwal', 'Julie Stefanich'],
+  westCoast: ['Himanshu Agarwal', 'Julie Stefanich', 'Justin Hills'],
   eastCoast: ['Olivia Jung'],
   international: ['Johnson Hana BL'] // International accounts assigned to Johnson Hana team
 };
@@ -27,7 +27,8 @@ const ALL_BUSINESS_LEADS = [
   'David Van Ryk',
   'John Cobb',
   'Jon Cobb',
-  'Olivia Jung'
+  'Olivia Jung',
+  'Justin Hills'
 ];
 
 /**
