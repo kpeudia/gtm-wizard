@@ -1522,7 +1522,8 @@ class ContractAnalyzer {
       // EndDate: enrichedFields.endDate,  // DO NOT SET - will cause permission error
       ContractTerm: enrichedFields.termMonths,
       Contract_Type__c: enrichedFields.contractTypeValue,
-      Status: 'Activated',
+      // Contracts must be created as "Draft" - can be activated after creation
+      Status: 'Draft',
       OwnerId: enrichedFields.salesforce?.contractOwnerId,
       
       // AI Enabled - ALWAYS TRUE for all contracts

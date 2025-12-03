@@ -8,7 +8,7 @@ const { formatResponse } = require('./responseFormatter');
 const { optimizeQuery, trackQueryPerformance } = require('../ai/queryOptimizer');
 const { processFeedback, isFeedbackMessage } = require('../ai/feedbackLearning');
 const { cleanStageName } = require('../utils/formatters');
-const { processContractUpload, handleContractCreationConfirmation } = require('../services/contractCreation');
+const { processContractUpload, handleContractCreationConfirmation, handleContractActivation } = require('../services/contractCreation');
 
 /**
  * Register Slack event handlers
@@ -190,6 +190,15 @@ async function processQuery(text, userId, channelId, client, threadTs = null) {
         const created = await handleContractCreationConfirmation(text, userId, channelId, client, threadTs);
         if (created) return;
       }
+    }
+    
+    // CONTRACT ACTIVATION HANDLING
+    // ═══════════════════════════════════════════════════════════════════════════
+    if (textLower === 'activate contract' || textLower === 'activate' || 
+        textLower.includes('move to activated') || textLower.includes('set to activated')) {
+      logger.info(`🔄 Processing contract activation request from ${userId}`);
+      const activated = await handleContractActivation(userId, channelId, client, threadTs);
+      if (activated) return;
     }
     
     // Handle cancel for pending contract

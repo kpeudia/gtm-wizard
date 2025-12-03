@@ -636,7 +636,8 @@ async function handleContractCreationConfirmation(message, userId, channelId, cl
     
     // Success!
     let successMessage = `✅ *Contract Created Successfully!*\n\n`;
-    successMessage += `📄 Contract #: ${result.contractNumber}\n`;
+    successMessage += `📄 *Contract #:* ${result.contractNumber}\n`;
+    successMessage += `📋 *Status:* Draft\n`;
     successMessage += `<${result.contractUrl}|View in Salesforce>\n\n`;
     
     if (result.pdfAttached) {
@@ -648,11 +649,22 @@ async function handleContractCreationConfirmation(message, userId, channelId, cl
       successMessage += `${field}\n`;
     });
     
+    successMessage += `\n────────────────────────────────\n`;
+    successMessage += `*Next Steps:*\n`;
+    successMessage += `• Reply \`activate contract\` to change status to Activated\n`;
+    successMessage += `• Or activate manually in Salesforce\n`;
+    
     await client.chat.postMessage({
       channel: channelId,
       text: successMessage,
       thread_ts: threadTs
     });
+    
+    // Store contract ID for potential activation
+    await cache.set(`pending_contract_${userId}_${channelId}`, {
+      contractId: result.contractId,
+      contractNumber: result.contractNumber
+    }, 3600); // 1 hour TTL
     
     // Clear stored analysis
     await cache.del(`contract_analysis_${userId}_${channelId}`);
@@ -894,12 +906,75 @@ function downloadWithHttps(url, token) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// CONTRACT ACTIVATION
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Activate a pending contract (change status from Draft to Activated)
+ */
+async function handleContractActivation(userId, channelId, client, threadTs) {
+  try {
+    // Check for pending contract
+    const pendingContract = await cache.get(`pending_contract_${userId}_${channelId}`);
+    
+    if (!pendingContract) {
+      await client.chat.postMessage({
+        channel: channelId,
+        text: `❓ No pending contract found to activate.\n\nCreate a contract first, then reply \`activate contract\`.`,
+        thread_ts: threadTs
+      });
+      return false;
+    }
+    
+    await client.chat.postMessage({
+      channel: channelId,
+      text: `🔄 Activating Contract #${pendingContract.contractNumber}...`,
+      thread_ts: threadTs
+    });
+    
+    // Update contract status to Activated
+    const { update } = require('../salesforce/client');
+    
+    const updateResult = await update('Contract', pendingContract.contractId, {
+      Status: 'Activated'
+    });
+    
+    if (!updateResult.success) {
+      throw new Error(updateResult.errors?.map(e => e.message).join(', ') || 'Activation failed');
+    }
+    
+    const contractUrl = `${process.env.SALESFORCE_INSTANCE_URL}/lightning/r/Contract/${pendingContract.contractId}/view`;
+    
+    await client.chat.postMessage({
+      channel: channelId,
+      text: `✅ *Contract Activated!*\n\n📄 Contract #${pendingContract.contractNumber}\n📋 Status: *Activated*\n<${contractUrl}|View in Salesforce>`,
+      thread_ts: threadTs
+    });
+    
+    // Clear pending contract
+    await cache.del(`pending_contract_${userId}_${channelId}`);
+    
+    return true;
+    
+  } catch (error) {
+    logger.error('Contract activation failed:', error);
+    await client.chat.postMessage({
+      channel: channelId,
+      text: `❌ *Activation failed:* ${error.message}`,
+      thread_ts: threadTs
+    });
+    return false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // EXPORTS
 // ═══════════════════════════════════════════════════════════════════════════
 module.exports = {
   ContractCreationService,
   processContractUpload,
   handleContractCreationConfirmation,
+  handleContractActivation,
   downloadSlackFile,
   REQUIRED_ERP_FIELDS
 };
