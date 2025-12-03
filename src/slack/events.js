@@ -8,6 +8,7 @@ const { formatResponse } = require('./responseFormatter');
 const { optimizeQuery, trackQueryPerformance } = require('../ai/queryOptimizer');
 const { processFeedback, isFeedbackMessage } = require('../ai/feedbackLearning');
 const { cleanStageName } = require('../utils/formatters');
+const { processContractUpload, handleContractCreationConfirmation } = require('../services/contractCreation');
 
 /**
  * Register Slack event handlers
@@ -80,6 +81,21 @@ async function handleMention(event, client, context) {
     return;
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CONTRACT PDF FILE HANDLING
+  // ═══════════════════════════════════════════════════════════════════════════
+  if (event.files && event.files.length > 0) {
+    const pdfFiles = event.files.filter(f => 
+      f.mimetype?.includes('pdf') || f.name?.toLowerCase().endsWith('.pdf')
+    );
+    
+    if (pdfFiles.length > 0) {
+      logger.info(`📄 Contract PDF uploaded by ${userId}: ${pdfFiles[0].name}`);
+      await processContractUpload(pdfFiles[0], client, userId, channelId, event.ts);
+      return;
+    }
+  }
+
   // Remove the bot mention from the text
   const cleanText = text.replace(/<@[A-Z0-9]+>/g, '').trim();
   
@@ -101,7 +117,7 @@ async function handleMention(event, client, context) {
 async function handleDirectMessage(event, client, context) {
   const userId = event.user;
   const channelId = event.channel;
-  const text = event.text;
+  const text = event.text || '';
 
   // Check rate limiting - More generous for exploration
   const rateLimit = await cache.checkRateLimit(userId, 'dm');
@@ -111,6 +127,21 @@ async function handleDirectMessage(event, client, context) {
       text: `⏱️ You're really putting me to work! Please wait ${Math.ceil((rateLimit.resetTime - Date.now()) / 1000)} seconds before your next query. 🤖`
     });
     return;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CONTRACT PDF FILE HANDLING (Direct Messages)
+  // ═══════════════════════════════════════════════════════════════════════════
+  if (event.files && event.files.length > 0) {
+    const pdfFiles = event.files.filter(f => 
+      f.mimetype?.includes('pdf') || f.name?.toLowerCase().endsWith('.pdf')
+    );
+    
+    if (pdfFiles.length > 0) {
+      logger.info(`📄 Contract PDF uploaded via DM by ${userId}: ${pdfFiles[0].name}`);
+      await processContractUpload(pdfFiles[0], client, userId, channelId, event.ts);
+      return;
+    }
   }
 
   // Handle help commands
@@ -144,6 +175,35 @@ async function processQuery(text, userId, channelId, client, threadTs = null) {
         threadTs
       );
       return; // Don't process as a new query
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CONTRACT CREATION CONFIRMATION HANDLING
+    // ═══════════════════════════════════════════════════════════════════════════
+    const textLower = text.toLowerCase().trim();
+    if (textLower.startsWith('create contract') || textLower === 'create' || 
+        textLower.includes('create contract assign to')) {
+      // Check if there's a pending contract analysis
+      const pendingAnalysis = await cache.get(`contract_analysis_${userId}_${channelId}`);
+      if (pendingAnalysis) {
+        logger.info(`📝 Processing contract creation confirmation from ${userId}`);
+        const created = await handleContractCreationConfirmation(text, userId, channelId, client, threadTs);
+        if (created) return;
+      }
+    }
+    
+    // Handle cancel for pending contract
+    if (textLower === 'cancel' || textLower === 'no' || textLower === 'nevermind') {
+      const pendingAnalysis = await cache.get(`contract_analysis_${userId}_${channelId}`);
+      if (pendingAnalysis) {
+        await cache.del(`contract_analysis_${userId}_${channelId}`);
+        await client.chat.postMessage({
+          channel: channelId,
+          text: '✅ Contract creation cancelled.',
+          thread_ts: threadTs
+        });
+        return;
+      }
     }
 
     // Parse intent using AI first
