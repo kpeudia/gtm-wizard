@@ -1025,10 +1025,11 @@ async function handleContractActivation(userId, channelId, client, threadTs) {
       thread_ts: threadTs
     });
     
-    // Update contract status to Activated
-    const { update } = require('../salesforce/client');
+    // Update contract status to Activated using jsforce connection
+    const conn = sfConnection.getConnection();
     
-    const updateResult = await update('Contract', pendingContract.contractId, {
+    const updateResult = await conn.sobject('Contract').update({
+      Id: pendingContract.contractId,
       Status: 'Activated'
     });
     
