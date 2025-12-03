@@ -187,8 +187,10 @@ async function processQuery(text, userId, channelId, client, threadTs = null) {
       const pendingAnalysis = await cache.get(`contract_analysis_${userId}_${channelId}`);
       if (pendingAnalysis) {
         logger.info(`📝 Processing contract creation confirmation from ${userId}`);
-        const created = await handleContractCreationConfirmation(text, userId, channelId, client, threadTs);
-        if (created) return;
+        // ALWAYS return after handling contract creation - even if it fails
+        // This prevents fall-through to intent parsing
+        await handleContractCreationConfirmation(text, userId, channelId, client, threadTs);
+        return;
       }
     }
     
