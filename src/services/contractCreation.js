@@ -372,19 +372,22 @@ class ContractCreationService {
       
       for (const [field, value] of Object.entries(overrides)) {
         if (field === 'ownerName') {
-          // Convert owner name to ID
-          const ownerId = OWNER_USER_IDS[value];
-          if (ownerId) {
-            record.OwnerId = ownerId;
-            logger.info(`✅ Owner set from OWNER_USER_IDS: ${value} → ${ownerId}`);
+          // ALWAYS query Salesforce for the user ID to ensure we have the correct, current ID
+          // Hardcoded IDs can become stale when user records are recreated
+          logger.info(`🔍 Looking up owner: ${value}`);
+          
+          const userQuery = `SELECT Id, Name FROM User WHERE Name LIKE '%${value}%' AND IsActive = true LIMIT 1`;
+          const userResult = await query(userQuery);
+          
+          if (userResult?.totalSize > 0) {
+            record.OwnerId = userResult.records[0].Id;
+            logger.info(`✅ Owner found: ${userResult.records[0].Name} → ${userResult.records[0].Id}`);
           } else {
-            // Lookup by name
-            logger.info(`🔍 Looking up user by name: ${value}`);
-            const userQuery = `SELECT Id, Name FROM User WHERE Name LIKE '%${value}%' AND IsActive = true LIMIT 1`;
-            const userResult = await query(userQuery);
-            if (userResult?.totalSize > 0) {
-              record.OwnerId = userResult.records[0].Id;
-              logger.info(`✅ Owner found via query: ${userResult.records[0].Name} → ${userResult.records[0].Id}`);
+            // Fallback to hardcoded IDs only if query fails
+            const ownerId = OWNER_USER_IDS[value];
+            if (ownerId) {
+              record.OwnerId = ownerId;
+              logger.info(`✅ Owner set from cache: ${value} → ${ownerId}`);
             } else {
               logger.warn(`⚠️ Owner not found: ${value}`);
             }

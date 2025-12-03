@@ -203,10 +203,12 @@ const EUDIA_SIGNERS = {
 // ═══════════════════════════════════════════════════════════════════════════
 // ACCOUNT OWNER TO CONTRACT OWNER MAPPING (Business Leads)
 // ═══════════════════════════════════════════════════════════════════════════
+// IMPORTANT: These IDs must match active Salesforce User records
+// If contract creation fails with "Owner ID not found", verify the ID in Salesforce
 const OWNER_USER_IDS = {
   'Julie Stefanich': '005Wj00000KDcFqIAL',
   'Himanshu Agarwal': '005Wj00000M2FnHIAV',
-  'Asad Hussain': '005Wj00000L8YuNIAV',
+  'Asad Hussain': '005Wj00000DT05BIAT',    // Updated 2025-12-03
   'Olivia Jung': '005Wj00000UVn0XIAT',
   'Justin Hills': '005Wj00000UVn1ZIAT',
   'Ananth Cherukupally': '005Wj00000KDcFrIAL',
