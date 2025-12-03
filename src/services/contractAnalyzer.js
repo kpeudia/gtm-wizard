@@ -79,27 +79,29 @@ const CONTRACT_TYPE_PATTERNS = {
     ],
     excludeMonetaryFields: true, // CAB/LOI = NO monetary values (except Delinea)
     defaultContractType: 'LOI',
-    confidenceBoost: 0.15
+    confidenceBoost: 0.20  // Higher boost for CAB detection
   },
   RECURRING: {
     keywords: [
       'Master Services Agreement', 'MSA', 'Subscription', 'Annual',
       'Recurring', 'Service Order', 'Statement of Work', 'SOW',
       'Year 1', 'Year 2', 'Year 3', 'annual fee', 'monthly fee',
-      'AI-Augmented', 'Contracting Support Order', 'Agreement'
+      'AI-Augmented', 'Contracting Support Order', 'Support Order',
+      'managed legal service', 'SCOPE OF SERVICES', 'FEES AND PAYMENT'
     ],
     excludeMonetaryFields: false,
     defaultContractType: 'Recurring',
-    confidenceBoost: 0.1
+    confidenceBoost: 0.15  // Strong boost for recurring indicators
   },
   AMENDMENT: {
     keywords: [
-      'Amendment', 'Amended and Restated', 'Addendum', 'Modification',
-      'Supplemental', 'extends', 'amends'
+      'Addendum', 'Modification', 'Supplemental', 'extends'
     ],
+    // NOTE: "Amended and Restated" does NOT mean Amendment type
+    // It means a new version that replaces the old - still Recurring
     excludeMonetaryFields: false,
     defaultContractType: 'Amendment',
-    confidenceBoost: 0.1
+    confidenceBoost: 0.05  // Lower boost - be careful about amendments
   }
 };
 
@@ -559,6 +561,25 @@ class ContractAnalyzer {
       bestMatch.confidence = Math.max(bestMatch.confidence, 0.9);
     }
     
+    // Special case: "Amended and Restated" is NOT an Amendment - it's a new Recurring contract
+    // that replaces an old one. Check for service delivery indicators.
+    if (textLower.includes('amended and restated') && 
+        (textLower.includes('scope of services') || 
+         textLower.includes('fees and payment') ||
+         textLower.includes('managed legal service'))) {
+      bestMatch.type = 'Recurring';
+      bestMatch.excludeMonetary = false;
+      bestMatch.confidence = Math.max(bestMatch.confidence, 0.85);
+      logger.info('📋 "Amended and Restated" with service terms → Recurring (not Amendment)');
+    }
+    
+    // If we have Year pricing, it's definitely Recurring
+    if (textLower.includes('year 1') || textLower.includes('year 2') || textLower.includes('year 3')) {
+      bestMatch.type = 'Recurring';
+      bestMatch.excludeMonetary = false;
+      bestMatch.confidence = Math.max(bestMatch.confidence, 0.9);
+    }
+    
     return bestMatch;
   }
 
@@ -607,10 +628,30 @@ class ContractAnalyzer {
     
     // Extract customer/account name with improved logic
     // Pattern 1: "Company Name Corp. ("Customer" or "Name")" - e.g., Coherent Corp. ("Customer" or "Coherent")
-    const customerOrPattern = text.match(/([A-Z][A-Za-z\s&]+?(?:Corp|Inc|LLC|Ltd|Co)\.?)\s*\(\s*["']?Customer["']?\s*(?:or\s*["']([A-Z][A-Za-z]+)["'])?\s*\)/i);
-    if (customerOrPattern) {
-      // Use the short name in "or" clause if available, otherwise use full name
-      extracted.accountName = customerOrPattern[2] || customerOrPattern[1].replace(/,?\s*(Inc|Corp|LLC|Ltd|Co)\.?$/i, '').trim();
+    const customerOrPatterns = [
+      /([A-Z][A-Za-z\s&]+?(?:Corp|Inc|LLC|Ltd|Co)\.?)\s*\(\s*["']?Customer["']?\s*or\s*["']([A-Z][A-Za-z]+)["']\s*\)/i,
+      /([A-Z][A-Za-z\s&]+?(?:Corp|Inc|LLC|Ltd|Co)\.?)\s*\(\s*["']?Customer["']?\s*\)/i,
+      /and\s+([A-Z][A-Za-z\s&]+?(?:Corp|Inc|LLC|Ltd|Co)\.?)\s*\(\s*["']?Customer["']?/i,
+    ];
+    
+    for (const pattern of customerOrPatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        // Use the short name in "or" clause if available (e.g., "Coherent"), otherwise use full name
+        const shortName = match[2];
+        const fullName = match[1]?.replace(/,?\s*(Inc|Corp|LLC|Ltd|Co)\.?$/i, '').trim();
+        
+        if (shortName && !shortName.toLowerCase().includes('customer')) {
+          extracted.accountName = shortName;
+        } else if (fullName && !fullName.toLowerCase().includes('eudia') && !fullName.toLowerCase().includes('cicero')) {
+          extracted.accountName = fullName;
+        }
+        
+        if (extracted.accountName) {
+          logger.info(`📋 Found account via Customer pattern: "${extracted.accountName}"`);
+          break;
+        }
+      }
     }
     
     // Pattern 2: Appointment format - "Appointment - Best Buy Co., Inc."
@@ -703,53 +744,87 @@ class ContractAnalyzer {
     }
     
     // ═══════════════════════════════════════════════════════════════════════════
-    // DATE EXTRACTION - Multiple patterns for different contract formats
+    // SIGNATURE EXTRACTION - Names and Dates from signature blocks
     // ═══════════════════════════════════════════════════════════════════════════
     
-    // Pattern 1: Signature block dates - "Date: 10/31/2025" or "Date: $10 / 6 / 2025$"
-    const signatureDatePatterns = [
-      /Date[:\s]+\$?(\d{1,2})\s*\/\s*(\d{1,2})\s*\/\s*(\d{4})\$?/gi,  // Date: 10/31/2025 or $10 / 6 / 2025$
-      /Date[:\s]+(\d{1,2})\/(\d{1,2})\/(\d{4})/gi,                     // Date: 10/31/2025
+    // Extract signer names - "Name: [Person Name]" pattern
+    const signerNamePatterns = [
+      /Name[:\s]+([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/g,  // Name: Omar Haroun
+      /Signed[:\s]+([A-Z][a-z]+\s+[A-Z][a-z]+)/gi,                   // Signed: John Doe
     ];
     
-    // Find all signature dates
-    const foundDates = [];
-    for (const pattern of signatureDatePatterns) {
+    const allSignerNames = [];
+    for (const pattern of signerNamePatterns) {
       let match;
       while ((match = pattern.exec(text)) !== null) {
-        const month = match[1].trim();
-        const day = match[2].trim();
-        const year = match[3].trim();
-        const dateStr = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-        if (this.isValidDate(dateStr)) {
-          foundDates.push(dateStr);
+        const name = match[1].trim();
+        // Exclude titles and generic terms
+        if (!name.match(/^(Name|Title|Date|CEO|CLO|CFO|President|Director)/i)) {
+          allSignerNames.push(name);
         }
       }
     }
     
-    logger.info(`📅 Found ${foundDates.length} signature dates: ${foundDates.join(', ')}`);
+    logger.info(`✍️ Found signer names: ${allSignerNames.join(', ')}`);
     
-    // Use first found date as start date if none found from other patterns
-    if (foundDates.length > 0 && !extracted.startDate) {
-      extracted.startDate = foundDates[0];
-      extracted.signedDate = foundDates[0];
+    // Identify Eudia signers vs Customer signers
+    const eudiaSignerNames = ['Omar Haroun', 'David Van Ryk', 'David Van Reyk', 'Keigan Pesenti'];
+    
+    for (const name of allSignerNames) {
+      const isEudiaSigner = eudiaSignerNames.some(es => 
+        name.toLowerCase().includes(es.toLowerCase()) || 
+        es.toLowerCase().includes(name.toLowerCase())
+      );
+      
+      if (isEudiaSigner) {
+        extracted.eudiaSignedName = name;
+      } else if (!extracted.customerSignedName) {
+        extracted.customerSignedName = name;
+      }
     }
     
-    // Pattern 2: Effective Date patterns
-    const effectiveDatePatterns = [
-      /Effective\s+Date[:\s)]+(\d{1,2}\/\d{1,2}\/\d{4})/i,
-      /Order\s+Effective\s+Date/i,  // Just detection, date comes from signature
-      /dated\s+(?:as\s+of\s+)?(\w+\s+\d{1,2},?\s+\d{4})/i,
+    // ═══════════════════════════════════════════════════════════════════════════
+    // DATE EXTRACTION - From signature blocks
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    // Pattern: "Date: 10/31/2025" or "Date: $10 / 6 / 2025$" (PDF formatting)
+    const datePatterns = [
+      /Date[:\s]+\$?\s*(\d{1,2})\s*\/\s*(\d{1,2})\s*\/\s*(\d{4})\s*\$?/gi,
+      /(\d{1,2})\/(\d{1,2})\/(\d{4})/g,  // Simple date format
     ];
     
-    for (const pattern of effectiveDatePatterns) {
-      const match = text.match(pattern);
-      if (match && match[1]) {
-        const parsed = this.parseDate(match[1]);
-        if (parsed) {
-          extracted.startDate = parsed;
-          break;
+    const foundDates = [];
+    for (const pattern of datePatterns) {
+      let match;
+      const textCopy = text; // Reset for each pattern
+      pattern.lastIndex = 0;
+      while ((match = pattern.exec(textCopy)) !== null) {
+        const month = match[1].trim();
+        const day = match[2].trim();
+        const year = match[3].trim();
+        // Validate it's a reasonable date
+        const m = parseInt(month), d = parseInt(day), y = parseInt(year);
+        if (m >= 1 && m <= 12 && d >= 1 && d <= 31 && y >= 2020 && y <= 2030) {
+          const dateStr = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+          if (!foundDates.includes(dateStr)) {
+            foundDates.push(dateStr);
+          }
         }
+      }
+    }
+    
+    logger.info(`📅 Found dates: ${foundDates.join(', ')}`);
+    
+    // The LAST date found is typically the signature/execution date
+    // The signature date IS the start date for contracts
+    if (foundDates.length > 0) {
+      // Use the most recent date as the signing date
+      const sortedDates = foundDates.sort();
+      extracted.signedDate = sortedDates[sortedDates.length - 1]; // Latest date
+      
+      // For start date, use the earliest date found OR the signed date
+      if (!extracted.startDate) {
+        extracted.startDate = sortedDates[0];
       }
     }
     
@@ -757,56 +832,54 @@ class ContractAnalyzer {
     // TERM & END DATE CALCULATION
     // ═══════════════════════════════════════════════════════════════════════════
     
-    // Check for anniversary-based terms
-    if (text.match(/third\s+anniversary|3rd\s+anniversary/i)) {
-      extracted.termMonths = 36;
-      logger.info('📅 Found "third anniversary" - setting term to 36 months');
-      if (extracted.startDate) {
-        extracted.endDate = this.addMonthsToDate(extracted.startDate, 36);
-      }
-    } else if (text.match(/second\s+anniversary|2nd\s+anniversary/i)) {
-      extracted.termMonths = 24;
-      if (extracted.startDate) {
-        extracted.endDate = this.addMonthsToDate(extracted.startDate, 24);
-      }
-    } else if (text.match(/first\s+12\s+months|12\s+months|first\s+anniversary|1st\s+anniversary/i)) {
-      extracted.termMonths = 12;
-      if (extracted.startDate) {
-        extracted.endDate = this.addMonthsToDate(extracted.startDate, 12);
-      }
-    }
-    
-    // Try explicit term patterns
+    // Check for explicit term mentions first
     const termPatterns = [
       /Contract\s+Term[:\s]*(\d+)\s*months?/i,
       /Term[:\s]+(\d+)\s*months?/i,
       /for\s+(?:a\s+period\s+of\s+)?(\d+)\s*months?/i,
       /(\d+)[\s-]*month\s+term/i,
       /first\s+(\d+)\s+months/i,
+      /access[^.]*?(\d+)\s+months/i,  // "access at no fee for the first 12 months"
     ];
     
-    if (!extracted.termMonths) {
-      for (const pattern of termPatterns) {
-        const match = text.match(pattern);
-        if (match && match[1]) {
-          extracted.termMonths = parseInt(match[1]);
-          logger.info(`📅 Extracted term: ${extracted.termMonths} months`);
+    for (const pattern of termPatterns) {
+      const match = text.match(pattern);
+      if (match && match[1]) {
+        const term = parseInt(match[1]);
+        if (term > 0 && term <= 120) { // Reasonable term
+          extracted.termMonths = term;
+          logger.info(`📅 Found explicit term: ${term} months`);
           break;
         }
       }
     }
     
-    // Calculate end date from start date and term if not already set
+    // Check for anniversary-based terms
+    if (!extracted.termMonths) {
+      if (text.match(/third\s+anniversary|3rd\s+anniversary/i)) {
+        extracted.termMonths = 36;
+        logger.info('📅 Found "third anniversary" - 36 months');
+      } else if (text.match(/second\s+anniversary|2nd\s+anniversary/i)) {
+        extracted.termMonths = 24;
+      } else if (text.match(/first\s+anniversary|1st\s+anniversary/i)) {
+        extracted.termMonths = 12;
+      }
+    }
+    
+    // DEFAULT: CAB/LOI contracts default to 12 months if no term specified
+    if (!extracted.termMonths && contractType.type === 'LOI') {
+      extracted.termMonths = 12;
+      logger.info('📅 CAB/LOI contract - defaulting to 12 months');
+    }
+    
+    // Calculate end date from start date + term
     if (extracted.startDate && extracted.termMonths && !extracted.endDate) {
       extracted.endDate = this.addMonthsToDate(extracted.startDate, extracted.termMonths);
     }
     
-    // Calculate term from dates if not found explicitly
-    if (extracted.startDate && extracted.endDate && !extracted.termMonths) {
-      extracted.termMonths = this.calculateTermMonths(extracted.startDate, extracted.endDate);
-    }
+    logger.info(`📅 Final: Start=${extracted.startDate}, End=${extracted.endDate}, Term=${extracted.termMonths}mo`);
+    logger.info(`✍️ Signers: Customer="${extracted.customerSignedName}", Eudia="${extracted.eudiaSignedName}"`);
     
-    logger.info(`📅 Final dates: Start=${extracted.startDate}, End=${extracted.endDate}, Term=${extracted.termMonths}mo`);
     
     // ═══════════════════════════════════════════════════════════════════════════
     // MONETARY VALUE EXTRACTION (only for non-LOI contracts)
@@ -814,37 +887,62 @@ class ContractAnalyzer {
     if (!contractType.excludeMonetary) {
       logger.info('💰 Extracting monetary values...');
       
-      // Find all dollar amounts in the text
+      // Find all dollar amounts in the text (must be > $1000 to be contract values)
       const dollarPattern = /\$\s*([\d,]+(?:\.\d{2})?)/g;
       const allAmounts = [];
       let amountMatch;
       while ((amountMatch = dollarPattern.exec(text)) !== null) {
         const value = this.parseMoneyValue(amountMatch[1]);
-        if (value && value > 1000) { // Filter out small amounts
+        if (value && value >= 10000) { // Contract values are typically $10K+
           allAmounts.push(value);
         }
       }
       
-      logger.info(`💰 Found ${allAmounts.length} dollar amounts: ${allAmounts.slice(0, 5).join(', ')}...`);
+      logger.info(`💰 Found ${allAmounts.length} significant dollar amounts: ${allAmounts.join(', ')}`);
       
-      // Look for Year pricing structure (Year 1, Year 2, Year 3)
+      // Look for Year pricing structure: "Year 2" followed by $ amount
+      // Pattern: Year 2: $1,150,000.00 or Year 2 | $1,150,000
       const yearPricing = [];
-      const yearPattern = /Year\s*(\d)[:\s]*\$?\s*([\d,]+(?:\.\d{2})?)/gi;
-      while ((amountMatch = yearPattern.exec(text)) !== null) {
-        const value = this.parseMoneyValue(amountMatch[2]);
-        if (value) {
-          yearPricing.push({ year: parseInt(amountMatch[1]), value });
+      
+      // Try multiple patterns for year-based pricing
+      const yearPatterns = [
+        /Year\s*(\d)\s*[:\|]?\s*\$\s*([\d,]+(?:\.\d{2})?)/gi,
+        /\("Year\s*(\d)"\)[^$]*\$\s*([\d,]+(?:\.\d{2})?)/gi,
+        /Year\s*(\d)[^$\d]*\$\s*([\d,]+(?:\.\d{2})?)/gi,
+      ];
+      
+      for (const pattern of yearPatterns) {
+        let match;
+        pattern.lastIndex = 0;
+        while ((match = pattern.exec(text)) !== null) {
+          const yearNum = parseInt(match[1]);
+          const value = this.parseMoneyValue(match[2]);
+          // Only include significant amounts (likely annual values)
+          if (value && value >= 100000 && yearNum >= 1 && yearNum <= 5) {
+            // Check if we already have this year
+            if (!yearPricing.find(y => y.year === yearNum)) {
+              yearPricing.push({ year: yearNum, value });
+            }
+          }
         }
+        if (yearPricing.length > 0) break;
       }
       
       if (yearPricing.length > 0) {
-        logger.info(`💰 Found year-based pricing: ${JSON.stringify(yearPricing)}`);
+        yearPricing.sort((a, b) => a.year - b.year);
+        logger.info(`💰 Year-based pricing: ${JSON.stringify(yearPricing)}`);
+        
         // Calculate total from all years
         extracted.totalContractValue = yearPricing.reduce((sum, y) => sum + y.value, 0);
-        // Annual value is average or Year 1 value
-        extracted.annualContractValue = yearPricing.length > 0 
-          ? Math.round(extracted.totalContractValue / yearPricing.length)
-          : yearPricing[0].value;
+        
+        // Annual value is average across years
+        const years = extracted.termMonths ? extracted.termMonths / 12 : yearPricing.length;
+        extracted.annualContractValue = Math.round(extracted.totalContractValue / years);
+        
+        // Monthly is annual / 12
+        extracted.monthlyAmount = Math.round(extracted.annualContractValue / 12);
+        
+        logger.info(`💰 Calculated: Total=$${extracted.totalContractValue}, Annual=$${extracted.annualContractValue}, Monthly=$${extracted.monthlyAmount}`);
       }
       
       // Fallback: Look for explicit Total Contract Value
