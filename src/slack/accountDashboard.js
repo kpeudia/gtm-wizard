@@ -136,40 +136,7 @@ async function generateAccountDashboard() {
     console.log(`[Dashboard] Categorized: revenue=${signedByType.revenue.length}, pilot=${signedByType.pilot.length}, loi=${signedByType.loi.length}`);
   } catch (e) { console.error('Signed deals query error:', e.message); }
   
-  // ═══════════════════════════════════════════════════════════════════════
-  // NEW LOGOS - Accounts where First_Deal_Closed__c is within last 90 days
-  // Categorized by Account.Customer_Type__c
-  // ═══════════════════════════════════════════════════════════════════════
-  const newLogosQuery = `
-    SELECT Id, Name, First_Deal_Closed__c, Customer_Type__c, Owner.Name
-    FROM Account
-    WHERE First_Deal_Closed__c >= LAST_N_DAYS:90 AND First_Deal_Closed__c != null
-    ORDER BY First_Deal_Closed__c DESC
-  `;
-  
-  let newLogosByType = { revenue: [], pilot: [], loi: [] };
-  
-  try {
-    const newLogoAccounts = await query(newLogosQuery, true);
-    console.log(`[Dashboard] New logos query returned ${newLogoAccounts?.records?.length || 0} accounts`);
-    if (newLogoAccounts?.records) {
-      // Log unique customer types found
-      const uniqueTypes = [...new Set(newLogoAccounts.records.map(a => a.Customer_Type__c).filter(Boolean))];
-      console.log(`[Dashboard] New logos Customer_Type__c values: ${JSON.stringify(uniqueTypes)}`);
-      
-      newLogoAccounts.records.forEach(acc => {
-        const logo = {
-          accountName: acc.Name,
-          closeDate: acc.First_Deal_Closed__c,
-          customerType: acc.Customer_Type__c || ''
-        };
-        
-        const category = categorizeByCustomerType(logo.customerType);
-        newLogosByType[category].push(logo);
-      });
-    }
-    console.log(`[Dashboard] New logos categorized: revenue=${newLogosByType.revenue.length}, pilot=${newLogosByType.pilot.length}, loi=${newLogosByType.loi.length}`);
-  } catch (e) { console.error('New logos query error:', e.message); }
+  // NEW LOGOS BY TYPE will be calculated from accountMap after it's built (uses same data as badges)
   
   // ═══════════════════════════════════════════════════════════════════════
   // Q4 WEIGHTED PIPELINE - Opportunities with Target_LOI_Date__c in Q4
@@ -402,6 +369,27 @@ async function generateAccountDashboard() {
   // Count accounts with/without plans
   const accountsWithPlans = Array.from(accountMap.values()).filter(a => a.hasAccountPlan).length;
   const accountsWithoutPlans = accountMap.size - accountsWithPlans;
+  
+  // ═══════════════════════════════════════════════════════════════════════
+  // ACCOUNTS BY CUSTOMER TYPE (uses same data as badges - accountMap)
+  // This ensures consistency between badges and tiles
+  // ═══════════════════════════════════════════════════════════════════════
+  let accountsByType = { revenue: [], pilot: [], loi: [] };
+  
+  accountMap.forEach(acc => {
+    if (acc.customerType) {
+      const ct = acc.customerType.toLowerCase().trim();
+      if (ct === 'revenue' || ct.includes('revenue') || ct === 'arr') {
+        accountsByType.revenue.push({ accountName: acc.name, customerType: acc.customerType });
+      } else if (ct === 'pilot' || ct.includes('pilot')) {
+        accountsByType.pilot.push({ accountName: acc.name, customerType: acc.customerType });
+      } else if (ct.includes('loi')) {
+        accountsByType.loi.push({ accountName: acc.name, customerType: acc.customerType });
+      }
+    }
+  });
+  
+  console.log(`[Dashboard] Accounts by type: revenue=${accountsByType.revenue.length}, pilot=${accountsByType.pilot.length}, loi=${accountsByType.loi.length}`);
   
   // For "By Stage" tab - group by stage for detailed breakdown
   // FIXED: Include Stage 0 to match all opportunities
@@ -943,41 +931,24 @@ ${early.map((acc, idx) => {
 
 <!-- TAB 4: ACCOUNTS -->
 <div id="account-plans" class="tab-content">
-  <!-- New Logos Summary Tiles -->
+  <!-- Accounts by Customer Type (uses same data as badges below) -->
   <div style="display: flex; gap: 8px; margin-bottom: 12px;">
     <div style="flex: 1; background: #f0fdf4; padding: 10px; border-radius: 6px;">
       <div style="font-size: 0.65rem; font-weight: 600; color: #16a34a; margin-bottom: 4px;">REVENUE</div>
-      <div style="font-size: 1.25rem; font-weight: 700; color: #166534;">${newLogosByType.revenue.length}</div>
-      <div style="font-size: 0.6rem; color: #6b7280; margin-top: 2px;">${newLogosByType.revenue.map(l => l.accountName).join(', ') || '-'}</div>
+      <div style="font-size: 1.25rem; font-weight: 700; color: #166534;">${accountsByType.revenue.length}</div>
+      <div style="font-size: 0.6rem; color: #6b7280; margin-top: 2px;">${accountsByType.revenue.map(a => a.accountName).join(', ') || '-'}</div>
     </div>
     <div style="flex: 1; background: #eff6ff; padding: 10px; border-radius: 6px;">
       <div style="font-size: 0.65rem; font-weight: 600; color: #2563eb; margin-bottom: 4px;">PILOT</div>
-      <div style="font-size: 1.25rem; font-weight: 700; color: #1e40af;">${newLogosByType.pilot.length}</div>
-      <div style="font-size: 0.6rem; color: #6b7280; margin-top: 2px;">${newLogosByType.pilot.map(l => l.accountName).join(', ') || '-'}</div>
+      <div style="font-size: 1.25rem; font-weight: 700; color: #1e40af;">${accountsByType.pilot.length}</div>
+      <div style="font-size: 0.6rem; color: #6b7280; margin-top: 2px;">${accountsByType.pilot.map(a => a.accountName).join(', ') || '-'}</div>
     </div>
     <div style="flex: 1; background: #f5f3ff; padding: 10px; border-radius: 6px;">
       <div style="font-size: 0.65rem; font-weight: 600; color: #7c3aed; margin-bottom: 4px;">LOI</div>
-      <div style="font-size: 1.25rem; font-weight: 700; color: #5b21b6;">${newLogosByType.loi.length}</div>
-      <div style="font-size: 0.6rem; color: #6b7280; margin-top: 2px;">${newLogosByType.loi.map(l => l.accountName).join(', ') || '-'}</div>
+      <div style="font-size: 1.25rem; font-weight: 700; color: #5b21b6;">${accountsByType.loi.length}</div>
+      <div style="font-size: 0.6rem; color: #6b7280; margin-top: 2px;">${accountsByType.loi.map(a => a.accountName).join(', ') || '-'}</div>
     </div>
   </div>
-  
-  <!-- Recently Signed (Collapsed) -->
-  <details style="margin-bottom: 12px;">
-    <summary style="cursor: pointer; font-size: 0.75rem; font-weight: 600; color: #374151; padding: 8px; background: #f9fafb; border-radius: 6px;">
-      New Logos (Last 90 Days) - ${newLogosByType.revenue.length + newLogosByType.pilot.length + newLogosByType.loi.length} total
-    </summary>
-    <div style="padding: 8px; font-size: 0.7rem;">
-      ${[...newLogosByType.revenue, ...newLogosByType.pilot, ...newLogosByType.loi]
-        .sort((a, b) => b.closeDate?.localeCompare(a.closeDate) || 0)
-        .map(l => `
-          <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f1f3f5;">
-            <span>${l.accountName}</span>
-            <span style="color: #6b7280;">${l.closeDate ? new Date(l.closeDate).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) : '-'}</span>
-          </div>
-        `).join('') || '<div style="color: #9ca3af; text-align: center; padding: 8px;">No new logos in last 90 days</div>'}
-    </div>
-  </details>
 
   <div class="stage-section">
     <div class="stage-title">Account Plans & Pipeline</div>
@@ -1174,3 +1145,4 @@ module.exports = {
   generateAccountDashboard,
   generateLoginPage
 };
+
