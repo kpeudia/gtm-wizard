@@ -42,43 +42,92 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
  * Generate Account Status Dashboard - Mobile-optimized with tabs
  */
 async function generateAccountDashboard() {
-  // Query Active Revenue (Contracts)
-  const activeRevenueQuery = `
-    SELECT Account.Name, Contract_Type__c, Annualized_Revenue__c, Contract_Value__c,
-           StartDate, EndDate, Status, Product_Line__c
+  // ═══════════════════════════════════════════════════════════════════════
+  // ACTIVE CONTRACTS QUERY (Status = Activated)
+  // ═══════════════════════════════════════════════════════════════════════
+  const contractsQuery = `
+    SELECT Account.Name, Contract_Type__c, Contract_Value__c, Annualized_Revenue__c,
+           Amount__c, StartDate, EndDate, Status, Product_Line__c, Parent_Product__c,
+           ContractNumber
     FROM Contract
-    WHERE Status = 'Activated' AND EndDate >= TODAY
-    ORDER BY Annualized_Revenue__c DESC NULLS LAST LIMIT 50
+    WHERE Status = 'Activated'
+    ORDER BY Account.Name ASC, Annualized_Revenue__c DESC NULLS LAST
   `;
   
-  let activeContracts = [];
-  let totalActiveRevenue = 0;
+  let contractsByAccount = new Map();
+  let recurringTotal = 0;
+  let projectTotal = 0;
+  let totalARR = 0;
+  
   try {
-    const contractData = await query(activeRevenueQuery, true);
+    const contractData = await query(contractsQuery, true);
     if (contractData?.records) {
-      activeContracts = contractData.records;
-      activeContracts.forEach(c => { totalActiveRevenue += (c.Annualized_Revenue__c || c.Contract_Value__c || 0); });
+      contractData.records.forEach(c => {
+        const accountName = c.Account?.Name || 'Unknown';
+        if (!contractsByAccount.has(accountName)) {
+          contractsByAccount.set(accountName, { recurring: [], project: [], totalARR: 0, totalProject: 0 });
+        }
+        const acct = contractsByAccount.get(accountName);
+        const acv = c.Annualized_Revenue__c || c.Contract_Value__c || 0;
+        
+        if (c.Contract_Type__c === 'Recurring') {
+          acct.recurring.push(c);
+          acct.totalARR += acv;
+          recurringTotal += acv;
+          totalARR += acv;
+        } else {
+          // LOI, Project, One-Time
+          acct.project.push(c);
+          acct.totalProject += (c.Contract_Value__c || 0);
+          projectTotal += (c.Contract_Value__c || 0);
+        }
+      });
     }
-  } catch (e) { console.error('Active revenue query:', e.message); }
+  } catch (e) { console.error('Contracts query error:', e.message); }
 
-  // Query Signed Logos (Last 90 Days)
+  // ═══════════════════════════════════════════════════════════════════════
+  // SIGNED LOGOS - Closed Won in last 90 days
+  // Check: Is_New_Logo__c OR First_Deal_Closed__c matches CloseDate
+  // ═══════════════════════════════════════════════════════════════════════
   const signedLogosQuery = `
-    SELECT Account.Name, Account.Is_New_Logo__c, ACV__c, CloseDate, Product_Line__c
+    SELECT Account.Name, Account.Is_New_Logo__c, Account.First_Deal_Closed__c, 
+           Account.Customer_Type__c, ACV__c, CloseDate, Name, Product_Line__c
     FROM Opportunity
     WHERE StageName = 'Closed Won' AND CloseDate >= LAST_N_DAYS:90
     ORDER BY CloseDate DESC
   `;
   
-  let signedLogos = { newLogos: [], existing: [] };
+  let signedLogos = { newLogos: [], expansions: [] };
+  let seenAccounts = new Set();
+  
   try {
     const signedData = await query(signedLogosQuery, true);
     if (signedData?.records) {
       signedData.records.forEach(opp => {
-        if (opp.Account?.Is_New_Logo__c) signedLogos.newLogos.push(opp);
-        else signedLogos.existing.push(opp);
+        const accountName = opp.Account?.Name;
+        // Skip if we already counted this account
+        if (seenAccounts.has(accountName)) {
+          // Add to expansions if same account has multiple deals
+          signedLogos.expansions.push(opp);
+          return;
+        }
+        
+        // Determine if new logo:
+        // 1. Account.Is_New_Logo__c = true, OR
+        // 2. First_Deal_Closed__c equals this CloseDate (first deal ever)
+        const isNewLogo = opp.Account?.Is_New_Logo__c || 
+          (opp.Account?.First_Deal_Closed__c && opp.CloseDate && 
+           opp.Account.First_Deal_Closed__c === opp.CloseDate);
+        
+        if (isNewLogo) {
+          signedLogos.newLogos.push(opp);
+        } else {
+          signedLogos.expansions.push(opp);
+        }
+        seenAccounts.add(accountName);
       });
     }
-  } catch (e) { console.error('Signed logos query:', e.message); }
+  } catch (e) { console.error('Signed logos query error:', e.message); }
 
   // Account Potential Value Mapping (from BL categorization)
   const potentialValueMap = {
@@ -697,55 +746,78 @@ ${early.map((acc, idx) => {
 
 <!-- TAB 3: REVENUE -->
 <div id="revenue" class="tab-content">
+  <!-- Revenue Summary -->
+  <div class="stage-section">
+    <div class="stage-title">Active Contracts</div>
+    <div class="stage-subtitle">${contractsByAccount.size} accounts • Recurring: $${(recurringTotal / 1000000).toFixed(2)}M ARR • Projects: $${(projectTotal / 1000000).toFixed(2)}M</div>
+  </div>
+  
+  <!-- Contracts by Account -->
   <div class="section-card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-      <h2>Active Revenue</h2>
-      <span style="background: #8e99e1; color: #fff; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">$${(totalActiveRevenue / 1000000).toFixed(2)}M ARR</span>
-    </div>
-    <div style="display: flex; flex-direction: column; gap: 6px;">
-      ${activeContracts.slice(0, 10).map(c => `
-        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f3f5;">
-          <span style="font-weight: 500; font-size: 0.8rem;">${c.Account?.Name || 'Unknown'}</span>
-          <span style="font-size: 0.75rem; color: #6b7280;">$${((c.Annualized_Revenue__c || c.Contract_Value__c || 0) / 1000).toFixed(0)}K${c.EndDate ? ' • ' + c.EndDate.substring(0,7) : ''}</span>
-        </div>
-      `).join('')}
-      ${activeContracts.length === 0 ? '<div style="text-align: center; color: #9ca3af; padding: 16px; font-size: 0.8rem;">No active contracts</div>' : ''}
-    </div>
+    <table style="width: 100%; border-collapse: collapse; font-size: 0.75rem;">
+      <thead>
+        <tr style="border-bottom: 2px solid #e5e7eb; text-align: left;">
+          <th style="padding: 8px 4px; font-weight: 600;">Account</th>
+          <th style="padding: 8px 4px; font-weight: 600; text-align: right;">ARR</th>
+          <th style="padding: 8px 4px; font-weight: 600; text-align: right;">Project</th>
+          <th style="padding: 8px 4px; font-weight: 600; text-align: center;">End</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${Array.from(contractsByAccount.entries())
+          .filter(([name, data]) => data.totalARR > 0 || data.totalProject > 0)
+          .sort((a, b) => (b[1].totalARR + b[1].totalProject) - (a[1].totalARR + a[1].totalProject))
+          .slice(0, 20)
+          .map(([name, data]) => {
+            const allContracts = [...data.recurring, ...data.project];
+            const nearestEnd = allContracts.filter(c => c.EndDate).sort((a, b) => a.EndDate.localeCompare(b.EndDate))[0]?.EndDate;
+            return `
+        <tr style="border-bottom: 1px solid #f1f3f5;">
+          <td style="padding: 6px 4px;">${name}</td>
+          <td style="padding: 6px 4px; text-align: right;">${data.totalARR > 0 ? '$' + (data.totalARR / 1000).toFixed(0) + 'K' : '-'}</td>
+          <td style="padding: 6px 4px; text-align: right;">${data.totalProject > 0 ? '$' + (data.totalProject / 1000).toFixed(0) + 'K' : '-'}</td>
+          <td style="padding: 6px 4px; text-align: center; color: #6b7280;">${nearestEnd ? nearestEnd.substring(5, 7) + '/' + nearestEnd.substring(2, 4) : '-'}</td>
+        </tr>`;
+          }).join('')}
+      </tbody>
+      <tfoot>
+        <tr style="border-top: 2px solid #e5e7eb; font-weight: 600;">
+          <td style="padding: 8px 4px;">TOTAL</td>
+          <td style="padding: 8px 4px; text-align: right;">$${(recurringTotal / 1000).toFixed(0)}K</td>
+          <td style="padding: 8px 4px; text-align: right;">$${(projectTotal / 1000).toFixed(0)}K</td>
+          <td style="padding: 8px 4px;"></td>
+        </tr>
+      </tfoot>
+    </table>
+    ${contractsByAccount.size === 0 ? '<div style="text-align: center; color: #9ca3af; padding: 16px; font-size: 0.8rem;">No active contracts</div>' : ''}
   </div>
 
-  <div class="section-card" style="margin-top: 12px;">
-    <h2 style="margin-bottom: 12px;">Signed Logos (Last 90 Days)</h2>
-    <div style="display: flex; gap: 12px; margin-bottom: 12px;">
-      <div style="flex: 1; background: #f0fdf4; padding: 12px; border-radius: 6px; text-align: center;">
-        <div style="font-size: 1.5rem; font-weight: 700; color: #16a34a;">${signedLogos.newLogos.length}</div>
-        <div style="font-size: 0.7rem; color: #6b7280;">New Logos</div>
-      </div>
-      <div style="flex: 1; background: #eff6ff; padding: 12px; border-radius: 6px; text-align: center;">
-        <div style="font-size: 1.5rem; font-weight: 700; color: #2563eb;">${signedLogos.existing.length}</div>
-        <div style="font-size: 0.7rem; color: #6b7280;">Existing</div>
-      </div>
-    </div>
+  <!-- Signed Logos (Last 90 Days) -->
+  <div class="stage-section" style="margin-top: 16px;">
+    <div class="stage-title">Signed (Last 90 Days)</div>
+    <div class="stage-subtitle">${signedLogos.newLogos.length} new logos • ${signedLogos.expansions.length} expansions</div>
+  </div>
+  
+  <div class="section-card">
     ${signedLogos.newLogos.length > 0 ? `
-    <div style="margin-bottom: 8px; font-size: 0.7rem; font-weight: 600; color: #6b7280; text-transform: uppercase;">New Logos</div>
-    <div style="display: flex; flex-direction: column; gap: 4px;">
-      ${signedLogos.newLogos.slice(0, 8).map(o => `
-        <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f3f5; font-size: 0.8rem;">
-          <span>${o.Account?.Name || 'Unknown'}</span>
-          <span style="color: #6b7280;">$${((o.ACV__c || 0) / 1000).toFixed(0)}K</span>
-        </div>
-      `).join('')}
-    </div>` : ''}
-    ${signedLogos.existing.length > 0 ? `
-    <div style="margin-top: 12px; margin-bottom: 8px; font-size: 0.7rem; font-weight: 600; color: #6b7280; text-transform: uppercase;">Expansions</div>
-    <div style="display: flex; flex-direction: column; gap: 4px;">
-      ${signedLogos.existing.slice(0, 8).map(o => `
-        <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f3f5; font-size: 0.8rem;">
-          <span>${o.Account?.Name || 'Unknown'}</span>
-          <span style="color: #6b7280;">$${((o.ACV__c || 0) / 1000).toFixed(0)}K</span>
-        </div>
-      `).join('')}
-    </div>` : ''}
-    ${signedLogos.newLogos.length === 0 && signedLogos.existing.length === 0 ? '<div style="text-align: center; color: #9ca3af; padding: 16px; font-size: 0.8rem;">No signed logos in last 90 days</div>' : ''}
+    <div style="font-size: 0.7rem; font-weight: 600; color: #16a34a; margin-bottom: 6px;">NEW LOGOS</div>
+    ${signedLogos.newLogos.map(o => `
+      <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f3f5; font-size: 0.8rem;">
+        <span>${o.Account?.Name || 'Unknown'}</span>
+        <span style="color: #6b7280;">$${((o.ACV__c || 0) / 1000).toFixed(0)}K • ${o.CloseDate?.substring(5, 10) || ''}</span>
+      </div>
+    `).join('')}` : ''}
+    
+    ${signedLogos.expansions.length > 0 ? `
+    <div style="font-size: 0.7rem; font-weight: 600; color: #6b7280; margin-top: 12px; margin-bottom: 6px;">EXPANSIONS</div>
+    ${signedLogos.expansions.slice(0, 10).map(o => `
+      <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f3f5; font-size: 0.8rem;">
+        <span>${o.Account?.Name || 'Unknown'}</span>
+        <span style="color: #6b7280;">$${((o.ACV__c || 0) / 1000).toFixed(0)}K • ${o.CloseDate?.substring(5, 10) || ''}</span>
+      </div>
+    `).join('')}` : ''}
+    
+    ${signedLogos.newLogos.length === 0 && signedLogos.expansions.length === 0 ? '<div style="text-align: center; color: #9ca3af; padding: 16px; font-size: 0.8rem;">No closed deals in last 90 days</div>' : ''}
   </div>
 </div>
 
