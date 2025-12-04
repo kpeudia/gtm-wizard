@@ -168,7 +168,7 @@ class GTMBrainApp {
     });
 
     // Account Status Dashboard - Password protected
-    const DASHBOARD_PASSWORDS = ['udia gtm accounts', 'udia account status'];
+    const DASHBOARD_PASSWORDS = ['eudia-gtm'];
     const AUTH_COOKIE = 'gtm_dash_auth';
     
     this.expressApp.get('/account-dashboard', async (req, res) => {
