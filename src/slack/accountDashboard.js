@@ -176,6 +176,49 @@ async function generateAccountDashboard() {
     if (val >= 1000000) return '$' + (val / 1000000).toFixed(1) + 'm';
     return '$' + (val / 1000).toFixed(0) + 'k';
   };
+  
+  // Helper function to format date as abbreviated (MAR-5)
+  const formatDateAbbrev = (dateStr) => {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    return `${months[date.getMonth()]}-${date.getDate()}`;
+  };
+  
+  // ═══════════════════════════════════════════════════════════════════════
+  // LOI HISTORY - Find Revenue accounts that signed LOIs before converting
+  // Check for closed Booking/LOI deals on each Revenue account
+  // ═══════════════════════════════════════════════════════════════════════
+  const loiHistoryQuery = `
+    SELECT Account.Name, Revenue_Type__c
+    FROM Opportunity
+    WHERE Revenue_Type__c = 'Booking' AND IsClosed = true AND IsWon = true
+  `;
+  
+  let accountsWithLOIHistory = new Set();
+  
+  try {
+    const loiHistoryData = await query(loiHistoryQuery, true);
+    if (loiHistoryData?.records) {
+      loiHistoryData.records.forEach(opp => {
+        if (opp.Account?.Name) {
+          accountsWithLOIHistory.add(opp.Account.Name);
+        }
+      });
+    }
+    console.log(`[Dashboard] Accounts with LOI history: ${accountsWithLOIHistory.size}`);
+  } catch (e) { console.error('LOI history query error:', e.message); }
+  
+  // Add manual entry for Ecolab (waiting for contract)
+  if (!contractsByAccount.has('Ecolab')) {
+    contractsByAccount.set('Ecolab', { recurring: [], project: [], totalARR: 200000, totalProject: 0, pending: true });
+    recurringTotal += 200000;
+  } else if (contractsByAccount.get('Ecolab').totalARR === 0) {
+    const ecolab = contractsByAccount.get('Ecolab');
+    ecolab.totalARR = 200000;
+    ecolab.pending = true;
+    recurringTotal += 200000;
+  }
 
   // Account Potential Value Mapping (from BL categorization)
   const potentialValueMap = {
@@ -821,14 +864,28 @@ ${early.map((acc, idx) => {
       <tbody>
         ${Array.from(contractsByAccount.entries())
           .filter(([name, data]) => data.totalARR > 0 || data.totalProject > 0)
-          .sort((a, b) => (b[1].totalARR + b[1].totalProject) - (a[1].totalARR + a[1].totalProject))
-          .slice(0, 25)
-          .map(([name, data]) => `
+          .sort((a, b) => {
+            // Sort ARR accounts first (by ARR amount), then Project-only accounts
+            const aHasARR = a[1].totalARR > 0;
+            const bHasARR = b[1].totalARR > 0;
+            if (aHasARR && !bHasARR) return -1; // A has ARR, B doesn't -> A first
+            if (!aHasARR && bHasARR) return 1;  // B has ARR, A doesn't -> B first
+            // Both have ARR or both have only Project -> sort by value
+            if (aHasARR && bHasARR) return b[1].totalARR - a[1].totalARR;
+            return b[1].totalProject - a[1].totalProject;
+          })
+          .slice(0, 30)
+          .map(([name, data]) => {
+            const hasLOIHistory = accountsWithLOIHistory.has(name);
+            const isPending = data.pending;
+            const indicator = isPending ? ' *' : (hasLOIHistory ? ' †' : '');
+            return `
         <tr style="border-bottom: 1px solid #f1f3f5;">
-          <td style="padding: 6px 4px;">${name}</td>
+          <td style="padding: 6px 4px;">${name}${indicator}</td>
           <td style="padding: 6px 4px; text-align: right;">${formatCurrency(data.totalARR)}</td>
           <td style="padding: 6px 4px; text-align: right;">${formatCurrency(data.totalProject)}</td>
-        </tr>`).join('')}
+        </tr>`;
+          }).join('')}
       </tbody>
       <tfoot>
         <tr style="border-top: 2px solid #e5e7eb; font-weight: 600;">
@@ -838,6 +895,7 @@ ${early.map((acc, idx) => {
         </tr>
       </tfoot>
     </table>
+    <div style="font-size: 0.6rem; color: #9ca3af; margin-top: 6px;">* Awaiting contract  † Signed LOI before converting</div>
     ${contractsByAccount.size === 0 ? '<div style="text-align: center; color: #9ca3af; padding: 16px; font-size: 0.8rem;">No active contracts</div>' : ''}
   </div>
 
@@ -851,27 +909,36 @@ ${early.map((acc, idx) => {
     ${signedByType.revenue.length > 0 ? `
     <div style="font-size: 0.7rem; font-weight: 600; color: #16a34a; margin-bottom: 6px;">REVENUE (${formatCurrency(signedDealsTotal.revenue)})</div>
     ${signedByType.revenue.map(d => `
-      <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f1f3f5; font-size: 0.75rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #f1f3f5; font-size: 0.75rem;">
         <span>${d.accountName}</span>
-        <span style="color: #6b7280;">${formatCurrency(d.acv)}</span>
+        <div style="display: flex; gap: 12px;">
+          <span style="color: #9ca3af; font-size: 0.65rem;">${formatDateAbbrev(d.closeDate)}</span>
+          <span style="color: #6b7280; min-width: 50px; text-align: right;">${formatCurrency(d.acv)}</span>
+        </div>
       </div>
     `).join('')}` : ''}
     
     ${signedByType.pilot.length > 0 ? `
     <div style="font-size: 0.7rem; font-weight: 600; color: #2563eb; margin-top: 10px; margin-bottom: 6px;">PILOT (${formatCurrency(signedDealsTotal.pilot)})</div>
     ${signedByType.pilot.map(d => `
-      <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f1f3f5; font-size: 0.75rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #f1f3f5; font-size: 0.75rem;">
         <span>${d.accountName}</span>
-        <span style="color: #6b7280;">${formatCurrency(d.acv)}</span>
+        <div style="display: flex; gap: 12px;">
+          <span style="color: #9ca3af; font-size: 0.65rem;">${formatDateAbbrev(d.closeDate)}</span>
+          <span style="color: #6b7280; min-width: 50px; text-align: right;">${formatCurrency(d.acv)}</span>
+        </div>
       </div>
     `).join('')}` : ''}
     
     ${signedByType.loi.length > 0 ? `
     <div style="font-size: 0.7rem; font-weight: 600; color: #7c3aed; margin-top: 10px; margin-bottom: 6px;">LOI (${formatCurrency(signedDealsTotal.loi)})</div>
     ${signedByType.loi.map(d => `
-      <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f1f3f5; font-size: 0.75rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #f1f3f5; font-size: 0.75rem;">
         <span>${d.accountName}</span>
-        <span style="color: #6b7280;">${formatCurrency(d.acv)}</span>
+        <div style="display: flex; gap: 12px;">
+          <span style="color: #9ca3af; font-size: 0.65rem;">${formatDateAbbrev(d.closeDate)}</span>
+          <span style="color: #6b7280; min-width: 50px; text-align: right;">${formatCurrency(d.acv)}</span>
+        </div>
       </div>
     `).join('')}` : ''}
     
@@ -893,7 +960,7 @@ ${early.map((acc, idx) => {
     <div style="flex: 1; background: #f0fdf4; padding: 10px; border-radius: 6px;">
       <div style="font-size: 0.65rem; font-weight: 600; color: #16a34a; margin-bottom: 4px;">REVENUE</div>
       <div style="font-size: 1.25rem; font-weight: 700; color: #166534;">${logosByType.revenue.length}</div>
-      <div style="font-size: 0.6rem; color: #6b7280; margin-top: 2px;">${logosByType.revenue.map(a => a.accountName).join(', ') || '-'}</div>
+      <div style="font-size: 0.6rem; color: #6b7280; margin-top: 2px;">${logosByType.revenue.map(a => a.accountName + (accountsWithLOIHistory.has(a.accountName) ? '†' : '')).join(', ') || '-'}</div>
     </div>
     <div style="flex: 1; background: #eff6ff; padding: 10px; border-radius: 6px;">
       <div style="font-size: 0.65rem; font-weight: 600; color: #2563eb; margin-bottom: 4px;">PILOT</div>
@@ -906,6 +973,7 @@ ${early.map((acc, idx) => {
       <div style="font-size: 0.6rem; color: #6b7280; margin-top: 2px;">${logosByType.loi.map(a => a.accountName).join(', ') || '-'}</div>
     </div>
   </div>
+  <div style="font-size: 0.55rem; color: #9ca3af; margin-bottom: 12px;">† Signed LOI before converting to Revenue</div>
   
   <div class="stage-section">
     <div class="stage-title">Account Plans & Pipeline</div>
