@@ -538,9 +538,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .badge-new { background: #d1fae5; color: #065f46; }
 .badge-revenue { background: #dbeafe; color: #1e40af; }
 .badge-pilot { background: #fef3c7; color: #92400e; }
-.badge-loi { background: #e0e7ff; color: #3730a3; }
+.badge-loi { background: #f3f4f6; color: #4b5563; }
 .badge-other { background: #f3f4f6; color: #374151; }
-.badge-marquee { background: #fce7f3; color: #831843; border: 1px solid #db2777; }
+.badge-marquee { background: #fff; color: #6b7280; border: 1px solid #d1d5db; font-weight: 500; }
 .badge-velocity { background: #e0f2fe; color: #075985; border: 1px solid #0284c7; }
 .plan-status { margin-bottom: 16px; padding: 12px; background: #f9fafb; border-radius: 6px; }
 .plan-stat { display: inline-block; margin-right: 20px; }
@@ -772,7 +772,7 @@ ${early.map((acc, idx) => {
   
   <!-- Account Tags Legend -->
   <div style="margin-top: 12px; padding: 10px; background: #f9fafb; border-radius: 6px; font-size: 0.65rem; color: #6b7280;">
-    <div style="margin-bottom: 4px;"><span class="badge badge-marquee" style="font-size: 0.6rem;">High-Touch Marquee</span> Large enterprise, $1m+ ARR potential, requires senior engagement</div>
+    <div style="margin-bottom: 4px;"><span class="badge badge-marquee" style="font-size: 0.6rem;">High-Touch Marquee</span> Large enterprise, $1M+ ARR potential, requires senior engagement</div>
     <div style="margin-bottom: 4px;"><span class="badge badge-velocity" style="font-size: 0.6rem;">High-Velocity</span> Mid-market, ~$150k ARR potential, faster sales cycle</div>
     <div><span class="badge badge-new" style="font-size: 0.6rem;">New</span> Account with no prior closed deals</div>
   </div>
@@ -931,7 +931,7 @@ ${early.map((acc, idx) => {
     `).join('')}` : ''}
     
     ${signedByType.loi.length > 0 ? `
-    <div style="font-size: 0.7rem; font-weight: 600; color: #7c3aed; margin-top: 10px; margin-bottom: 6px;">LOI (${formatCurrency(signedDealsTotal.loi)})</div>
+    <div style="font-size: 0.7rem; font-weight: 600; color: #6b7280; margin-top: 10px; margin-bottom: 6px;">LOI (${formatCurrency(signedDealsTotal.loi)})</div>
     ${signedByType.loi.map(d => `
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #f1f3f5; font-size: 0.75rem;">
         <span>${d.accountName}</span>
@@ -972,9 +972,9 @@ ${early.map((acc, idx) => {
       <div style="font-size: 1.25rem; font-weight: 700; color: #1e40af;">${logosByType.pilot.length}</div>
       <div style="font-size: 0.6rem; color: #6b7280; margin-top: 2px;">${logosByType.pilot.map(a => a.accountName).join(', ') || '-'}</div>
     </div>
-    <div style="flex: 1; background: #f5f3ff; padding: 10px; border-radius: 6px;">
-      <div style="font-size: 0.65rem; font-weight: 600; color: #7c3aed; margin-bottom: 4px;">LOI</div>
-      <div style="font-size: 1.25rem; font-weight: 700; color: #5b21b6;">${logosByType.loi.length}</div>
+    <div style="flex: 1; background: #f9fafb; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+      <div style="font-size: 0.65rem; font-weight: 600; color: #6b7280; margin-bottom: 4px;">LOI</div>
+      <div style="font-size: 1.25rem; font-weight: 700; color: #374151;">${logosByType.loi.length}</div>
       <div style="font-size: 0.6rem; color: #6b7280; margin-top: 2px;">${logosByType.loi.map(a => a.accountName).join(', ') || '-'}</div>
     </div>
   </div>
@@ -987,7 +987,7 @@ ${early.map((acc, idx) => {
     <div style="display: flex; gap: 16px; font-size: 0.6rem; color: #9ca3af;">
       <span><strong style="color: #16a34a;">Revenue</strong> = ARR customer</span>
       <span><strong style="color: #2563eb;">Pilot</strong> = Active project</span>
-      <span><strong style="color: #7c3aed;">LOI</strong> = Signed commitment</span>
+      <span><strong style="color: #6b7280;">LOI</strong> = Signed commitment</span>
       <span><strong style="color: #065f46;">New</strong> = First deal &lt;90 days</span>
     </div>
   </div>
@@ -1065,9 +1065,9 @@ ${early.map((acc, idx) => {
               '</div>' +
             '</summary>' +
             '<div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 0.8125rem;">' +
-              (acc.hasAccountPlan ? '<div style="background: #f0f9ff; padding: 10px; border-radius: 4px; margin-bottom: 8px;"><strong style="color: #1e40af;">✓ Account Plan</strong><div style="color: #1e40af; margin-top: 4px; font-size: 0.75rem; white-space: pre-wrap; max-height: 100px; overflow-y: auto;">' + (acc.accountPlan ? acc.accountPlan.substring(0, 200) + (acc.accountPlan.length > 200 ? '...' : '') : '') + '</div></div>' : '') +
+              (acc.hasAccountPlan ? '<div style="background: #f0f9ff; padding: 10px; border-radius: 4px; margin-bottom: 8px;"><strong style="color: #1e40af;">✓ Account Plan</strong><div style="color: #1e40af; margin-top: 4px; font-size: 0.75rem; white-space: pre-wrap;">' + (acc.accountPlan || '') + '</div></div>' : '') +
               (lastMeetingDate || nextMeetingDate ? '<div style="background: #ecfdf5; padding: 10px; border-radius: 4px; margin-bottom: 8px; font-size: 0.8125rem; color: #065f46;">' + (lastMeetingDate ? '<div style="margin-bottom: 4px;"><strong>📅 Last Meeting:</strong> ' + lastMeetingDate + (lastMeetingSubject ? ' - ' + lastMeetingSubject : '') + '</div>' : '') + (nextMeetingDate ? '<div><strong>📅 Next Meeting:</strong> ' + nextMeetingDate + (nextMeetingSubject ? ' - ' + nextMeetingSubject : '') + '</div>' : '') + '</div>' : '<div style="background: #fef2f2; padding: 8px; border-radius: 4px; margin-bottom: 8px; font-size: 0.75rem; color: #991b1b;">📭 No meetings scheduled</div>') +
-              (legalContacts.length > 0 ? '<div style="background: #ede9fe; padding: 8px; border-radius: 4px; margin-bottom: 8px; font-size: 0.75rem; color: #5b21b6;"><strong>Legal Contacts:</strong> ' + legalContacts.join(', ') + '</div>' : '') +
+              (legalContacts.length > 0 ? '<div style="background: #f3f4f6; padding: 8px; border-radius: 4px; margin-bottom: 8px; font-size: 0.75rem; color: #374151;"><strong>Legal Contacts:</strong> ' + legalContacts.join(', ') + '</div>' : '') +
               '<div style="margin-top: 8px; font-size: 0.8125rem;">' +
                 '<div style="color: #374151; margin-bottom: 4px;"><strong>Products:</strong> ' + productList + '</div>' +
                 (acc.customerType ? '<div style="color: #374151; margin-bottom: 4px;"><strong>Customer Type:</strong> ' + acc.customerType + '</div>' : '') +
