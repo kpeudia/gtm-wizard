@@ -505,6 +505,8 @@ async function generateAccountDashboard() {
       AND (NOT Account.Name LIKE '%Acme%')
       AND (NOT Account.Name LIKE '%Sandbox%')
       AND (NOT Account.Name LIKE '%Test%')
+      AND (NOT Account.Name LIKE '%MasterCard Rose%')
+      AND (NOT Account.Name LIKE '%DXC Technology%')
     ORDER BY CloseDate DESC
   `;
   
@@ -519,6 +521,8 @@ async function generateAccountDashboard() {
       AND (NOT Account.Name LIKE '%Acme%')
       AND (NOT Account.Name LIKE '%Sandbox%')
       AND (NOT Account.Name LIKE '%Test%')
+      AND (NOT Account.Name LIKE '%MasterCard Rose%')
+      AND (NOT Account.Name LIKE '%DXC Technology%')
     ORDER BY CloseDate DESC
   `;
   
@@ -537,11 +541,15 @@ async function generateAccountDashboard() {
   let novDecRevenue = [];
   let novDecRevenueTotal = 0;
   
-  // Helper to check if account is a sample/test account
+  // Helper to check if account is a sample/test/dummy account
   const isSampleAccount = (name) => {
     if (!name) return false;
     const lower = name.toLowerCase();
-    return lower.includes('sample') || lower.includes('acme') || lower.includes('sandbox') || lower.includes('test');
+    // Exclude sample, test, sandbox accounts
+    if (lower.includes('sample') || lower.includes('acme') || lower.includes('sandbox') || lower.includes('test')) return true;
+    // Exclude specific dummy accounts
+    if (lower.includes('mastercard rose') || lower.includes('dxc technology')) return true;
+    return false;
   };
   
   try {
@@ -1330,7 +1338,7 @@ ${generateTopCoTab(totalGross, totalWeighted, totalDeals, accountMap.size, stage
     `).join('')}` : ''}
     
     ${signedByType.loi.length > 0 ? `
-    <div style="font-size: 0.7rem; font-weight: 600; color: #6b7280; margin-top: 10px; margin-bottom: 6px;">LOI (${formatCurrency(signedDealsTotal.loi)})</div>
+    <div style="font-size: 0.7rem; font-weight: 600; color: #1f2937; margin-top: 10px; margin-bottom: 6px;">LOI (${formatCurrency(signedDealsTotal.loi)})</div>
     ${signedByType.loi.map(d => `
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #f1f3f5; font-size: 0.75rem;">
         <span>${d.accountName}</span>
@@ -1346,9 +1354,9 @@ ${generateTopCoTab(totalGross, totalWeighted, totalDeals, accountMap.size, stage
   
   <!-- Definitions -->
   <div style="margin-top: 16px; padding: 10px; background: #f9fafb; border-radius: 6px; font-size: 0.65rem; color: #6b7280;">
-    <div style="margin-bottom: 4px;"><strong>Revenue:</strong> Recurring/ARR contracts (Revenue_Type = ARR)</div>
-    <div style="margin-bottom: 4px;"><strong>Pilot:</strong> Project engagements (Revenue_Type = Project)</div>
-    <div><strong>LOI:</strong> Commitments/Bookings (Revenue_Type = Booking)</div>
+    <div style="margin-bottom: 4px;"><strong>Revenue:</strong> Recurring/ARR subscription contracts</div>
+    <div style="margin-bottom: 4px;"><strong>Pilot:</strong> One-time project engagements</div>
+    <div><strong>LOI:</strong> Signed commitments to spend over defined period</div>
   </div>
 </div>
 
