@@ -508,13 +508,13 @@ async function generateAccountDashboard() {
     ORDER BY CloseDate DESC
   `;
   
-  // FQ4 TO DATE (Fiscal Q4: Nov 1, 2024 - Jan 31, 2025)
+  // FQ4 TO DATE (Fiscal Q4: Nov 1, 2025 - Jan 31, 2026)
   // For Top Co Closed Revenue section - only deals closed since fiscal quarter start
   const novDecDealsQuery = `
     SELECT Account.Name, Name, ACV__c, CloseDate, Product_Line__c, Revenue_Type__c, StageName
     FROM Opportunity
     WHERE StageName = 'Stage 6. Closed(Won)' 
-      AND CloseDate >= 2024-11-01
+      AND CloseDate >= 2025-11-01
       AND (NOT Account.Name LIKE '%Sample%')
       AND (NOT Account.Name LIKE '%Acme%')
       AND (NOT Account.Name LIKE '%Sandbox%')
