@@ -494,20 +494,31 @@ async function generateAccountDashboard() {
   // ═══════════════════════════════════════════════════════════════════════
   // ALL CLOSED WON DEALS - Only 'Stage 6. Closed(Won)' opportunities
   // Excludes deals from other closed stages (like Glanbia, OpenAI, etc.)
+  // Excludes sample/test accounts (Acme, Sample, Sandbox, etc.)
   // Categorized by Revenue_Type__c: ARR = Revenue, Booking = LOI, Project = Pilot
   // ═══════════════════════════════════════════════════════════════════════
   const signedDealsQuery = `
     SELECT Account.Name, Name, ACV__c, CloseDate, Product_Line__c, Revenue_Type__c, StageName
     FROM Opportunity
     WHERE StageName = 'Stage 6. Closed(Won)'
+      AND (NOT Account.Name LIKE '%Sample%')
+      AND (NOT Account.Name LIKE '%Acme%')
+      AND (NOT Account.Name LIKE '%Sandbox%')
+      AND (NOT Account.Name LIKE '%Test%')
     ORDER BY CloseDate DESC
   `;
   
-  // Nov-Dec deals only (for Top Co Closed Revenue section)
+  // Nov 1, 2024+ deals only (for Top Co Closed Revenue section)
+  // FIXED: Using explicit date >= 2024-11-01 for November onwards
   const novDecDealsQuery = `
     SELECT Account.Name, Name, ACV__c, CloseDate, Product_Line__c, Revenue_Type__c, StageName
     FROM Opportunity
-    WHERE StageName = 'Stage 6. Closed(Won)' AND CloseDate >= 2024-11-01
+    WHERE StageName = 'Stage 6. Closed(Won)' 
+      AND CloseDate >= 2024-11-01
+      AND (NOT Account.Name LIKE '%Sample%')
+      AND (NOT Account.Name LIKE '%Acme%')
+      AND (NOT Account.Name LIKE '%Sandbox%')
+      AND (NOT Account.Name LIKE '%Test%')
     ORDER BY CloseDate DESC
   `;
   
@@ -526,6 +537,13 @@ async function generateAccountDashboard() {
   let novDecRevenue = [];
   let novDecRevenueTotal = 0;
   
+  // Helper to check if account is a sample/test account
+  const isSampleAccount = (name) => {
+    if (!name) return false;
+    const lower = name.toLowerCase();
+    return lower.includes('sample') || lower.includes('acme') || lower.includes('sandbox') || lower.includes('test');
+  };
+  
   try {
     const signedData = await query(signedDealsQuery, true);
     console.log(`[Dashboard] All Closed Won (Stage 6) returned ${signedData?.records?.length || 0} records`);
@@ -534,8 +552,12 @@ async function generateAccountDashboard() {
       console.log(`[Dashboard] Revenue_Type__c values: ${JSON.stringify(uniqueTypes)}`);
       
       signedData.records.forEach(opp => {
+        const accountName = opp.Account?.Name || 'Unknown';
+        // Skip sample/test accounts
+        if (isSampleAccount(accountName)) return;
+        
         const deal = {
-          accountName: opp.Account?.Name || 'Unknown',
+          accountName,
           oppName: opp.Name || '',
           closeDate: opp.CloseDate,
           acv: opp.ACV__c || 0,
@@ -550,16 +572,20 @@ async function generateAccountDashboard() {
     }
     console.log(`[Dashboard] All Closed Won by type: revenue=${signedByType.revenue.length}, pilot=${signedByType.pilot.length}, loi=${signedByType.loi.length}`);
     
-    // Query Nov-Dec deals separately for Top Co section
+    // Query Nov 1, 2024+ deals separately for Top Co section
     const novDecData = await query(novDecDealsQuery, true);
-    console.log(`[Dashboard] Nov-Dec Closed Won returned ${novDecData?.records?.length || 0} records`);
+    console.log(`[Dashboard] Nov 1+ Closed Won returned ${novDecData?.records?.length || 0} records`);
     if (novDecData?.records) {
       novDecData.records.forEach(opp => {
+        const accountName = opp.Account?.Name || 'Unknown';
+        // Skip sample/test accounts
+        if (isSampleAccount(accountName)) return;
+        
         const revType = (opp.Revenue_Type__c || '').toLowerCase().trim();
         // Only include recurring/ARR deals for revenue section
         if (revType === 'arr' || revType === 'recurring') {
           novDecRevenue.push({
-            accountName: opp.Account?.Name || 'Unknown',
+            accountName,
             oppName: opp.Name || '',
             closeDate: opp.CloseDate,
             acv: opp.ACV__c || 0,
@@ -569,7 +595,7 @@ async function generateAccountDashboard() {
         }
       });
     }
-    console.log(`[Dashboard] Nov-Dec Revenue deals: ${novDecRevenue.length}, total: $${novDecRevenueTotal}`);
+    console.log(`[Dashboard] Nov 1+ Revenue deals: ${novDecRevenue.length}, total: $${novDecRevenueTotal}`);
   } catch (e) { console.error('Signed deals query error:', e.message); }
   
   // ═══════════════════════════════════════════════════════════════════════
