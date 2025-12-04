@@ -151,11 +151,16 @@ async function generateAccountDashboard() {
     const logosData = await query(logosQuery, true);
     console.log(`[Dashboard] Logos query returned ${logosData?.records?.length || 0} accounts with Customer_Type__c`);
     if (logosData?.records) {
+      // Log all unique Customer_Type__c values for debugging
+      const uniqueTypes = [...new Set(logosData.records.map(a => a.Customer_Type__c).filter(Boolean))];
+      console.log(`[Dashboard] Customer_Type__c values found: ${JSON.stringify(uniqueTypes)}`);
+      
       logosData.records.forEach(acc => {
         const ct = (acc.Customer_Type__c || '').toLowerCase().trim();
-        if (ct === 'revenue') {
+        // Match badge logic: includes('revenue') OR equals 'arr'
+        if (ct.includes('revenue') || ct === 'arr') {
           logosByType.revenue.push({ accountName: acc.Name });
-        } else if (ct === 'pilot') {
+        } else if (ct.includes('pilot')) {
           logosByType.pilot.push({ accountName: acc.Name });
         } else if (ct.includes('loi')) {
           logosByType.loi.push({ accountName: acc.Name });
