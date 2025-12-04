@@ -86,13 +86,14 @@ async function generateAccountDashboard() {
   } catch (e) { console.error('Contracts query error:', e.message); }
 
   // ═══════════════════════════════════════════════════════════════════════
-  // SIGNED DEALS (Last 90 Days) - Categorized by Revenue_Type__c on Opportunity
-  // Revenue_Type__c values: ARR = Recurring/Revenue, Booking = LOI, Project = Pilot
+  // SIGNED DEALS (Last 90 Days) - Only 'Stage 6. Closed(Won)' opportunities
+  // Excludes deals from other closed stages (like Glanbia, OpenAI, etc.)
+  // Categorized by Revenue_Type__c: ARR = Revenue, Booking = LOI, Project = Pilot
   // ═══════════════════════════════════════════════════════════════════════
   const signedDealsQuery = `
-    SELECT Account.Name, Name, ACV__c, CloseDate, Product_Line__c, Revenue_Type__c
+    SELECT Account.Name, Name, ACV__c, CloseDate, Product_Line__c, Revenue_Type__c, StageName
     FROM Opportunity
-    WHERE IsClosed = true AND IsWon = true AND CloseDate >= LAST_N_DAYS:90
+    WHERE StageName = 'Stage 6. Closed(Won)' AND CloseDate >= LAST_N_DAYS:90
     ORDER BY CloseDate DESC
   `;
   
@@ -110,7 +111,7 @@ async function generateAccountDashboard() {
   
   try {
     const signedData = await query(signedDealsQuery, true);
-    console.log(`[Dashboard] Signed deals returned ${signedData?.records?.length || 0} records`);
+    console.log(`[Dashboard] Signed deals (Stage 6. Closed(Won)) returned ${signedData?.records?.length || 0} records`);
     if (signedData?.records) {
       const uniqueTypes = [...new Set(signedData.records.map(o => o.Revenue_Type__c).filter(Boolean))];
       console.log(`[Dashboard] Revenue_Type__c values: ${JSON.stringify(uniqueTypes)}`);
@@ -133,7 +134,36 @@ async function generateAccountDashboard() {
     console.log(`[Dashboard] Signed by type: revenue=${signedByType.revenue.length}, pilot=${signedByType.pilot.length}, loi=${signedByType.loi.length}`);
   } catch (e) { console.error('Signed deals query error:', e.message); }
   
-  // LOGOS BY TYPE - will be calculated from accountMap after it's built (same source as badges)
+  // ═══════════════════════════════════════════════════════════════════════
+  // LOGOS BY TYPE - Query Account directly for Customer_Type__c
+  // Includes ALL accounts with Customer_Type__c set (not just open pipeline)
+  // ═══════════════════════════════════════════════════════════════════════
+  const logosQuery = `
+    SELECT Name, Customer_Type__c
+    FROM Account
+    WHERE Customer_Type__c != null
+    ORDER BY Name
+  `;
+  
+  let logosByType = { revenue: [], pilot: [], loi: [] };
+  
+  try {
+    const logosData = await query(logosQuery, true);
+    console.log(`[Dashboard] Logos query returned ${logosData?.records?.length || 0} accounts with Customer_Type__c`);
+    if (logosData?.records) {
+      logosData.records.forEach(acc => {
+        const ct = (acc.Customer_Type__c || '').toLowerCase().trim();
+        if (ct === 'revenue') {
+          logosByType.revenue.push({ accountName: acc.Name });
+        } else if (ct === 'pilot') {
+          logosByType.pilot.push({ accountName: acc.Name });
+        } else if (ct.includes('loi')) {
+          logosByType.loi.push({ accountName: acc.Name });
+        }
+      });
+    }
+    console.log(`[Dashboard] Logos by type: revenue=${logosByType.revenue.length}, pilot=${logosByType.pilot.length}, loi=${logosByType.loi.length}`);
+  } catch (e) { console.error('Logos query error:', e.message); }
   
   // Helper function to format currency
   const formatCurrency = (val) => {
@@ -348,26 +378,6 @@ async function generateAccountDashboard() {
   const accountsWithoutPlans = accountMap.size - accountsWithPlans;
   
   // ═══════════════════════════════════════════════════════════════════════
-  // LOGOS BY TYPE - Uses same Account.Customer_Type__c data as badges below
-  // This ensures tiles match the badges shown next to account names
-  // ═══════════════════════════════════════════════════════════════════════
-  let logosByType = { revenue: [], pilot: [], loi: [] };
-  
-  accountMap.forEach(acc => {
-    if (acc.customerType) {
-      const ct = acc.customerType.toLowerCase().trim();
-      if (ct === 'revenue') {
-        logosByType.revenue.push({ accountName: acc.name, customerType: acc.customerType });
-      } else if (ct === 'pilot') {
-        logosByType.pilot.push({ accountName: acc.name, customerType: acc.customerType });
-      } else if (ct.includes('loi')) {
-        logosByType.loi.push({ accountName: acc.name, customerType: acc.customerType });
-      }
-    }
-  });
-  
-  console.log(`[Dashboard] Logos by type (from accountMap): revenue=${logosByType.revenue.length}, pilot=${logosByType.pilot.length}, loi=${logosByType.loi.length}`);
-  
   // For "By Stage" tab - group by stage for detailed breakdown
   // FIXED: Include Stage 0 to match all opportunities
   const stageBreakdown = {
@@ -497,6 +507,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <img src="/logo" alt="Eudia" style="max-width: 200px; max-height: 60px; margin-bottom: 20px; display: block;">
   <h1>Account Status Dashboard</h1>
   <p>Real-time pipeline overview • Updated ${new Date().toLocaleTimeString()}</p>
+  <a href="/account-dashboard/logout" style="font-size: 0.7rem; color: #9ca3af; text-decoration: none; margin-top: 8px; display: inline-block;">🔒 Logout (end session)</a>
 </div>
 
 <!-- Pure CSS Tabs (No JavaScript - CSP Safe) -->

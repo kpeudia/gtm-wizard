@@ -212,6 +212,12 @@ class GTMBrainApp {
       }
     });
     
+    // Logout endpoint - clears auth cookie
+    this.expressApp.get('/account-dashboard/logout', (req, res) => {
+      res.clearCookie(AUTH_COOKIE);
+      res.redirect('/account-dashboard');
+    });
+    
     // Legacy redirect
     this.expressApp.get('/dashboard', (req, res) => {
       res.redirect('/account-dashboard');
