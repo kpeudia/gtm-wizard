@@ -2,10 +2,84 @@ const { query } = require('../salesforce/connection');
 const { cleanStageName } = require('../utils/formatters');
 
 /**
+ * Generate password-protected Account Status Dashboard
+ */
+function generateLoginPage() {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Account Status Dashboard</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f7fe; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+.login-container { background: #fff; padding: 40px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); max-width: 360px; width: 90%; }
+.login-container h1 { font-size: 1.25rem; font-weight: 600; color: #1f2937; margin-bottom: 8px; }
+.login-container p { font-size: 0.875rem; color: #6b7280; margin-bottom: 24px; }
+.login-container input { width: 100%; padding: 12px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 0.875rem; margin-bottom: 16px; }
+.login-container input:focus { outline: none; border-color: #8e99e1; }
+.login-container button { width: 100%; padding: 12px; background: #8e99e1; color: #fff; border: none; border-radius: 6px; font-size: 0.875rem; font-weight: 500; cursor: pointer; }
+.login-container button:hover { background: #7c8bd4; }
+.error { color: #ef4444; font-size: 0.75rem; margin-bottom: 12px; display: none; }
+</style>
+</head>
+<body>
+<div class="login-container">
+  <h1>Account Status Dashboard</h1>
+  <p>Enter password to continue</p>
+  <form method="POST" action="/account-dashboard">
+    <input type="password" name="password" placeholder="Password" required autocomplete="off">
+    <div class="error" id="error">Incorrect password</div>
+    <button type="submit">Continue</button>
+  </form>
+</div>
+</body>
+</html>`;
+}
+
+/**
  * Generate Account Status Dashboard - Mobile-optimized with tabs
- * Matches v0 interview dashboard quality
  */
 async function generateAccountDashboard() {
+  // Query Active Revenue (Contracts)
+  const activeRevenueQuery = `
+    SELECT Account.Name, Contract_Type__c, Annualized_Revenue__c, Contract_Value__c,
+           StartDate, EndDate, Status, Product_Line__c
+    FROM Contract
+    WHERE Status = 'Activated' AND EndDate >= TODAY
+    ORDER BY Annualized_Revenue__c DESC NULLS LAST LIMIT 50
+  `;
+  
+  let activeContracts = [];
+  let totalActiveRevenue = 0;
+  try {
+    const contractData = await query(activeRevenueQuery, true);
+    if (contractData?.records) {
+      activeContracts = contractData.records;
+      activeContracts.forEach(c => { totalActiveRevenue += (c.Annualized_Revenue__c || c.Contract_Value__c || 0); });
+    }
+  } catch (e) { console.error('Active revenue query:', e.message); }
+
+  // Query Signed Logos (Last 90 Days)
+  const signedLogosQuery = `
+    SELECT Account.Name, Account.Is_New_Logo__c, ACV__c, CloseDate, Product_Line__c
+    FROM Opportunity
+    WHERE StageName = 'Closed Won' AND CloseDate >= LAST_N_DAYS:90
+    ORDER BY CloseDate DESC
+  `;
+  
+  let signedLogos = { newLogos: [], existing: [] };
+  try {
+    const signedData = await query(signedLogosQuery, true);
+    if (signedData?.records) {
+      signedData.records.forEach(opp => {
+        if (opp.Account?.Is_New_Logo__c) signedLogos.newLogos.push(opp);
+        else signedLogos.existing.push(opp);
+      });
+    }
+  } catch (e) { console.error('Signed logos query:', e.message); }
+
   // Account Potential Value Mapping (from BL categorization)
   const potentialValueMap = {
     // High-Touch Marquee ($1M+ ARR potential)
@@ -292,10 +366,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .tab:hover { background: #e5e7eb; }
 #tab-summary:checked ~ .tabs label[for="tab-summary"],
 #tab-by-stage:checked ~ .tabs label[for="tab-by-stage"],
+#tab-revenue:checked ~ .tabs label[for="tab-revenue"],
 #tab-account-plans:checked ~ .tabs label[for="tab-account-plans"] { background: #8e99e1; color: #fff; }
 .tab-content { display: none; }
 #tab-summary:checked ~ #summary,
 #tab-by-stage:checked ~ #by-stage,
+#tab-revenue:checked ~ #revenue,
 #tab-account-plans:checked ~ #account-plans { display: block; }
 .metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
 .metric { background: #fff; padding: 16px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
@@ -343,12 +419,14 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 <!-- Pure CSS Tabs (No JavaScript - CSP Safe) -->
 <input type="radio" name="tabs" id="tab-summary" checked style="display: none;">
 <input type="radio" name="tabs" id="tab-by-stage" style="display: none;">
+<input type="radio" name="tabs" id="tab-revenue" style="display: none;">
 <input type="radio" name="tabs" id="tab-account-plans" style="display: none;">
 
 <div class="tabs">
   <label for="tab-summary" class="tab">Summary</label>
   <label for="tab-by-stage" class="tab">By Stage</label>
-  <label for="tab-account-plans" class="tab">Account Plans</label>
+  <label for="tab-revenue" class="tab">Revenue</label>
+  <label for="tab-account-plans" class="tab">Accounts</label>
 </div>
 
 <!-- TAB 1: SUMMARY -->
@@ -617,7 +695,61 @@ ${early.map((acc, idx) => {
   </div>
 </div>
 
-<!-- TAB 3: ACCOUNT PLANS -->
+<!-- TAB 3: REVENUE -->
+<div id="revenue" class="tab-content">
+  <div class="section-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <h2>Active Revenue</h2>
+      <span style="background: #8e99e1; color: #fff; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">$${(totalActiveRevenue / 1000000).toFixed(2)}M ARR</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      ${activeContracts.slice(0, 10).map(c => `
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f3f5;">
+          <span style="font-weight: 500; font-size: 0.8rem;">${c.Account?.Name || 'Unknown'}</span>
+          <span style="font-size: 0.75rem; color: #6b7280;">$${((c.Annualized_Revenue__c || c.Contract_Value__c || 0) / 1000).toFixed(0)}K${c.EndDate ? ' • ' + c.EndDate.substring(0,7) : ''}</span>
+        </div>
+      `).join('')}
+      ${activeContracts.length === 0 ? '<div style="text-align: center; color: #9ca3af; padding: 16px; font-size: 0.8rem;">No active contracts</div>' : ''}
+    </div>
+  </div>
+
+  <div class="section-card" style="margin-top: 12px;">
+    <h2 style="margin-bottom: 12px;">Signed Logos (Last 90 Days)</h2>
+    <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+      <div style="flex: 1; background: #f0fdf4; padding: 12px; border-radius: 6px; text-align: center;">
+        <div style="font-size: 1.5rem; font-weight: 700; color: #16a34a;">${signedLogos.newLogos.length}</div>
+        <div style="font-size: 0.7rem; color: #6b7280;">New Logos</div>
+      </div>
+      <div style="flex: 1; background: #eff6ff; padding: 12px; border-radius: 6px; text-align: center;">
+        <div style="font-size: 1.5rem; font-weight: 700; color: #2563eb;">${signedLogos.existing.length}</div>
+        <div style="font-size: 0.7rem; color: #6b7280;">Existing</div>
+      </div>
+    </div>
+    ${signedLogos.newLogos.length > 0 ? `
+    <div style="margin-bottom: 8px; font-size: 0.7rem; font-weight: 600; color: #6b7280; text-transform: uppercase;">New Logos</div>
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      ${signedLogos.newLogos.slice(0, 8).map(o => `
+        <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f3f5; font-size: 0.8rem;">
+          <span>${o.Account?.Name || 'Unknown'}</span>
+          <span style="color: #6b7280;">$${((o.ACV__c || 0) / 1000).toFixed(0)}K</span>
+        </div>
+      `).join('')}
+    </div>` : ''}
+    ${signedLogos.existing.length > 0 ? `
+    <div style="margin-top: 12px; margin-bottom: 8px; font-size: 0.7rem; font-weight: 600; color: #6b7280; text-transform: uppercase;">Expansions</div>
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      ${signedLogos.existing.slice(0, 8).map(o => `
+        <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f3f5; font-size: 0.8rem;">
+          <span>${o.Account?.Name || 'Unknown'}</span>
+          <span style="color: #6b7280;">$${((o.ACV__c || 0) / 1000).toFixed(0)}K</span>
+        </div>
+      `).join('')}
+    </div>` : ''}
+    ${signedLogos.newLogos.length === 0 && signedLogos.existing.length === 0 ? '<div style="text-align: center; color: #9ca3af; padding: 16px; font-size: 0.8rem;">No signed logos in last 90 days</div>' : ''}
+  </div>
+</div>
+
+<!-- TAB 4: ACCOUNTS -->
 <div id="account-plans" class="tab-content">
   <div class="stage-section">
     <div class="stage-title">Account Plans & Pipeline</div>
@@ -811,5 +943,6 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 module.exports = {
-  generateAccountDashboard
+  generateAccountDashboard,
+  generateLoginPage
 };

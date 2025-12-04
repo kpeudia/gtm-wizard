@@ -134,6 +134,11 @@ class GTMBrainApp {
     this.expressApp.use(helmet());
     this.expressApp.use(cors());
     this.expressApp.use(express.json());
+    this.expressApp.use(express.urlencoded({ extended: true }));
+    
+    // Cookie parser for session
+    const cookieParser = require('cookie-parser');
+    this.expressApp.use(cookieParser());
 
     // Health check endpoint
     this.expressApp.get('/health', (req, res) => {
@@ -162,22 +167,54 @@ class GTMBrainApp {
       res.sendFile(logoPath);
     });
 
-    // Account Status Dashboard endpoint (clean web view)
-    this.expressApp.get('/dashboard', async (req, res) => {
-      try {
-        // Set CSP headers to allow inline scripts for dashboard
-        res.setHeader('Content-Security-Policy', "script-src 'self' 'unsafe-inline'");
-        // Prevent caching - always fetch fresh data from Salesforce
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-        
-        const { generateAccountDashboard } = require('./slack/accountDashboard');
-        const html = await generateAccountDashboard();
-        res.send(html);
-      } catch (error) {
-        res.status(500).send(`Error generating dashboard: ${error.message}`);
+    // Account Status Dashboard - Password protected
+    const DASHBOARD_PASSWORDS = ['udia gtm accounts', 'udia account status'];
+    const AUTH_COOKIE = 'gtm_dash_auth';
+    
+    this.expressApp.get('/account-dashboard', async (req, res) => {
+      // Check auth cookie
+      if (req.cookies[AUTH_COOKIE] === 'authenticated') {
+        try {
+          res.setHeader('Content-Security-Policy', "script-src 'self' 'unsafe-inline'");
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          const { generateAccountDashboard } = require('./slack/accountDashboard');
+          const html = await generateAccountDashboard();
+          res.send(html);
+        } catch (error) {
+          res.status(500).send(`Error: ${error.message}`);
+        }
+      } else {
+        const { generateLoginPage } = require('./slack/accountDashboard');
+        res.send(generateLoginPage());
       }
+    });
+    
+    this.expressApp.post('/account-dashboard', async (req, res) => {
+      const { password } = req.body;
+      if (DASHBOARD_PASSWORDS.includes(password?.toLowerCase()?.trim())) {
+        // Set auth cookie (30 days)
+        res.cookie(AUTH_COOKIE, 'authenticated', { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true });
+        try {
+          res.setHeader('Content-Security-Policy', "script-src 'self' 'unsafe-inline'");
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          const { generateAccountDashboard } = require('./slack/accountDashboard');
+          const html = await generateAccountDashboard();
+          res.send(html);
+        } catch (error) {
+          res.status(500).send(`Error: ${error.message}`);
+        }
+      } else {
+        res.send(`<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Account Status Dashboard</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f7fe;min-height:100vh;display:flex;align-items:center;justify-content:center}.login-container{background:#fff;padding:40px;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.1);max-width:360px;width:90%}.login-container h1{font-size:1.25rem;font-weight:600;color:#1f2937;margin-bottom:8px}.login-container p{font-size:0.875rem;color:#6b7280;margin-bottom:24px}.login-container input{width:100%;padding:12px;border:1px solid #e5e7eb;border-radius:6px;font-size:0.875rem;margin-bottom:16px}.login-container input:focus{outline:none;border-color:#8e99e1}.login-container button{width:100%;padding:12px;background:#8e99e1;color:#fff;border:none;border-radius:6px;font-size:0.875rem;font-weight:500;cursor:pointer}.login-container button:hover{background:#7c8bd4}.error{color:#ef4444;font-size:0.75rem;margin-bottom:12px}</style>
+</head><body><div class="login-container"><h1>Account Status Dashboard</h1><p>Enter password to continue</p><form method="POST" action="/account-dashboard"><input type="password" name="password" placeholder="Password" required autocomplete="off"><div class="error">Incorrect password</div><button type="submit">Continue</button></form></div></body></html>`);
+      }
+    });
+    
+    // Legacy redirect
+    this.expressApp.get('/dashboard', (req, res) => {
+      res.redirect('/account-dashboard');
     });
 
     // Email Builder interface
