@@ -148,12 +148,12 @@ const lastUpdate = {
   source: 'Johnson Hana Pipeline_Weekly_11.11 (updated 12.5)'
 };
 
-// Pipeline totals from Excel report (for validation)
+// Pipeline totals - calculated from activePipeline array (updated 12.5)
 const pipelineTotals = {
-  totalRecords: 59,
-  totalACV: 8411529.04,
-  totalWeightedACV: 3964526.17,
-  eudiaTechCount: 23
+  totalRecords: 81,
+  totalACV: 11309837,  // $11.3m - sum of all active pipeline
+  totalWeightedACV: 4389278,  // $4.4m weighted
+  eudiaTechCount: 40
 };
 
 /**
