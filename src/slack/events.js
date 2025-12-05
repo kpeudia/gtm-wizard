@@ -1072,22 +1072,23 @@ async function formatAccountLookup(queryResult, parsedIntent) {
     if (businessLeads.some(bl => priorOwner && priorOwner.includes(bl))) {
       response = `*${primaryResult.Name}*\n`;
       response += `Prior Owner: ${priorOwner}\n`;
-      response += `Current holder: ${currentOwner} (unassigned)\n`;
+      response += `Current holder: ${currentOwner} _(needs reassignment)_\n`;
       if (primaryResult.Industry) response += `Industry: ${primaryResult.Industry}\n`;
-      response += `\nNote: This account was previously owned by a business lead but is currently unassigned.`;
+      response += `\n⚠️ *This account needs to be reassigned to a BL.*\n`;
+      response += `Say \`reassign ${primaryResult.Name} to BL\` for smart suggestions.`;
     } else {
       response = `*${primaryResult.Name}*\n`;
-      response += `Status: Unassigned account\n`;
-      response += `Current holder: ${currentOwner}\n`;
+      response += `Status: Unassigned _(held by ${currentOwner})_\n`;
       if (primaryResult.Industry) response += `Industry: ${primaryResult.Industry}\n`;
-      response += `\nThis account is not currently assigned to a business lead.`;
+      response += `\n⚠️ *This account needs to be reassigned to a BL.*\n`;
+      response += `Say \`reassign ${primaryResult.Name} to BL\` for smart suggestions.`;
     }
   } else if (!isBusinessLead) {
     response = `*${primaryResult.Name}*\n`;
-    response += `Status: Unassigned account\n`;
-    response += `Current holder: ${currentOwner || 'No owner'}\n`;
+    response += `Status: Unassigned _(held by ${currentOwner || 'No owner'})_\n`;
     if (primaryResult.Industry) response += `Industry: ${primaryResult.Industry}\n`;
-    response += `\nThis account is not currently assigned to a business lead.`;
+    response += `\n⚠️ *This account needs to be reassigned to a BL.*\n`;
+    response += `Say \`reassign ${primaryResult.Name} to BL\` for smart suggestions.`;
   } else {
     response = `*${primaryResult.Name}*\n`;
     response += `Owner: ${currentOwner}\n`;
@@ -2953,9 +2954,11 @@ async function handleReassignAccountNEW(entities, userId, channelId, client, thr
 
 /**
  * Handle Account Reassignment (Keigan only)
+ * SMART MODE: If no specific BL provided, suggests based on workload/region
  */
 async function handleReassignAccount(entities, userId, channelId, client, threadTs) {
   const KEIGAN_USER_ID = 'U094AQE9V7D';
+  const KEIGAN_NAMES = ['Keigan Pesenti', 'Keigan'];
   
   try {
     // Security check - Keigan only
@@ -2977,35 +2980,15 @@ async function handleReassignAccount(entities, userId, channelId, client, thread
       return;
     }
     
-    if (!entities.targetBL) {
-      await client.chat.postMessage({
-        channel: channelId,
-        text: `Please specify a Business Lead.\n\n*Example:* "assign Intel to Julie Stefanich"`,
-        thread_ts: threadTs
-      });
-      return;
-    }
-    
     const accountName = entities.accounts[0];
     const targetBLName = entities.targetBL;
     
-    // Validate BL name
-    const { validateBusinessLead } = require('../services/accountAssignment');
-    const validBL = validateBusinessLead(targetBLName);
+    // Import assignment helpers
+    const { validateBusinessLead, ALL_BUSINESS_LEADS, assessWorkload, selectBusinessLead, determineRegion, getBusinessLeadsForRegion } = require('../services/accountAssignment');
     
-    if (!validBL) {
-      const { ALL_BUSINESS_LEADS } = require('../services/accountAssignment');
-      await client.chat.postMessage({
-        channel: channelId,
-        text: `❌ "${targetBLName}" is not a valid Business Lead.\n\n*Valid BLs:*\n${ALL_BUSINESS_LEADS.join(', ')}`,
-        thread_ts: threadTs
-      });
-      return;
-    }
-    
-    // Find account
+    // Find account first (we need it for smart suggestions)
     const escapeQuotes = (str) => str.replace(/'/g, "\\'");
-    const accountQuery = `SELECT Id, Name, Owner.Name,
+    const accountQuery = `SELECT Id, Name, Owner.Name, BillingState, BillingCountry,
                                  (SELECT Id, Name, Owner.Name FROM Opportunities WHERE IsClosed = false)
                           FROM Account
                           WHERE Name LIKE '%${escapeQuotes(accountName)}%'
@@ -3025,6 +3008,67 @@ async function handleReassignAccount(entities, userId, channelId, client, thread
     const account = accountResult.records[0];
     const oldOwner = account.Owner?.Name;
     const opportunities = account.Opportunities || [];
+    const isOwnedByKeigan = KEIGAN_NAMES.some(name => oldOwner?.toLowerCase().includes(name.toLowerCase()));
+    
+    // Check if targetBL is missing or invalid (e.g., "BL", "a BL", "business lead")
+    const invalidBLPatterns = ['bl', 'a bl', 'business lead', 'a business lead'];
+    const needsSmartSuggestion = !targetBLName || 
+      invalidBLPatterns.includes(targetBLName.toLowerCase().trim()) ||
+      !validateBusinessLead(targetBLName);
+    
+    if (needsSmartSuggestion) {
+      // SMART MODE: Suggest BL based on workload and region
+      logger.info(`🧠 Smart BL suggestion mode for ${account.Name}`);
+      
+      // Determine region from account billing address
+      const headquarters = {
+        state: account.BillingState,
+        country: account.BillingCountry
+      };
+      const regionData = determineRegion(headquarters);
+      const businessLeads = getBusinessLeadsForRegion(regionData.blRegion);
+      
+      // Get workload assessment
+      const workloadMap = await assessWorkload(businessLeads);
+      const recommended = selectBusinessLead(workloadMap);
+      
+      // Build suggestion message
+      let suggestionMsg = `📊 *Smart BL Suggestion for ${account.Name}*\n\n`;
+      suggestionMsg += `• Current owner: ${oldOwner || 'Unassigned'}${isOwnedByKeigan ? ' _(needs reassignment)_' : ''}\n`;
+      suggestionMsg += `• Region: ${regionData.sfRegion || 'Unknown'} (${account.BillingState || 'No state'}, ${account.BillingCountry || 'US'})\n`;
+      suggestionMsg += `• Open opportunities: ${opportunities.length}\n\n`;
+      
+      suggestionMsg += `*Recommended:* \`${recommended.name}\`\n`;
+      suggestionMsg += `_(${recommended.activeOpportunities} active opps, ${recommended.closingThisMonth} closing this month)_\n\n`;
+      
+      suggestionMsg += `*All options by workload:*\n`;
+      const sortedBLs = Object.values(workloadMap).sort((a, b) => a.totalScore - b.totalScore);
+      sortedBLs.forEach((bl, idx) => {
+        const marker = idx === 0 ? '→ ' : '   ';
+        suggestionMsg += `${marker}${bl.name}: ${bl.activeOpportunities} active, ${bl.closingThisMonth} closing\n`;
+      });
+      
+      suggestionMsg += `\n*To reassign, say:*\n\`reassign ${account.Name} to ${recommended.name}\``;
+      
+      await client.chat.postMessage({
+        channel: channelId,
+        text: suggestionMsg,
+        thread_ts: threadTs
+      });
+      return;
+    }
+    
+    // EXPLICIT MODE: Validate and assign to specific BL
+    const validBL = validateBusinessLead(targetBLName);
+    
+    if (!validBL) {
+      await client.chat.postMessage({
+        channel: channelId,
+        text: `❌ "${targetBLName}" is not a valid Business Lead.\n\n*Valid BLs:*\n${ALL_BUSINESS_LEADS.join(', ')}`,
+        thread_ts: threadTs
+      });
+      return;
+    }
     
     // Get target BL's Salesforce User ID
     const userQuery = `SELECT Id FROM User WHERE Name = '${validBL}' AND IsActive = true LIMIT 1`;
