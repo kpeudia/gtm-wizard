@@ -476,6 +476,7 @@ function generateWeeklyTab(params) {
             account: acc.name,
             name: opp.Name,
             acv: opp.ACV__c || 0,
+            weighted: opp.Finance_Weighted_ACV__c || 0,
             stage: opp.StageName,
             owner: acc.owner
           });
@@ -485,6 +486,7 @@ function generateWeeklyTab(params) {
   });
   decemberOpps.sort((a, b) => b.acv - a.acv);
   const decTotalACV = decemberOpps.reduce((sum, o) => sum + o.acv, 0);
+  const decTotalWeighted = decemberOpps.reduce((sum, o) => sum + o.weighted, 0);
   
   // Top 10 by ACV (from pipeline)
   const top10Opps = [];
@@ -621,7 +623,7 @@ function generateWeeklyTab(params) {
           <ol class="weekly-list" style="font-size: 0.75rem; margin: 0; padding-left: 16px;">
             ${decemberOpps.slice(0, 10).map((o, i) => `<li>${o.account}, ${fmt(o.acv)}</li>`).join('') || '<li style="color: #9ca3af;">None</li>'}
           </ol>
-          <div style="margin-top: 8px; font-size: 0.75rem; font-weight: 600; color: #059669;">Total: ${fmt(decTotalACV)}</div>
+          <div style="margin-top: 8px; font-size: 0.75rem; font-weight: 600; color: #059669;">Total: ${fmt(decTotalACV)} <span style="font-weight: 400; color: #6b7280;">(weighted: ${fmt(decTotalWeighted)})</span></div>
         </div>
         <!-- Johnson Hana - slightly darker gray -->
         <div style="flex: 1; min-width: 280px; background: #e5e7eb; border-radius: 8px; padding: 12px;">
@@ -681,22 +683,28 @@ function generateWeeklyTab(params) {
       <div class="weekly-subsection-title">Run-Rate Forecast ($)</div>
       <table class="weekly-table">
         <thead>
-          <tr><th>Month</th><th>Eudia</th><th>Net New</th></tr>
+          <tr><th>Month</th><th>Eudia</th><th>JH</th><th>Combined</th></tr>
         </thead>
         <tbody>
-          <tr><td>August</td><td style="text-align: right;">$4.9</td><td style="text-align: right;">-</td></tr>
-          <tr><td>September</td><td style="text-align: right;">$5.0</td><td style="text-align: right;">$0.1</td></tr>
-          <tr><td>October</td><td style="text-align: right;">$6.8</td><td style="text-align: right;">$1.8</td></tr>
-          <tr><td>November</td><td style="text-align: right;">$7.2</td><td style="text-align: right;">$0.4</td></tr>
-          <tr style="font-weight: 600; background: #f9fafb;">
-            <td>FY2025E - Eudia Only</td>
-            <td style="text-align: right;">$9.89</td>
-            <td style="text-align: right;">-</td>
+          <tr><td>August</td><td style="text-align: right;">$4.9</td><td style="text-align: right; color: #6b7280;">-</td><td style="text-align: right; color: #6b7280;">-</td></tr>
+          <tr><td>September</td><td style="text-align: right;">$5.0</td><td style="text-align: right; color: #6b7280;">-</td><td style="text-align: right; color: #6b7280;">-</td></tr>
+          <tr><td>October</td><td style="text-align: right;">$6.8</td><td style="text-align: right; color: #6b7280;">-</td><td style="text-align: right; color: #6b7280;">-</td></tr>
+          <tr><td>November (EOM)</td><td style="text-align: right;">$7.2</td><td style="text-align: right;">$10.3</td><td style="text-align: right; font-weight: 600;">$17.5</td></tr>
+          <tr style="color: #6b7280; font-size: 0.7rem;">
+            <td>+ Q4 Weighted Pipeline</td>
+            <td style="text-align: right;">$2.33</td>
+            <td style="text-align: right;">$3.88</td>
+            <td style="text-align: right;">$6.21</td>
+          </tr>
+          <tr style="font-weight: 600; background: #f0fdf4;">
+            <td>FY2025E Total</td>
+            <td style="text-align: right;">$9.53</td>
+            <td style="text-align: right;">$14.18</td>
+            <td style="text-align: right; color: #059669;">$23.71</td>
           </tr>
         </tbody>
       </table>
-      <div style="margin-top: 8px; font-size: 0.7rem; color: #374151; font-style: italic;">JH Run-Rate as of EOM Nov: <strong>$10.24m</strong></div>
-      <div style="font-size: 0.6rem; color: #9ca3af; margin-top: 4px;">*Eudia: $7.56m revenue + $2.33m weighted. JH: $8.41m pipeline + $3.96m weighted.</div>
+      <div style="font-size: 0.6rem; color: #9ca3af; margin-top: 4px;">*JH Q4 pipeline: $8.3m gross, $3.88m weighted. Eudia Q4: $7.56m rev, $2.33m weighted.</div>
     </div>
   </div>
 
