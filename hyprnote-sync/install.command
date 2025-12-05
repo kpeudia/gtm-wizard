@@ -44,6 +44,18 @@ echo "  Starting setup..."
 echo ""
 node setup-quick.js
 
+# Enable auto-sync (every 3 hours)
+echo ""
+echo "  Enabling auto-sync (every 3 hours)..."
+node auto-sync.js --install 2>/dev/null
+
+echo ""
+echo "  ┌─────────────────────────────────────────┐"
+echo "  │  SETUP COMPLETE                         │"
+echo "  │                                         │"
+echo "  │  Meetings sync automatically every 3h   │"
+echo "  │  Internal meetings are skipped          │"
+echo "  └─────────────────────────────────────────┘"
 echo ""
 read -p "  Press Enter to close..."
 

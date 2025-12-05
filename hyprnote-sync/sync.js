@@ -107,6 +107,21 @@ async function showStatus() {
   console.log('\nRun "npm run sync" to sync pending meetings.\n');
 }
 
+// Internal domains - meetings with only these participants are skipped
+const INTERNAL_DOMAINS = ['eudia.com', 'cicerotech.com', 'johnstonhana.com'];
+
+function isInternalMeeting(participants) {
+  if (!participants || participants.length === 0) return true;
+  
+  const externalParticipants = participants.filter(p => {
+    if (!p.email) return false;
+    const domain = p.email.split('@')[1]?.toLowerCase();
+    return domain && !INTERNAL_DOMAINS.some(d => domain.includes(d));
+  });
+  
+  return externalParticipants.length === 0;
+}
+
 async function syncSession(session, config, sfConnection) {
   const title = session.title || 'Meeting';
   
@@ -116,6 +131,12 @@ async function syncSession(session, config, sfConnection) {
   // Get participants
   const participants = await hyprnote.getSessionParticipants(session.id);
   console.log('    Participants: ' + participants.length);
+  
+  // Skip internal meetings (only Eudia/internal participants)
+  if (isInternalMeeting(participants)) {
+    console.log('    Type: INTERNAL (skipping - no external participants)');
+    return { success: false, reason: 'internal_meeting' };
+  }
   
   // Get calendar event if available
   const calendarEvent = await hyprnote.getCalendarEvent(session.calendar_event_id);
