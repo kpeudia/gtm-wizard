@@ -225,7 +225,7 @@ function generateTopCoTab(eudiaGross, eudiaWeighted, eudiaDeals, eudiaAccounts, 
             ${topSLs ? '<div style="font-size: 0.6rem; color: #9ca3af;">' + topSLs + '</div>' : ''}
           </td>
           <td style="text-align: center; padding: 6px;">${data.count}</td>
-          <td style="text-align: right; padding: 6px;">${fmt(data.acv)}</td>
+          <td style="text-align: right; padding: 6px; color: #9ca3af;">-</td>
           <td style="text-align: right; padding: 6px;">${fmt(data.weighted)}</td>
         </tr>`;
       }).join('')}
@@ -236,6 +236,17 @@ function generateTopCoTab(eudiaGross, eudiaWeighted, eudiaDeals, eudiaAccounts, 
         <td style="text-align: right; padding: 6px;">${fmt(jhSummary.totalWeighted)}</td>
       </tr>
     </table>
+  </div>
+
+  <!-- Stage Definitions -->
+  <div style="background: #f9fafb; padding: 10px 12px; border-radius: 6px; margin-top: 12px; font-size: 0.65rem; color: #6b7280;">
+    <div style="font-weight: 600; color: #374151; margin-bottom: 4px;">Stage Definitions</div>
+    <div><strong>S0</strong> Qualifying - Initial outreach, determining fit</div>
+    <div><strong>S1</strong> Discovery - Meeting with client, understanding needs</div>
+    <div><strong>S2</strong> SQO - Sales Qualified, active evaluation</div>
+    <div><strong>S3</strong> Pilot - Trial or proof-of-concept underway</div>
+    <div><strong>S4</strong> Proposal - Formal proposal submitted</div>
+    <div><strong>S5</strong> Negotiation - Contract terms being finalized</div>
   </div>
   
   <!-- ═══════════════════════════════════════════════════════════════════════ -->
@@ -1292,7 +1303,7 @@ async function generateAccountDashboard() {
                                 COUNT(Id) DealCount
                          FROM Opportunity
                          WHERE IsClosed = false 
-                           AND StageName IN ('Stage 0 - Qualifying', 'Stage 1 - Discovery', 'Stage 2 - SQO', 'Stage 3 - Pilot', 'Stage 4 - Proposal')
+                           AND StageName IN ('Stage 0 - Qualifying', 'Stage 1 - Discovery', 'Stage 2 - SQO', 'Stage 3 - Pilot', 'Stage 4 - Proposal', 'Stage 5 - Negotiation')
                          GROUP BY StageName`;
   
   const pipelineData = await query(pipelineQuery, true);
@@ -1320,7 +1331,7 @@ async function generateAccountDashboard() {
                                Target_LOI_Date__c
                         FROM Opportunity
                         WHERE IsClosed = false
-                          AND StageName IN ('Stage 0 - Qualifying', 'Stage 1 - Discovery', 'Stage 2 - SQO', 'Stage 3 - Pilot', 'Stage 4 - Proposal')
+                          AND StageName IN ('Stage 0 - Qualifying', 'Stage 1 - Discovery', 'Stage 2 - SQO', 'Stage 3 - Pilot', 'Stage 4 - Proposal', 'Stage 5 - Negotiation')
                         ORDER BY StageName DESC, Account.Name`;
   
   const accountData = await query(accountQuery, true);
