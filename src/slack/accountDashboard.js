@@ -537,44 +537,64 @@ function generateWeeklyTab(params) {
   <div class="weekly-section">
     <div class="weekly-section-title">1. Revenue Forecast Snapshot</div>
     
-    <!-- Opportunities with December Sign Date -->
+    <!-- Opportunities with December Sign Date - Side by Side -->
     <div class="weekly-subsection">
-      <div class="weekly-subsection-title">Opportunities with December Sign Date: ${decemberOpps.length}</div>
-      <div style="margin-bottom: 8px; font-size: 0.75rem; color: #6b7280;">Top 10 by ACV</div>
-      <ol class="weekly-list">
-        ${decemberOpps.slice(0, 10).map((o, i) => `<li>${o.account}, ${fmt(o.acv)}</li>`).join('')}
-      </ol>
-      <div class="weekly-highlight">
-        <strong>Total Unweighted ACV</strong> (${decemberOpps.length} opps): <strong>${fmt(decTotalACV)}</strong>
+      <div class="weekly-subsection-title">Opportunities with December Target Sign Date</div>
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px;">
+        <!-- Eudia -->
+        <div style="flex: 1; min-width: 280px; background: #f9fafb; border-radius: 8px; padding: 12px;">
+          <div style="font-weight: 600; color: #111827; margin-bottom: 8px; font-size: 0.8rem;">EUDIA (${decemberOpps.length} opps)</div>
+          <ol class="weekly-list" style="font-size: 0.75rem; margin: 0; padding-left: 16px;">
+            ${decemberOpps.slice(0, 10).map((o, i) => `<li>${o.account}, ${fmt(o.acv)}</li>`).join('') || '<li style="color: #9ca3af;">None</li>'}
+          </ol>
+          <div style="margin-top: 8px; font-size: 0.75rem; font-weight: 600; color: #059669;">Total: ${fmt(decTotalACV)}</div>
+        </div>
+        <!-- Johnson Hana -->
+        <div style="flex: 1; min-width: 280px; background: #fdf4ff; border-radius: 8px; padding: 12px;">
+          <div style="font-weight: 600; color: #111827; margin-bottom: 8px; font-size: 0.8rem;">JOHNSON HANA ${(() => {
+            const jhDecOpps = (jhSummary?.pipeline || []).filter(o => {
+              if (!o.closeDate) return false;
+              const d = new Date(o.closeDate);
+              return d.getMonth() === 11 && d.getFullYear() === 2025;
+            });
+            return '(' + jhDecOpps.length + ' opps)';
+          })()}</div>
+          <ol class="weekly-list" style="font-size: 0.75rem; margin: 0; padding-left: 16px;">
+            ${(() => {
+              const jhDecOpps = (jhSummary?.pipeline || []).filter(o => {
+                if (!o.closeDate) return false;
+                const d = new Date(o.closeDate);
+                return d.getMonth() === 11 && d.getFullYear() === 2025;
+              }).sort((a, b) => (b.acv || 0) - (a.acv || 0)).slice(0, 10);
+              return jhDecOpps.map(o => `<li>${o.account}, ${fmt(o.acv || 0)}</li>`).join('') || '<li style="color: #9ca3af;">None</li>';
+            })()}
+          </ol>
+          <div style="margin-top: 8px; font-size: 0.75rem; font-weight: 600; color: #7c3aed;">Total: ${fmt((jhSummary?.pipeline || []).filter(o => {
+            if (!o.closeDate) return false;
+            const d = new Date(o.closeDate);
+            return d.getMonth() === 11 && d.getFullYear() === 2025;
+          }).reduce((sum, o) => sum + (o.acv || 0), 0))}</div>
+        </div>
       </div>
     </div>
     
-    <!-- Signed Net New Logos Table - Fiscal Quarter Breakdown -->
+    <!-- Signed Net New Logos Table - FY2025 Focus -->
     <div class="weekly-subsection">
       <div class="weekly-subsection-title">Eudia - Signed Net New Logos</div>
       <table class="weekly-table">
         <thead>
-          <tr><th>Fiscal Quarter</th><th>Logos Signed</th></tr>
+          <tr><th>Period</th><th style="text-align: center;">Logos Signed</th></tr>
         </thead>
         <tbody>
-          <tr><td>Q2 FY2024</td><td style="text-align: center;">1</td></tr>
-          <tr><td>Q3 FY2024</td><td style="text-align: center;">2</td></tr>
-          <tr><td>Q4 FY2024</td><td style="text-align: center;">1</td></tr>
+          <tr style="color: #6b7280;"><td>FY2024 Total</td><td style="text-align: center;">4</td></tr>
           <tr><td>Q1 FY2025</td><td style="text-align: center;">2</td></tr>
           <tr><td>Q2 FY2025</td><td style="text-align: center;">2</td></tr>
           <tr><td>Q3 FY2025</td><td style="text-align: center;">25</td></tr>
-          <tr><td>Q4 FY2025</td><td style="text-align: center;">5</td></tr>
+          <tr style="background: #f0fdf4;"><td>Q4 FY2025 (to date)</td><td style="text-align: center;">5</td></tr>
           <tr style="font-weight: 600; background: #e5e7eb;"><td>Total</td><td style="text-align: center;">38</td></tr>
         </tbody>
       </table>
-      <div style="font-size: 0.65rem; color: #9ca3af; margin-top: 4px;">Q4 FY2025 Logos (Nov-Jan): ${(() => {
-        const q4Deals = signedByType.revenue.filter(d => {
-          const cd = new Date(d.closeDate);
-          // Q4 FY2025 = Nov 2025, Dec 2025, Jan 2026
-          return (cd.getMonth() >= 10 && cd.getFullYear() === 2025) || (cd.getMonth() === 0 && cd.getFullYear() === 2026);
-        });
-        return q4Deals.map(d => d.accountName).join(', ') || 'None';
-      })()}</div>
+      <div style="font-size: 0.65rem; color: #374151; margin-top: 4px;"><strong>Q4 FY2025 Logos (Nov-Dec to date):</strong> BNY Mellon, Delinea, IQVIA, Udemy Ireland Limited, World Wide Technology</div>
     </div>
     
     <!-- Current Logos -->
@@ -676,14 +696,30 @@ function generateWeeklyTab(params) {
     </div>
   </div>
 
-  <!-- SECTION 3: DEALS IMPACTING THE FORECAST (T10) -->
+  <!-- SECTION 3: DEALS IMPACTING THE FORECAST (T10) - Side by Side -->
   <div class="weekly-section">
     <div class="weekly-section-title">3. Deals Impacting the Forecast (T10)</div>
-    <ol class="weekly-list">
-      ${top10.map((o, i) => `<li>${o.account}${o.name ? ' | ' + o.name.substring(0, 30) : ''} | ${fmt(o.acv)}</li>`).join('')}
-    </ol>
-    <div class="weekly-highlight">
-      <strong>Total ACV:</strong> ${fmt(top10Total)}
+    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+      <!-- Eudia -->
+      <div style="flex: 1; min-width: 280px; background: #f9fafb; border-radius: 8px; padding: 12px;">
+        <div style="font-weight: 600; color: #111827; margin-bottom: 8px; font-size: 0.8rem;">EUDIA</div>
+        <ol class="weekly-list" style="font-size: 0.75rem; margin: 0; padding-left: 16px;">
+          ${top10.map((o, i) => `<li>${o.account} | ${fmt(o.acv)}</li>`).join('')}
+        </ol>
+        <div style="margin-top: 8px; font-size: 0.75rem; font-weight: 600; color: #059669;">Total: ${fmt(top10Total)}</div>
+      </div>
+      <!-- Johnson Hana -->
+      <div style="flex: 1; min-width: 280px; background: #fdf4ff; border-radius: 8px; padding: 12px;">
+        <div style="font-weight: 600; color: #111827; margin-bottom: 8px; font-size: 0.8rem;">JOHNSON HANA</div>
+        <ol class="weekly-list" style="font-size: 0.75rem; margin: 0; padding-left: 16px;">
+          ${(() => {
+            const jhPipeline = jhSummary?.pipeline || [];
+            const jhTop10 = [...jhPipeline].sort((a, b) => (b.weighted || 0) - (a.weighted || 0)).slice(0, 10);
+            return jhTop10.map(o => `<li>${o.account} | ${fmt(o.acv)}</li>`).join('') || '<li style="color: #9ca3af;">No data</li>';
+          })()}
+        </ol>
+        <div style="margin-top: 8px; font-size: 0.75rem; font-weight: 600; color: #7c3aed;">Total: ${fmt(jhSummary?.pipeline?.slice(0, 10).reduce((sum, o) => sum + (o.acv || 0), 0) || 0)}</div>
+      </div>
     </div>
   </div>
 
