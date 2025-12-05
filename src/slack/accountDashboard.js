@@ -1,6 +1,6 @@
 const { query } = require('../salesforce/connection');
 const { cleanStageName } = require('../utils/formatters');
-const { getJohnsonHanaSummary, getAccountSummaries: getJHAccounts, closedWonNovDec, mapStage } = require('../data/johnsonHanaData');
+const { getJohnsonHanaSummary, getAccountSummaries: getJHAccounts, closedWonNovDec, mapStage, lastUpdate: jhLastUpdate } = require('../data/johnsonHanaData');
 
 /**
  * Generate password-protected Account Status Dashboard
@@ -102,8 +102,9 @@ function generateTopCoTab(eudiaGross, eudiaWeighted, eudiaDeals, eudiaAccounts, 
   
   return `
 <div id="topco" class="tab-content">
-  <div style="background: #fffbeb; border: 1px solid #fcd34d; padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; font-size: 0.7rem; color: #92400e;">
-    <strong>Top Co Overview</strong> — Blended pipeline (Eudia + Johnson Hana). Updated weekly until systems sync.
+  <div style="background: #f3f4f6; border: 1px solid #d1d5db; padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; font-size: 0.7rem; color: #374151;">
+    <strong>Top Co Overview</strong> — Blended pipeline (Eudia + Johnson Hana).
+    <span style="color: #6b7280; margin-left: 8px;">JH data updated: ${jhLastUpdate?.time || 'recently'} ${jhLastUpdate?.date || ''}</span>
   </div>
   
   <!-- Blended Metrics -->
@@ -360,7 +361,9 @@ function generateTopCoTab(eudiaGross, eudiaWeighted, eudiaDeals, eudiaAccounts, 
               const stageLabel = stageMatch ? 'S' + stageMatch[1] + (stageMatch[2] ? ' ' + stageMatch[2].trim() : '') : (o.stage || 'TBD');
               // Format target date if available
               const targetDate = o.closeDate ? new Date(o.closeDate).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) : null;
-              return '<div style="display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid #f1f3f5;"><div><span style="font-weight: 500;">' + (o.mappedServiceLine || 'Other') + '</span>' + (o.eudiaTech ? ' <span style="color: #047857; font-size: 0.6rem;">●</span>' : '') + '<div style="font-size: 0.6rem; color: #6b7280;">' + stageLabel + (targetDate ? ' • Target: ' + targetDate : '') + '</div></div><span style="font-weight: 600;">$' + ((o.acv || 0) / 1000).toFixed(0) + 'k</span></div>';
+              // Get owner name (first name only for brevity)
+              const ownerName = o.owner ? o.owner.split(' ')[0] : '';
+              return '<div style="display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid #f1f3f5;"><div><span style="font-weight: 500;">' + (o.mappedServiceLine || 'Other') + '</span>' + (o.eudiaTech ? ' <span style="color: #047857; font-size: 0.6rem;">●</span>' : '') + '<div style="font-size: 0.6rem; color: #6b7280;">' + stageLabel + (ownerName ? ' • ' + ownerName : '') + (targetDate ? ' • ' + targetDate : '') + '</div></div><span style="font-weight: 600;">$' + ((o.acv || 0) / 1000).toFixed(0) + 'k</span></div>';
             }).join('')}
           </div>
         </details>`;
@@ -397,7 +400,7 @@ function generateTopCoTab(eudiaGross, eudiaWeighted, eudiaDeals, eudiaAccounts, 
         <div>
           <span style="font-weight: 500;">${deal.account}</span>
           ${deal.eudiaTech ? '<span class="badge badge-eudia" style="margin-left: 4px;">Eudia Tech</span>' : ''}
-          <div style="font-size: 0.6rem; color: #9ca3af;">${deal.serviceLine || 'Other'}</div>
+          <div style="font-size: 0.6rem; color: #9ca3af;">${deal.serviceLine || 'Other'}${deal.owner ? ' • ' + deal.owner.split(' ')[0] : ''}</div>
         </div>
         <div style="font-weight: 600; color: #16a34a;">${fmt(deal.acv)}</div>
       </div>
