@@ -702,7 +702,7 @@ function generateWeeklyTab(params) {
       </div>`;
     }).join('')}
     
-    <div style="font-size: 0.6rem; color: #9ca3af; margin-top: 8px; font-style: italic;">Days calculated from opportunity CreatedDate. For accurate stage-specific tracking, LastStageChangeDate field may be needed.</div>
+    <div style="font-size: 0.6rem; color: #9ca3af; margin-top: 8px; font-style: italic;">Source: Days_in_Stage__c field from Salesforce</div>
   </div>
 </div>`;
 }
@@ -976,15 +976,14 @@ async function generateAccountDashboard() {
   } catch (e) { console.error('Closed Lost query error:', e.message); }
   
   // ═══════════════════════════════════════════════════════════════════════
-  // DAYS IN STAGE - Calculate how long opportunities have been in current stage
-  // Using LastStageChangeDate or CreatedDate as fallback
+  // DAYS IN STAGE - Using Salesforce's Days_in_Stage__c field
   // ═══════════════════════════════════════════════════════════════════════
   const daysInStageQuery = `
-    SELECT Account.Name, Name, StageName, ACV__c, CreatedDate, LastModifiedDate
+    SELECT Account.Name, Name, StageName, ACV__c, Days_in_Stage__c
     FROM Opportunity
     WHERE IsClosed = false
       AND StageName IN ('Stage 1 - Discovery', 'Stage 2 - SQO', 'Stage 3 - Pilot', 'Stage 4 - Proposal', 'Stage 5 - Negotiation')
-    ORDER BY CreatedDate ASC
+    ORDER BY Days_in_Stage__c DESC NULLS LAST
   `;
   
   let daysInStageByStage = {
@@ -999,24 +998,19 @@ async function generateAccountDashboard() {
     const daysData = await query(daysInStageQuery, true);
     console.log(`[Dashboard] Days in Stage query returned ${daysData?.records?.length || 0} records`);
     if (daysData?.records) {
-      const today = new Date();
       daysData.records.forEach(opp => {
         const stage = opp.StageName;
         if (daysInStageByStage[stage]) {
-          // Calculate days since CreatedDate (approximation without LastStageChangeDate)
-          const created = new Date(opp.CreatedDate);
-          const daysInStage = Math.floor((today - created) / (1000 * 60 * 60 * 24));
           daysInStageByStage[stage].push({
             accountName: opp.Account?.Name || 'Unknown',
             oppName: opp.Name || '',
             acv: opp.ACV__c || 0,
-            daysInStage
+            daysInStage: opp.Days_in_Stage__c || 0
           });
         }
       });
-      // Sort each stage by days in stage (descending) and keep top 10
+      // Keep only top 10 per stage (already sorted by Days_in_Stage__c DESC)
       Object.keys(daysInStageByStage).forEach(stage => {
-        daysInStageByStage[stage].sort((a, b) => b.daysInStage - a.daysInStage);
         daysInStageByStage[stage] = daysInStageByStage[stage].slice(0, 10);
       });
     }
