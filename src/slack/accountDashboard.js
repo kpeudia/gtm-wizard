@@ -670,12 +670,42 @@ function generateWeeklyTab(params) {
       <div style="font-size: 0.65rem; color: #374151; margin-top: 4px;"><strong>Q4 FY2025 Logos (Nov-Dec to date):</strong> BNY Mellon, Delinea, IQVIA, Udemy Ireland Limited, World Wide Technology</div>
     </div>
     
-    <!-- Current Logos -->
+    <!-- Current Logos by Entity -->
     <div class="weekly-subsection">
-      <div class="weekly-subsection-title">Current Logos: (${currentLogosCount})</div>
-      <div style="font-size: 0.75rem; color: #374151; line-height: 1.6;">
-        ${allLogos.sort().join(', ')}
-      </div>
+      <div class="weekly-subsection-title">Current Logos by Entity</div>
+      
+      <!-- Eudia Logos -->
+      <details style="margin-bottom: 8px;">
+        <summary style="cursor: pointer; font-weight: 600; font-size: 0.75rem; color: #059669; padding: 4px 0;">
+          Eudia (${currentLogosCount}) ▾
+        </summary>
+        <div style="font-size: 0.7rem; color: #374151; line-height: 1.5; padding: 8px 12px; background: #f9fafb; border-radius: 4px; margin-top: 4px;">
+          ${allLogos.sort().join(', ')}
+        </div>
+      </details>
+      
+      <!-- Johnson Hana Logos -->
+      <details style="margin-bottom: 8px;">
+        <summary style="cursor: pointer; font-weight: 600; font-size: 0.75rem; color: #374151; padding: 4px 0;">
+          Johnson Hana (${jhSummary?.uniqueAccounts || 0}) ▾
+        </summary>
+        <div style="font-size: 0.7rem; color: #374151; line-height: 1.5; padding: 8px 12px; background: #e5e7eb; border-radius: 4px; margin-top: 4px;">
+          ${(() => {
+            const jhAccounts = [...new Set((jhSummary?.pipeline || []).map(o => o.account))].sort();
+            return jhAccounts.join(', ') || 'No data';
+          })()}
+        </div>
+      </details>
+      
+      <!-- OutHouse Logos -->
+      <details style="margin-bottom: 8px;">
+        <summary style="cursor: pointer; font-weight: 600; font-size: 0.75rem; color: #6b7280; padding: 4px 0;">
+          OutHouse (0) ▾
+        </summary>
+        <div style="font-size: 0.7rem; color: #6b7280; line-height: 1.5; padding: 8px 12px; background: #f3f4f6; border-radius: 4px; margin-top: 4px; font-style: italic;">
+          No OutHouse logos tracked yet
+        </div>
+      </details>
     </div>
     
     <!-- Run-Rate Forecast Table -->
@@ -689,7 +719,7 @@ function generateWeeklyTab(params) {
           <tr><td>August</td><td style="text-align: right;">$4.9</td><td style="text-align: right; color: #6b7280;">-</td><td style="text-align: right; color: #6b7280;">-</td></tr>
           <tr><td>September</td><td style="text-align: right;">$5.0</td><td style="text-align: right; color: #6b7280;">-</td><td style="text-align: right; color: #6b7280;">-</td></tr>
           <tr><td>October</td><td style="text-align: right;">$6.8</td><td style="text-align: right; color: #6b7280;">-</td><td style="text-align: right; color: #6b7280;">-</td></tr>
-          <tr><td>November (EOM)</td><td style="text-align: right;">$7.2</td><td style="text-align: right;">$10.3</td><td style="text-align: right; font-weight: 600;">$17.5</td></tr>
+          <tr><td>November (EOM)</td><td style="text-align: right;">$7.56</td><td style="text-align: right;">$10.3</td><td style="text-align: right; font-weight: 600;">$17.86</td></tr>
           <tr style="color: #6b7280; font-size: 0.7rem;">
             <td>+ Q4 Weighted Pipeline</td>
             <td style="text-align: right;">$2.33</td>
@@ -698,13 +728,13 @@ function generateWeeklyTab(params) {
           </tr>
           <tr style="font-weight: 600; background: #f0fdf4;">
             <td>FY2025E Total</td>
-            <td style="text-align: right;">$9.53</td>
+            <td style="text-align: right;">$9.89</td>
             <td style="text-align: right;">$14.18</td>
-            <td style="text-align: right; color: #059669;">$23.71</td>
+            <td style="text-align: right; color: #059669;">$24.07</td>
           </tr>
         </tbody>
       </table>
-      <div style="font-size: 0.6rem; color: #9ca3af; margin-top: 4px;">*JH Q4 pipeline: $8.3m gross, $3.88m weighted. Eudia Q4: $7.56m rev, $2.33m weighted.</div>
+      <div style="font-size: 0.6rem; color: #9ca3af; margin-top: 4px;">*Eudia: $7.56m revenue + $2.33m weighted = $9.89m. JH: $10.3m + $3.88m = $14.18m.</div>
     </div>
   </div>
 
