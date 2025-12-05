@@ -700,13 +700,10 @@ function generateWeeklyTab(params) {
       <!-- Johnson Hana Logos -->
       <details style="margin-bottom: 8px;">
         <summary style="cursor: pointer; font-weight: 600; font-size: 0.75rem; color: #111827; padding: 4px 0;">
-          Johnson Hana (${jhSummary?.uniqueAccounts || 0}) ▾
+          Johnson Hana (35) ▾
         </summary>
         <div style="font-size: 0.7rem; color: #374151; line-height: 1.5; padding: 8px 12px; background: #e5e7eb; border-radius: 4px; margin-top: 4px;">
-          ${(() => {
-            const jhAccounts = [...new Set((jhSummary?.pipeline || []).map(o => o.account))].sort();
-            return jhAccounts.join(', ') || 'No data';
-          })()}
+          ACS, Airbnb, Airship, Aryza, BOI, Coimisiún na Meán, Coillte, Coleman Legal, CommScope, Consensys, Creed McStay, Datalex, DCEDIY, Dropbox, ESB, Etsy, Gilead, Glanbia, Hayes, Indeed, Irish Water, Kellanova, Kingspan, Northern Trust, NTMA, OpenAI, Orsted, Perrigo, Sisk, Stripe, Taoglas, Teamwork, TikTok, Tinder, Udemy
         </div>
       </details>
       
