@@ -131,20 +131,6 @@ function generateTopCoTab(eudiaGross, eudiaWeighted, eudiaDeals, eudiaAccounts, 
     </div>
   </div>
   
-  <!-- Eudia Tech Indicator (subtle) -->
-  <div style="background: #ecfdf5; border: 1px solid #10b981; padding: 10px 12px; border-radius: 6px; margin-bottom: 16px;">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-      <div>
-        <div style="font-size: 0.7rem; font-weight: 600; color: #047857;">Eudia Tech Opportunities (JH)</div>
-        <div style="font-size: 0.65rem; color: #065f46; margin-top: 2px;">${jhSummary.eudiaTech.opportunityCount} opps (${jhSummary.eudiaTech.percentOfOpps}% of JH pipeline)</div>
-      </div>
-      <div style="text-align: right;">
-        <div style="font-size: 1.25rem; font-weight: 700; color: #047857;">${fmt(jhSummary.eudiaTech.pipelineValue)}</div>
-        <div style="font-size: 0.65rem; color: #065f46;">${jhSummary.eudiaTech.percentOfValue}% of value</div>
-      </div>
-    </div>
-  </div>
-  
   <!-- ═══════════════════════════════════════════════════════════════════════ -->
   <!-- EUDIA BY STAGE -->
   <!-- ═══════════════════════════════════════════════════════════════════════ -->
@@ -196,8 +182,16 @@ function generateTopCoTab(eudiaGross, eudiaWeighted, eudiaDeals, eudiaAccounts, 
   <!-- JOHNSON HANA BY STAGE -->
   <!-- ═══════════════════════════════════════════════════════════════════════ -->
   <div class="stage-section" style="margin-top: 16px;">
-    <div class="stage-title">Johnson Hana by Stage</div>
-    <div class="stage-subtitle">${jhSummary.totalOpportunities} opps • ${fmt(jhSummary.totalPipeline)} gross • ${fmt(jhSummary.totalWeighted)} weighted</div>
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
+      <div>
+        <div class="stage-title">Johnson Hana by Stage</div>
+        <div class="stage-subtitle">${jhSummary.totalOpportunities} opps • ${fmt(jhSummary.totalPipeline)} gross • ${fmt(jhSummary.totalWeighted)} weighted</div>
+      </div>
+      <div style="background: #ecfdf5; border: 1px solid #10b981; padding: 6px 10px; border-radius: 6px; font-size: 0.65rem; text-align: right;">
+        <div style="font-weight: 600; color: #047857;">Eudia Tech: ${jhSummary.eudiaTech.opportunityCount} opps</div>
+        <div style="color: #065f46;">${fmt(jhSummary.eudiaTech.pipelineValue)} (${jhSummary.eudiaTech.percentOfValue}%)</div>
+      </div>
+    </div>
     <table style="width: 100%; font-size: 0.8rem; margin-top: 8px;">
       <tr style="background: #f9fafb; font-weight: 600;">
         <td style="padding: 6px;">Stage</td>
@@ -443,6 +437,272 @@ function generateTopCoTab(eudiaGross, eudiaWeighted, eudiaDeals, eudiaAccounts, 
           </div>
         `).join('')}
     </div>
+  </div>
+</div>`;
+}
+
+/**
+ * Generate Weekly RevOps Summary Tab
+ * Replicates Friday "RevOps Weekly Update" email format
+ */
+function generateWeeklyTab(params) {
+  const {
+    totalGross, totalWeighted, totalDeals, accountMap,
+    stageBreakdown, jhSummary, jhAccounts,
+    signedByType, signedDealsTotal,
+    novDecRevenue, novDecRevenueTotal,
+    contractsByAccount, recurringTotal, projectTotal
+  } = params;
+  
+  // Helper for currency formatting
+  const fmt = (val) => {
+    if (!val || val === 0) return '-';
+    if (val >= 1000000) return '$' + (val / 1000000).toFixed(1) + 'm';
+    return '$' + Math.round(val / 1000) + 'k';
+  };
+  
+  // Get opportunities with December sign date (Target_LOI_Date__c)
+  const decemberOpps = [];
+  accountMap.forEach(acc => {
+    acc.opportunities?.forEach(opp => {
+      const targetDate = opp.Target_LOI_Date__c;
+      if (targetDate) {
+        const d = new Date(targetDate);
+        if (d.getMonth() === 11 && d.getFullYear() === 2025) { // December 2025
+          decemberOpps.push({
+            account: acc.name,
+            name: opp.Name,
+            acv: opp.ACV__c || 0,
+            stage: opp.StageName,
+            owner: acc.owner
+          });
+        }
+      }
+    });
+  });
+  decemberOpps.sort((a, b) => b.acv - a.acv);
+  const decTotalACV = decemberOpps.reduce((sum, o) => sum + o.acv, 0);
+  
+  // Top 10 by ACV (from pipeline)
+  const top10Opps = [];
+  accountMap.forEach(acc => {
+    acc.opportunities?.forEach(opp => {
+      top10Opps.push({
+        account: acc.name,
+        name: opp.Name,
+        acv: opp.ACV__c || 0,
+        stage: opp.StageName
+      });
+    });
+  });
+  top10Opps.sort((a, b) => b.acv - a.acv);
+  const top10 = top10Opps.slice(0, 10);
+  const top10Total = top10.reduce((sum, o) => sum + o.acv, 0);
+  
+  // Week-over-week changes by stage (placeholder - would need historical data)
+  const stageWoW = [
+    { stage: 'Stage 0 - Qualifying', acv: stageBreakdown['Stage 0 - Qualifying']?.totalACV || 0, oppCount: stageBreakdown['Stage 0 - Qualifying']?.count || 0 },
+    { stage: 'Stage 1 - Discovery', acv: stageBreakdown['Stage 1 - Discovery']?.totalACV || 0, oppCount: stageBreakdown['Stage 1 - Discovery']?.count || 0 },
+    { stage: 'Stage 2 - SQO', acv: stageBreakdown['Stage 2 - SQO']?.totalACV || 0, oppCount: stageBreakdown['Stage 2 - SQO']?.count || 0 },
+    { stage: 'Stage 3 - Pilot', acv: stageBreakdown['Stage 3 - Pilot']?.totalACV || 0, oppCount: stageBreakdown['Stage 3 - Pilot']?.count || 0 },
+    { stage: 'Stage 4 - Proposal', acv: stageBreakdown['Stage 4 - Proposal']?.totalACV || 0, oppCount: stageBreakdown['Stage 4 - Proposal']?.count || 0 },
+    { stage: 'Stage 5 - Negotiation', acv: stageBreakdown['Stage 5 - Negotiation']?.totalACV || 0, oppCount: stageBreakdown['Stage 5 - Negotiation']?.count || 0 }
+  ];
+  const stageTotalACV = stageWoW.reduce((sum, s) => sum + s.acv, 0);
+  const stageTotalCount = stageWoW.reduce((sum, s) => sum + s.oppCount, 0);
+  
+  // Current logos count from signed deals
+  const currentLogosCount = new Set([
+    ...signedByType.revenue.map(d => d.accountName),
+    ...signedByType.pilot.map(d => d.accountName),
+    ...signedByType.loi.map(d => d.accountName)
+  ]).size;
+  
+  // Run-rate forecast (using contract data)
+  const fy2025Total = recurringTotal + projectTotal;
+  const jhTotal = jhSummary?.totalPipeline || 0;
+  const combinedTotal = fy2025Total + jhTotal;
+  
+  return `
+<div id="weekly" class="tab-content">
+  <div style="background: #f3f4f6; border: 1px solid #d1d5db; padding: 8px 12px; border-radius: 6px; margin-bottom: 16px; font-size: 0.75rem; color: #374151;">
+    <strong>RevOps Weekly Summary</strong> — Formatted like Friday email updates. Data pulled live from Salesforce.
+  </div>
+
+  <!-- SECTION 1: REVENUE FORECAST SNAPSHOT -->
+  <div class="weekly-section">
+    <div class="weekly-section-title">1. Revenue Forecast Snapshot</div>
+    
+    <!-- Opportunities with December Sign Date -->
+    <div class="weekly-subsection">
+      <div class="weekly-subsection-title">Opportunities with December Sign Date: ${decemberOpps.length}</div>
+      <div style="margin-bottom: 8px; font-size: 0.75rem; color: #6b7280;">Top 10 by ACV</div>
+      <ol class="weekly-list">
+        ${decemberOpps.slice(0, 10).map((o, i) => `<li>${o.account}, ${fmt(o.acv)}</li>`).join('')}
+      </ol>
+      <div class="weekly-highlight">
+        <strong>Total Unweighted ACV</strong> (${decemberOpps.length} opps): <strong>${fmt(decTotalACV)}</strong>
+      </div>
+    </div>
+    
+    <!-- Signed Net New Logos Table -->
+    <div class="weekly-subsection">
+      <div class="weekly-subsection-title">Eudia - Signed Net New Logos</div>
+      <table class="weekly-table">
+        <thead>
+          <tr><th>Date</th><th>Actual</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Q3</td><td>33*</td></tr>
+          <tr><td>November</td><td>${signedByType.revenue.filter(d => {
+            const cd = new Date(d.closeDate);
+            return cd.getMonth() === 10 && cd.getFullYear() === 2025;
+          }).length}</td></tr>
+        </tbody>
+      </table>
+      <div style="font-size: 0.65rem; color: #9ca3af; margin-top: 4px;">November Logos Signed: ${signedByType.revenue.filter(d => {
+        const cd = new Date(d.closeDate);
+        return cd.getMonth() === 10 && cd.getFullYear() === 2025;
+      }).map(d => d.accountName).join(', ') || 'None'}</div>
+    </div>
+    
+    <!-- Current Logos -->
+    <div class="weekly-subsection">
+      <div class="weekly-subsection-title">Current Logos: (${currentLogosCount})</div>
+      <div style="font-size: 0.75rem; color: #374151; line-height: 1.6;">
+        ${[...new Set([...signedByType.revenue.map(d => d.accountName), ...signedByType.pilot.map(d => d.accountName), ...signedByType.loi.map(d => d.accountName)])].slice(0, 40).join(', ')}
+      </div>
+    </div>
+    
+    <!-- Run-Rate Forecast Table -->
+    <div class="weekly-subsection">
+      <div class="weekly-subsection-title">Eudia - Run-Rate Forecast ($)</div>
+      <table class="weekly-table">
+        <thead>
+          <tr><th>Month</th><th>Cumulative*</th><th>Net New</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>August</td><td>$4.9</td><td>-</td></tr>
+          <tr><td>September</td><td>$5.0</td><td>$0.1</td></tr>
+          <tr><td>October</td><td>$6.8</td><td>$1.8</td></tr>
+          <tr><td>November Forecast</td><td>$7.2</td><td>$0.4</td></tr>
+          <tr style="font-weight: 600; background: #f0fdf4;">
+            <td>FY2025E - Eudia Only</td><td>${fmt(fy2025Total)}</td><td>-</td>
+          </tr>
+          <tr style="font-style: italic; color: #6b7280;">
+            <td>Including JH</td><td>~$23m</td><td></td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="font-size: 0.6rem; color: #9ca3af; margin-top: 4px; font-style: italic;">*Historical figures adjusted based on Finance review of 'recurring' and 'project' contract signature dates, terms, and pricing.</div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: GROSS PIPELINE BREAKDOWN BY ENTITY -->
+  <div class="weekly-section">
+    <div class="weekly-section-title">2. Gross Pipeline Breakdown by Entity</div>
+    
+    <ul class="weekly-list">
+      <li><strong>Eudia:</strong> ${fmt(totalGross)} Gross || ${fmt(totalWeighted)} Weighted || ${totalDeals} opportunities</li>
+      <li><strong>Johnson Hana:</strong> ${fmt(jhSummary?.totalPipeline || 0)} || ${fmt(jhSummary?.totalWeighted || 0)} Weighted || ${jhSummary?.totalOpportunities || 0} opportunities <span style="font-size: 0.7rem; color: #047857;">(${jhSummary?.eudiaTech?.opportunityCount || 0} tagged as 'Eudia Tech enabled')</span></li>
+      <li><strong>Total Gross Pipeline:</strong> ${fmt((totalGross || 0) + (jhSummary?.totalPipeline || 0))} || ${fmt((totalWeighted || 0) + (jhSummary?.totalWeighted || 0))} Weighted || ${(totalDeals || 0) + (jhSummary?.totalOpportunities || 0)} opportunities</li>
+    </ul>
+    
+    <!-- Week-over-week Change by Stage (%) -->
+    <div class="weekly-subsection">
+      <div class="weekly-subsection-title">Week-over-week Change by Stage (%)</div>
+      <table class="weekly-table">
+        <thead>
+          <tr><th>Stage</th><th>ACV</th><th>% Change WoW</th></tr>
+        </thead>
+        <tbody>
+          ${stageWoW.filter(s => s.acv > 0).map(s => `
+          <tr>
+            <td>${s.stage.replace('Stage ', 'S')}</td>
+            <td>${fmt(s.acv)}</td>
+            <td>-</td>
+          </tr>`).join('')}
+          <tr style="font-weight: 600; background: #e5e7eb;">
+            <td>Total</td>
+            <td>${fmt(stageTotalACV)}</td>
+            <td>-</td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <table class="weekly-table" style="margin-top: 12px;">
+        <thead>
+          <tr><th>This Week</th><th>Opp Count</th><th>% Change WoW</th></tr>
+        </thead>
+        <tbody>
+          ${stageWoW.filter(s => s.oppCount > 0).map(s => `
+          <tr>
+            <td>${s.stage.replace('Stage ', 'S')}</td>
+            <td>${s.oppCount}</td>
+            <td>-</td>
+          </tr>`).join('')}
+          <tr style="font-weight: 600; background: #e5e7eb;">
+            <td>Total</td>
+            <td>${stageTotalCount}</td>
+            <td>-</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <!-- New Opportunities Added -->
+    <div class="weekly-subsection">
+      <div class="weekly-subsection-title">New Opportunities Added This Week</div>
+      <div style="font-size: 0.8rem; color: #374151;">
+        <div style="margin-bottom: 8px;"><strong>Eudia:</strong> <em>Data requires week-over-week tracking</em></div>
+        <div><strong>Johnson Hana:</strong> <em>See JH data updated ${jhSummary?.lastUpdate?.time || 'recently'}</em></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: DEALS IMPACTING THE FORECAST (T10) -->
+  <div class="weekly-section">
+    <div class="weekly-section-title">3. Deals Impacting the Forecast (T10)</div>
+    <ol class="weekly-list">
+      ${top10.map((o, i) => `<li>${o.account}${o.name ? ' | ' + o.name.substring(0, 30) : ''} | ${fmt(o.acv)}</li>`).join('')}
+    </ol>
+    <div class="weekly-highlight">
+      <strong>Total ACV:</strong> ${fmt(top10Total)}
+    </div>
+  </div>
+
+  <!-- SECTION 4: CLOSED LOST, DQ, OR NURTURE -->
+  <div class="weekly-section">
+    <div class="weekly-section-title">4. Closed Lost, Disqualified, or Nurture this week</div>
+    <table class="weekly-table">
+      <thead>
+        <tr><th>Account</th><th>Closed Lost Detail</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td colspan="2" style="color: #9ca3af; text-align: center; font-style: italic;">No closed lost deals this week (data requires CL tracking)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 5: LONGEST DEALS BY STAGE (T10) -->
+  <div class="weekly-section">
+    <div class="weekly-section-title">5. Longest Deals by Stage (T10)</div>
+    <div style="font-size: 0.75rem; color: #9ca3af; margin-bottom: 12px;">Days in current stage (requires CreatedDate tracking)</div>
+    
+    ${['Stage 1 - Discovery', 'Stage 2 - SQO', 'Stage 3 - Pilot', 'Stage 4 - Proposal'].map(stage => {
+      const stageData = stageBreakdown[stage];
+      if (!stageData || !stageData.accounts?.length) return '';
+      const topAccounts = stageData.accounts.slice(0, 10);
+      return `
+      <div class="weekly-subsection">
+        <div class="weekly-subsection-title">${stage}</div>
+        <div style="font-size: 0.75rem; color: #374151;">
+          ${topAccounts.map(a => a.name || a).join(', ') || 'None'}
+        </div>
+      </div>`;
+    }).join('')}
   </div>
 </div>`;
 }
@@ -983,14 +1243,29 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .tab { background: #fff; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 500; cursor: pointer; white-space: nowrap; color: #6b7280; transition: all 0.2s; }
 .tab:hover { background: #e5e7eb; }
 #tab-topco:checked ~ .tabs label[for="tab-topco"],
+#tab-weekly:checked ~ .tabs label[for="tab-weekly"],
 #tab-summary:checked ~ .tabs label[for="tab-summary"],
 #tab-revenue:checked ~ .tabs label[for="tab-revenue"],
 #tab-account-plans:checked ~ .tabs label[for="tab-account-plans"] { background: #8e99e1; color: #fff; }
 .tab-content { display: none; }
 #tab-topco:checked ~ #topco,
+#tab-weekly:checked ~ #weekly,
 #tab-summary:checked ~ #summary,
 #tab-revenue:checked ~ #revenue,
 #tab-account-plans:checked ~ #account-plans { display: block; }
+.weekly-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; margin: 8px 0; }
+.weekly-table th { background: #1f2937; color: #fff; padding: 8px; text-align: left; font-weight: 600; }
+.weekly-table td { padding: 6px 8px; border-bottom: 1px solid #e5e7eb; }
+.weekly-table tr:nth-child(even) { background: #f9fafb; }
+.weekly-section { background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.weekly-section-title { font-size: 1rem; font-weight: 700; color: #1f2937; margin-bottom: 12px; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; }
+.weekly-subsection { margin-top: 16px; }
+.weekly-subsection-title { font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 8px; }
+.weekly-list { margin: 0; padding-left: 20px; font-size: 0.8rem; color: #374151; }
+.weekly-list li { margin-bottom: 4px; }
+.weekly-highlight { background: #f0fdf4; border-left: 3px solid #10b981; padding: 8px 12px; margin: 8px 0; font-size: 0.8rem; }
+.wow-positive { color: #16a34a; font-weight: 600; }
+.wow-negative { color: #dc2626; font-weight: 600; }
 .badge-eudia { background: #ecfdf5; color: #047857; border: 1px solid #10b981; font-size: 0.6rem; }
 .jh-indicator { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #f59e0b; margin-left: 4px; vertical-align: middle; }
 .metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
@@ -1039,12 +1314,14 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 
 <!-- Pure CSS Tabs (No JavaScript - CSP Safe) -->
 <input type="radio" name="tabs" id="tab-topco" checked style="display: none;">
+<input type="radio" name="tabs" id="tab-weekly" style="display: none;">
 <input type="radio" name="tabs" id="tab-summary" style="display: none;">
 <input type="radio" name="tabs" id="tab-revenue" style="display: none;">
 <input type="radio" name="tabs" id="tab-account-plans" style="display: none;">
 
 <div class="tabs">
   <label for="tab-topco" class="tab">Top Co</label>
+  <label for="tab-weekly" class="tab">Weekly</label>
   <label for="tab-summary" class="tab">Eudia Summary</label>
   <label for="tab-revenue" class="tab">Revenue</label>
   <label for="tab-account-plans" class="tab">Eudia Accounts</label>
@@ -1247,6 +1524,15 @@ ${mid.map((acc, idx) => {
 
 <!-- TAB: TOP CO OVERVIEW (Blended Eudia + Johnson Hana) -->
 ${generateTopCoTab(totalGross, totalWeighted, totalDeals, accountMap.size, stageBreakdown, productBreakdown, accountMap, signedByType, meetingData, novDecRevenue, novDecRevenueTotal)}
+
+<!-- TAB: WEEKLY REVOPS SUMMARY -->
+${generateWeeklyTab({
+  totalGross, totalWeighted, totalDeals, accountMap,
+  stageBreakdown, jhSummary: getJohnsonHanaSummary(), jhAccounts: getJHAccounts(),
+  signedByType, signedDealsTotal,
+  novDecRevenue, novDecRevenueTotal,
+  contractsByAccount, recurringTotal, projectTotal
+})}
 
 <!-- TAB 3: REVENUE -->
 <div id="revenue" class="tab-content">
@@ -1541,12 +1827,21 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   
-  // Show more accounts button
+  // Show more accounts button (with collapse)
   if (showMoreBtn) {
+    let expanded = false;
     showMoreBtn.addEventListener('click', function() {
-      allAccounts.forEach(acc => acc.style.display = 'block');
-      this.style.display = 'none';
-      matchCount.textContent = 'Showing all ' + allAccounts.length + ' accounts';
+      if (!expanded) {
+        allAccounts.forEach(acc => acc.style.display = 'block');
+        this.textContent = '▲ Collapse to top 10';
+        matchCount.textContent = 'Showing all ' + allAccounts.length + ' accounts';
+        expanded = true;
+      } else {
+        allAccounts.forEach((acc, idx) => acc.style.display = idx < 10 ? 'block' : 'none');
+        this.textContent = '+' + (allAccounts.length - 10) + ' more accounts';
+        matchCount.textContent = 'Showing top 10 accounts';
+        expanded = false;
+      }
     });
   }
   
@@ -1555,50 +1850,67 @@ document.addEventListener('DOMContentLoaded', function() {
   const showMoreMid = document.getElementById('show-more-mid');
   const showMoreEarly = document.getElementById('show-more-early');
   
-  if (showMoreLate) {
-    showMoreLate.addEventListener('click', function() {
-      const lateList = document.getElementById('late-stage-list');
-      const allLate = lateList.querySelectorAll('.summary-expandable');
-      allLate.forEach(acc => acc.style.display = 'block');
-      this.style.display = 'none';
+  // Summary tab expand/collapse handlers
+  function setupExpandCollapse(btn, listId, itemClass, defaultCount) {
+    if (!btn) return;
+    let expanded = false;
+    const list = document.getElementById(listId);
+    if (!list) return;
+    const items = list.querySelectorAll('.' + itemClass);
+    const totalCount = items.length;
+    
+    btn.addEventListener('click', function() {
+      if (!expanded) {
+        items.forEach(acc => acc.style.display = 'block');
+        this.textContent = '▲ Collapse';
+        expanded = true;
+      } else {
+        items.forEach((acc, idx) => acc.style.display = idx < defaultCount ? 'block' : 'none');
+        this.textContent = '+' + (totalCount - defaultCount) + ' more';
+        expanded = false;
+      }
     });
   }
   
-  if (showMoreMid) {
-    showMoreMid.addEventListener('click', function() {
-      const midList = document.getElementById('mid-stage-list');
-      const allMid = midList.querySelectorAll('.summary-expandable');
-      allMid.forEach(acc => acc.style.display = 'block');
-      this.style.display = 'none';
-    });
-  }
+  setupExpandCollapse(showMoreLate, 'late-stage-list', 'summary-expandable', 5);
+  setupExpandCollapse(showMoreMid, 'mid-stage-list', 'summary-expandable', 5);
+  setupExpandCollapse(showMoreEarly, 'early-stage-list', 'summary-expandable', 5);
   
-  if (showMoreEarly) {
-    showMoreEarly.addEventListener('click', function() {
-      const earlyList = document.getElementById('early-stage-list');
-      const allEarly = earlyList.querySelectorAll('.summary-expandable');
-      allEarly.forEach(acc => acc.style.display = 'block');
-      this.style.display = 'none';
-    });
-  }
-  
-  // Top Co tab - Eudia accounts expand
+  // Top Co tab - Eudia accounts expand/collapse
   const showMoreEudiaTopco = document.getElementById('show-more-eudia-topco');
   if (showMoreEudiaTopco) {
+    let eudiaExpanded = false;
+    const allEudiaTopco = document.querySelectorAll('.eudia-topco-account');
+    const eudiaCount = allEudiaTopco.length;
     showMoreEudiaTopco.addEventListener('click', function() {
-      const allEudiaTopco = document.querySelectorAll('.eudia-topco-account');
-      allEudiaTopco.forEach(acc => acc.style.display = 'block');
-      this.style.display = 'none';
+      if (!eudiaExpanded) {
+        allEudiaTopco.forEach(acc => acc.style.display = 'block');
+        this.textContent = '▲ Collapse to top 10';
+        eudiaExpanded = true;
+      } else {
+        allEudiaTopco.forEach((acc, idx) => acc.style.display = idx < 10 ? 'block' : 'none');
+        this.textContent = '+' + (eudiaCount - 10) + ' more accounts';
+        eudiaExpanded = false;
+      }
     });
   }
   
-  // Top Co tab - JH accounts expand
+  // Top Co tab - JH accounts expand/collapse
   const showMoreJhTopco = document.getElementById('show-more-jh-topco');
   if (showMoreJhTopco) {
+    let jhExpanded = false;
+    const allJhTopco = document.querySelectorAll('.jh-topco-account');
+    const jhCount = allJhTopco.length;
     showMoreJhTopco.addEventListener('click', function() {
-      const allJhTopco = document.querySelectorAll('.jh-topco-account');
-      allJhTopco.forEach(acc => acc.style.display = 'block');
-      this.style.display = 'none';
+      if (!jhExpanded) {
+        allJhTopco.forEach(acc => acc.style.display = 'block');
+        this.textContent = '▲ Collapse to top 10';
+        jhExpanded = true;
+      } else {
+        allJhTopco.forEach((acc, idx) => acc.style.display = idx < 10 ? 'block' : 'none');
+        this.textContent = '+' + (jhCount - 10) + ' more accounts';
+        jhExpanded = false;
+      }
     });
   }
 });
