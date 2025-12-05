@@ -729,24 +729,24 @@ function generateWeeklyTab(params) {
           <tr><td>August</td><td style="text-align: right;">$4.9</td><td style="text-align: right; color: #6b7280;">-</td><td style="text-align: right; color: #6b7280;">-</td><td style="text-align: right; color: #6b7280;">-</td></tr>
           <tr><td>September</td><td style="text-align: right;">$5.0</td><td style="text-align: right; color: #6b7280;">-</td><td style="text-align: right; color: #6b7280;">-</td><td style="text-align: right; color: #6b7280;">-</td></tr>
           <tr><td>October</td><td style="text-align: right;">$6.8</td><td style="text-align: right; color: #6b7280;">-</td><td style="text-align: right; color: #6b7280;">-</td><td style="text-align: right; color: #6b7280;">-</td></tr>
-          <tr><td>November (EOM)</td><td style="text-align: right;">$7.56</td><td style="text-align: right;">$10.3</td><td style="text-align: right;">$1.56</td><td style="text-align: right; font-weight: 600;">$19.42</td></tr>
+          <tr><td>November (EOM)</td><td style="text-align: right;">$7.5</td><td style="text-align: right;">$10.2</td><td style="text-align: right;">$1.5</td><td style="text-align: right; font-weight: 600;">$19.2</td></tr>
           <tr style="color: #6b7280; font-size: 0.7rem;">
             <td>+ Q4 Weighted Pipeline</td>
-            <td style="text-align: right;">$2.33</td>
-            <td style="text-align: right;">$3.88</td>
+            <td style="text-align: right;">$2.3</td>
+            <td style="text-align: right;">$3.9</td>
             <td style="text-align: right;">-</td>
-            <td style="text-align: right;">$6.21</td>
+            <td style="text-align: right;">$6.2</td>
           </tr>
           <tr style="font-weight: 600; background: #e5e7eb;">
             <td>FY2025E Total</td>
-            <td style="text-align: right;">$9.89</td>
-            <td style="text-align: right;">$14.18</td>
-            <td style="text-align: right;">$1.56</td>
-            <td style="text-align: right; color: #111827;">$25.63</td>
+            <td style="text-align: right;">$9.8</td>
+            <td style="text-align: right;">$14.1</td>
+            <td style="text-align: right;">$1.5</td>
+            <td style="text-align: right; color: #111827;">$25.4</td>
           </tr>
         </tbody>
       </table>
-      <div style="font-size: 0.6rem; color: #9ca3af; margin-top: 4px;">*Eudia: $7.56m + $2.33m wtd. JH: $10.3m + $3.88m wtd. OH: $1.56m (Meta contracted RR).</div>
+      <div style="font-size: 0.6rem; color: #9ca3af; margin-top: 4px;">*Eudia: $7.5m + $2.3m wtd. JH: $10.2m + $3.9m wtd. OH: $1.5m (Meta).</div>
     </div>
   </div>
 
