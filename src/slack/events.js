@@ -1609,6 +1609,9 @@ function formatAccountFieldResults(queryResult, parsedIntent) {
     
     case 'competitive_landscape':
       const competitorSearchTerm = parsedIntent.entities.searchTerm || 'competitors';
+      const nonBLHolders = ['Keigan Pesenti', 'Emmit Hood', 'Emmitt Hood', 'Mark Runyon', 'Derreck Chu', 'Sarah Rakhine'];
+      const validBLs = ['Julie Stefanich', 'Himanshu Agarwal', 'Asad Hussain', 'Ananth Cherukupally', 'David Van Ryk', 'John Cobb', 'Jon Cobb', 'Olivia Jung', 'Justin Hills'];
+      
       if (records.length === 0) {
         response = `No accounts found with "${competitorSearchTerm}" in their competitive landscape.`;
       } else {
@@ -1616,18 +1619,26 @@ function formatAccountFieldResults(queryResult, parsedIntent) {
         records.forEach(account => {
           const competitiveInfo = account.Competitive_Landscape__c || '';
           const preview = competitiveInfo.length > 100 ? competitiveInfo.substring(0, 100) + '...' : competitiveInfo;
+          const ownerName = account.Owner?.Name || 'Unassigned';
+          const needsReassignment = nonBLHolders.includes(ownerName);
+          
           response += `• *${account.Name}*\n`;
-          response += `  Owner: ${account.Owner?.Name || 'Unassigned'}\n`;
+          response += `  Owner: ${ownerName}${needsReassignment ? ' _(needs reassignment)_' : ''}\n`;
           if (preview) {
             response += `  _${preview}_\n`;
           }
           response += `\n`;
         });
         
-        // Add summary at bottom
-        const owners = [...new Set(records.map(r => r.Owner?.Name).filter(Boolean))];
-        if (owners.length > 0) {
-          response += `\n*BLs to reach out to:* ${owners.join(', ')}`;
+        // Add summary at bottom - only include actual BLs
+        const blOwners = [...new Set(records.map(r => r.Owner?.Name).filter(name => name && validBLs.includes(name)))];
+        const needsReassignmentCount = records.filter(r => nonBLHolders.includes(r.Owner?.Name)).length;
+        
+        if (blOwners.length > 0) {
+          response += `\n*BLs to reach out to:* ${blOwners.join(', ')}`;
+        }
+        if (needsReassignmentCount > 0) {
+          response += `\n_${needsReassignmentCount} account${needsReassignmentCount > 1 ? 's need' : ' needs'} reassignment_`;
         }
       }
       break;
