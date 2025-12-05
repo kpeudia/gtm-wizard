@@ -513,50 +513,63 @@ function generateWeeklyTab(params) {
     'Total': { acv: 35500000, oppCount: 253 }
   };
   
-  // Get Johnson Hana stage breakdown
+  // Get Johnson Hana stage breakdown - with flexible key matching
   const jhByStage = jhSummary?.byStage || {};
+  
+  // Helper to get JH stage value by checking multiple possible key formats
+  const getJHStageValue = (stageName, prop) => {
+    const possibleKeys = [
+      stageName,
+      stageName.replace(' - ', ' '),
+      stageName.replace(' - ', '. ')
+    ];
+    for (const key of possibleKeys) {
+      if (jhByStage[key]?.[prop]) return jhByStage[key][prop];
+    }
+    return 0;
+  };
   
   // Combine Eudia + JH for current week (COMBINED VIEW)
   const stageWoW = [
     { 
       stage: 'Stage 0 - Qualifying', 
-      acv: (stageBreakdown['Stage 0 - Qualifying']?.totalACV || 0) + (jhByStage['Stage 0 - Qualifying']?.totalACV || 0), 
-      oppCount: (stageBreakdown['Stage 0 - Qualifying']?.count || 0) + (jhByStage['Stage 0 - Qualifying']?.count || 0),
+      acv: (stageBreakdown['Stage 0 - Qualifying']?.totalACV || 0) + getJHStageValue('Stage 0 - Qualifying', 'totalACV'), 
+      oppCount: (stageBreakdown['Stage 0 - Qualifying']?.count || 0) + getJHStageValue('Stage 0 - Qualifying', 'count'),
       lastAcv: lastWeekBaseline['Stage 0 - Qualifying'].acv,
       lastOppCount: lastWeekBaseline['Stage 0 - Qualifying'].oppCount
     },
     { 
       stage: 'Stage 1 - Discovery', 
-      acv: (stageBreakdown['Stage 1 - Discovery']?.totalACV || 0) + (jhByStage['Stage 1 - Discovery']?.totalACV || 0), 
-      oppCount: (stageBreakdown['Stage 1 - Discovery']?.count || 0) + (jhByStage['Stage 1 - Discovery']?.count || 0),
+      acv: (stageBreakdown['Stage 1 - Discovery']?.totalACV || 0) + getJHStageValue('Stage 1 - Discovery', 'totalACV'), 
+      oppCount: (stageBreakdown['Stage 1 - Discovery']?.count || 0) + getJHStageValue('Stage 1 - Discovery', 'count'),
       lastAcv: lastWeekBaseline['Stage 1 - Discovery'].acv,
       lastOppCount: lastWeekBaseline['Stage 1 - Discovery'].oppCount
     },
     { 
       stage: 'Stage 2 - SQO', 
-      acv: (stageBreakdown['Stage 2 - SQO']?.totalACV || 0) + (jhByStage['Stage 2 - SQO']?.totalACV || 0), 
-      oppCount: (stageBreakdown['Stage 2 - SQO']?.count || 0) + (jhByStage['Stage 2 - SQO']?.count || 0),
+      acv: (stageBreakdown['Stage 2 - SQO']?.totalACV || 0) + getJHStageValue('Stage 2 - SQO', 'totalACV'), 
+      oppCount: (stageBreakdown['Stage 2 - SQO']?.count || 0) + getJHStageValue('Stage 2 - SQO', 'count'),
       lastAcv: lastWeekBaseline['Stage 2 - SQO'].acv,
       lastOppCount: lastWeekBaseline['Stage 2 - SQO'].oppCount
     },
     { 
       stage: 'Stage 3 - Pilot', 
-      acv: (stageBreakdown['Stage 3 - Pilot']?.totalACV || 0) + (jhByStage['Stage 3 - Pilot']?.totalACV || 0), 
-      oppCount: (stageBreakdown['Stage 3 - Pilot']?.count || 0) + (jhByStage['Stage 3 - Pilot']?.count || 0),
+      acv: (stageBreakdown['Stage 3 - Pilot']?.totalACV || 0) + getJHStageValue('Stage 3 - Pilot', 'totalACV'), 
+      oppCount: (stageBreakdown['Stage 3 - Pilot']?.count || 0) + getJHStageValue('Stage 3 - Pilot', 'count'),
       lastAcv: lastWeekBaseline['Stage 3 - Pilot'].acv,
       lastOppCount: lastWeekBaseline['Stage 3 - Pilot'].oppCount
     },
     { 
       stage: 'Stage 4 - Proposal', 
-      acv: (stageBreakdown['Stage 4 - Proposal']?.totalACV || 0) + (jhByStage['Stage 4 - Proposal']?.totalACV || 0), 
-      oppCount: (stageBreakdown['Stage 4 - Proposal']?.count || 0) + (jhByStage['Stage 4 - Proposal']?.count || 0),
+      acv: (stageBreakdown['Stage 4 - Proposal']?.totalACV || 0) + getJHStageValue('Stage 4 - Proposal', 'totalACV'), 
+      oppCount: (stageBreakdown['Stage 4 - Proposal']?.count || 0) + getJHStageValue('Stage 4 - Proposal', 'count'),
       lastAcv: lastWeekBaseline['Stage 4 - Proposal'].acv,
       lastOppCount: lastWeekBaseline['Stage 4 - Proposal'].oppCount
     },
     { 
       stage: 'Stage 5 - Negotiation', 
-      acv: (stageBreakdown['Stage 5 - Negotiation']?.totalACV || 0) + (jhByStage['Stage 5 - Negotiation']?.totalACV || 0), 
-      oppCount: (stageBreakdown['Stage 5 - Negotiation']?.count || 0) + (jhByStage['Stage 5 - Negotiation']?.count || 0),
+      acv: (stageBreakdown['Stage 5 - Negotiation']?.totalACV || 0) + getJHStageValue('Stage 5 - Negotiation', 'totalACV'), 
+      oppCount: (stageBreakdown['Stage 5 - Negotiation']?.count || 0) + getJHStageValue('Stage 5 - Negotiation', 'count'),
       lastAcv: lastWeekBaseline['Stage 5 - Negotiation'].acv,
       lastOppCount: lastWeekBaseline['Stage 5 - Negotiation'].oppCount
     }
@@ -608,8 +621,8 @@ function generateWeeklyTab(params) {
           </ol>
           <div style="margin-top: 8px; font-size: 0.75rem; font-weight: 600; color: #059669;">Total: ${fmt(decTotalACV)}</div>
         </div>
-        <!-- Johnson Hana -->
-        <div style="flex: 1; min-width: 280px; background: #fdf4ff; border-radius: 8px; padding: 12px;">
+        <!-- Johnson Hana - slightly darker gray -->
+        <div style="flex: 1; min-width: 280px; background: #e5e7eb; border-radius: 8px; padding: 12px;">
           <div style="font-weight: 600; color: #111827; margin-bottom: 8px; font-size: 0.8rem;">JOHNSON HANA ${(() => {
             const jhDecOpps = (jhSummary?.pipeline || []).filter(o => {
               if (!o.closeDate) return false;
@@ -624,11 +637,11 @@ function generateWeeklyTab(params) {
                 if (!o.closeDate) return false;
                 const d = new Date(o.closeDate);
                 return d.getMonth() === 11 && d.getFullYear() === 2025;
-              }).sort((a, b) => (b.acv || 0) - (a.acv || 0)).slice(0, 10);
+              }).sort((a, b) => (b.weighted || 0) - (a.weighted || 0)).slice(0, 10);
               return jhDecOpps.map(o => `<li>${o.account}, ${fmt(o.acv || 0)}</li>`).join('') || '<li style="color: #9ca3af;">None</li>';
             })()}
           </ol>
-          <div style="margin-top: 8px; font-size: 0.75rem; font-weight: 600; color: #7c3aed;">Total: ${fmt((jhSummary?.pipeline || []).filter(o => {
+          <div style="margin-top: 8px; font-size: 0.75rem; font-weight: 600; color: #374151;">Total: ${fmt((jhSummary?.pipeline || []).filter(o => {
             if (!o.closeDate) return false;
             const d = new Date(o.closeDate);
             return d.getMonth() === 11 && d.getFullYear() === 2025;
@@ -773,8 +786,8 @@ function generateWeeklyTab(params) {
         </ol>
         <div style="margin-top: 8px; font-size: 0.75rem; font-weight: 600; color: #059669;">Total: ${fmt(top10Total)}</div>
       </div>
-      <!-- Johnson Hana -->
-      <div style="flex: 1; min-width: 280px; background: #fdf4ff; border-radius: 8px; padding: 12px;">
+      <!-- Johnson Hana - slightly darker gray -->
+      <div style="flex: 1; min-width: 280px; background: #e5e7eb; border-radius: 8px; padding: 12px;">
         <div style="font-weight: 600; color: #111827; margin-bottom: 8px; font-size: 0.8rem;">JOHNSON HANA</div>
         <ol class="weekly-list" style="font-size: 0.75rem; margin: 0; padding-left: 16px;">
           ${(() => {
@@ -783,7 +796,11 @@ function generateWeeklyTab(params) {
             return jhTop10.map(o => `<li>${o.account} | ${fmt(o.acv)}</li>`).join('') || '<li style="color: #9ca3af;">No data</li>';
           })()}
         </ol>
-        <div style="margin-top: 8px; font-size: 0.75rem; font-weight: 600; color: #7c3aed;">Total: ${fmt(jhSummary?.pipeline?.slice(0, 10).reduce((sum, o) => sum + (o.acv || 0), 0) || 0)}</div>
+        <div style="margin-top: 8px; font-size: 0.75rem; font-weight: 600; color: #374151;">Total: ${fmt((() => {
+          const jhPipeline = jhSummary?.pipeline || [];
+          const jhTop10 = [...jhPipeline].sort((a, b) => (b.weighted || 0) - (a.weighted || 0)).slice(0, 10);
+          return jhTop10.reduce((sum, o) => sum + (o.acv || 0), 0);
+        })())}</div>
       </div>
     </div>
   </div>
@@ -817,32 +834,32 @@ function generateWeeklyTab(params) {
     <div class="weekly-subsection">
       <div class="weekly-subsection-title">Stage 1 - Discovery</div>
       <div style="font-size: 0.75rem; color: #374151; line-height: 1.6;">
-        USDA (191), Apple (105), Goldman Sachs (102), Army Futures Command (102), MetLife (86), Advent (79), JP Morgan (79), CSL (79), HG (78), Centene (76)
+        USDA (198), Apple (112), Goldman Sachs (109), Army Futures Command (109), MetLife (93), Advent (86), JP Morgan (86), CSL (86), HG (85), Centene (83)
       </div>
     </div>
     
     <div class="weekly-subsection">
       <div class="weekly-subsection-title">Stage 2 - SQO</div>
       <div style="font-size: 0.75rem; color: #374151; line-height: 1.6;">
-        Corebridge Financial (178), UK Government (147), Southwest Airlines (143), Blackstone (105), Amazon (105), Cummins (105), Petsmart (105), Instacart (101), Uber (87), The Weir Group (79)
+        Corebridge Financial (185), UK Government (154), Southwest Airlines (150), Blackstone (112), Amazon (112), Cummins (112), Petsmart (112), Instacart (108), Uber (94), The Weir Group (86)
       </div>
     </div>
     
     <div class="weekly-subsection">
       <div class="weekly-subsection-title">Stage 3 - Pilot</div>
       <div style="font-size: 0.75rem; color: #374151; line-height: 1.6;">
-        Intuit (190), US Marine Corp (105)
+        Intuit (197), US Marine Corp (112)
       </div>
     </div>
     
     <div class="weekly-subsection">
       <div class="weekly-subsection-title">Stage 4 - Proposal</div>
       <div style="font-size: 0.75rem; color: #374151; line-height: 1.6;">
-        NATO (105), Air Force STTR (105), The Weir Group (102), Western Digital (73), DHL (64), WW Grainger (64), USAF SBIR Phase 1 (64), Intuit (57), Medtronic (35), Dolby (35)
+        NATO (112), Air Force STTR (112), The Weir Group (109), Western Digital (80), DHL (71), WW Grainger (71), USAF SBIR Phase 1 (71), Intuit (64), Medtronic (42), Dolby (42)
       </div>
     </div>
     
-    <div style="font-size: 0.6rem; color: #9ca3af; margin-top: 8px; font-style: italic;">Last updated: Dec 5, 2025 (based on prior week + 7 days)</div>
+    <div style="font-size: 0.6rem; color: #9ca3af; margin-top: 8px; font-style: italic;">Last updated: Dec 12, 2025 (based on prior week + 7 days)</div>
   </div>
 </div>`;
 }

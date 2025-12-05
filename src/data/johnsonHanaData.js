@@ -162,13 +162,13 @@ function getJohnsonHanaSummary() {
   const eudiaTechWeighted = eudiaTechOpps.reduce((sum, o) => sum + o.weighted, 0);
   const eudiaTechClosed = closedWonNovDec.filter(o => o.eudiaTech).reduce((sum, o) => sum + o.acv, 0);
   
-  // Stage breakdown (mapped)
+  // Stage breakdown (mapped) - use totalACV to match Eudia format
   const byStage = {};
   activePipeline.forEach(o => {
     const mappedStage = mapStage(o.stage);
-    if (!byStage[mappedStage]) byStage[mappedStage] = { count: 0, acv: 0, weighted: 0 };
+    if (!byStage[mappedStage]) byStage[mappedStage] = { count: 0, totalACV: 0, weighted: 0 };
     byStage[mappedStage].count++;
-    byStage[mappedStage].acv += o.acv;
+    byStage[mappedStage].totalACV += o.acv;
     byStage[mappedStage].weighted += o.weighted;
   });
   
@@ -192,6 +192,7 @@ function getJohnsonHanaSummary() {
     closedTotal,
     uniqueAccounts: uniqueAccounts.length,
     lastUpdate,
+    pipeline: activePipeline, // Full pipeline array for filtering
     eudiaTech: {
       opportunityCount: eudiaTechOpps.length,
       pipelineValue: eudiaTechPipeline,
