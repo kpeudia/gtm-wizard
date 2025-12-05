@@ -162,7 +162,7 @@ const pipelineTotals = {
  */
 function getJohnsonHanaSummary() {
   // Use Excel report totals for accuracy (they may differ slightly from array sum)
-  const totalPipeline = pipelineTotals.totalACV; // $8,411,529.04 from Excel
+  const totalPipeline = pipelineTotals.totalACV; // $11.3m from Excel (updated 12.5)
   const totalWeighted = pipelineTotals.totalWeightedACV; // $3,964,526.17 from Excel
   const closedTotal = closedWonNovDec.reduce((sum, o) => sum + o.acv, 0);
   
