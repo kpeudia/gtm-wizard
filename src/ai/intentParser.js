@@ -1215,12 +1215,38 @@ Business Context:
       };
     }
     
-    // Harvey/competitor mentions
-    else if (message.includes('harvey') || message.includes('mentioned harvey')) {
+    // Competitive landscape / competitor search (Ironclad, Harvey, DocuSign, etc.)
+    else if (message.includes('competitive landscape') || message.includes('competitor') ||
+             message.includes('ironclad') || message.includes('harvey') || 
+             message.includes('docusign') || message.includes('kira') ||
+             message.includes('luminance') || message.includes('evisort') ||
+             message.includes('icertis') || message.includes('agiloft') ||
+             message.includes('who has') && (message.includes('using') || message.includes('use '))) {
       intent = 'account_field_lookup';
-      entities.fieldType = 'harvey_mentions';
+      entities.fieldType = 'competitive_landscape';
       entities.includeAccount = true;
-      entities.searchTerm = 'harvey';
+      
+      // Extract competitor name from message
+      const competitorPatterns = [
+        /(?:have|has|using|use|with|mentioned?)\s+(\w+)(?:\s|$|\?)/i,
+        /accounts?\s+(?:with|that have|using)\s+(\w+)/i,
+        /(\w+)\s+(?:in|on)\s+competitive/i,
+        /(ironclad|harvey|docusign|kira|luminance|evisort|icertis|agiloft)/i
+      ];
+      
+      for (const pattern of competitorPatterns) {
+        const match = message.match(pattern);
+        if (match && match[1]) {
+          entities.searchTerm = match[1].trim();
+          break;
+        }
+      }
+      
+      // Default to first competitor keyword found
+      if (!entities.searchTerm) {
+        const competitors = ['ironclad', 'harvey', 'docusign', 'kira', 'luminance', 'evisort', 'icertis', 'agiloft'];
+        entities.searchTerm = competitors.find(c => message.includes(c)) || '';
+      }
     }
     
     // Pain points queries

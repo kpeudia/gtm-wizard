@@ -263,7 +263,8 @@ async function processQuery(text, userId, channelId, client, threadTs = null) {
 *ACCOUNT INTELLIGENCE*
 • "who owns Apple?" - Find account owner (business leads only)
 • "who's the BL for Intel?" - Business lead lookup
-• "which accounts have mentioned Harvey?" - Competitor intelligence
+• "which accounts have Ironclad?" - Competitive landscape search
+• "who has Harvey in competitive landscape?" - Competitor intelligence
 • "what's the legal team size at Best Buy?" - Legal department info
 • "who are the decision makers at Microsoft?" - Key stakeholders
 • "which accounts are discussing contracting?" - Use case analysis
@@ -1310,6 +1311,23 @@ function buildAccountFieldQuery(entities) {
               WHERE Pain_Points_Identified__c LIKE '%harvey%'
               ORDER BY Name LIMIT 15`;
       break;
+    
+    case 'competitive_landscape':
+      // Search Competitive_Landscape__c field for competitor mentions
+      const competitor = entities.searchTerm ? entities.searchTerm.replace(/'/g, "\\'") : '';
+      if (competitor) {
+        soql = `SELECT Id, Name, Owner.Name, Competitive_Landscape__c, Industry
+                FROM Account 
+                WHERE Competitive_Landscape__c LIKE '%${competitor}%'
+                ORDER BY Name LIMIT 30`;
+      } else {
+        // No specific competitor - show all accounts with competitive info
+        soql = `SELECT Id, Name, Owner.Name, Competitive_Landscape__c, Industry
+                FROM Account 
+                WHERE Competitive_Landscape__c != null
+                ORDER BY Name LIMIT 20`;
+      }
+      break;
 
     case 'pain_points':
       soql = `SELECT Id, Name, Owner.Name, Pain_Points_Identified__c, Industry
@@ -1587,6 +1605,31 @@ function formatAccountFieldResults(queryResult, parsedIntent) {
     case 'harvey_mentions':
       const harveAccountNames = records.map(r => r.Name).join(', ');
       response = `*Accounts that have mentioned Harvey:*\n${harveAccountNames}`;
+      break;
+    
+    case 'competitive_landscape':
+      const competitorSearchTerm = parsedIntent.entities.searchTerm || 'competitors';
+      if (records.length === 0) {
+        response = `No accounts found with "${competitorSearchTerm}" in their competitive landscape.`;
+      } else {
+        response = `*Accounts with ${competitorSearchTerm.charAt(0).toUpperCase() + competitorSearchTerm.slice(1)} in Competitive Landscape (${records.length}):*\n\n`;
+        records.forEach(account => {
+          const competitiveInfo = account.Competitive_Landscape__c || '';
+          const preview = competitiveInfo.length > 100 ? competitiveInfo.substring(0, 100) + '...' : competitiveInfo;
+          response += `• *${account.Name}*\n`;
+          response += `  Owner: ${account.Owner?.Name || 'Unassigned'}\n`;
+          if (preview) {
+            response += `  _${preview}_\n`;
+          }
+          response += `\n`;
+        });
+        
+        // Add summary at bottom
+        const owners = [...new Set(records.map(r => r.Owner?.Name).filter(Boolean))];
+        if (owners.length > 0) {
+          response += `\n*BLs to reach out to:* ${owners.join(', ')}`;
+        }
+      }
       break;
 
     case 'use_cases':
