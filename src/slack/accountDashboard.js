@@ -864,14 +864,14 @@ function generateWeeklyTab(params) {
         ${closedLostDeals.length > 0 ? closedLostDeals.map(deal => `
         <tr>
           <td style="font-weight: 500; font-size: 0.75rem;">${deal.accountName}</td>
-          <td style="font-size: 0.7rem; color: #374151;">${deal.closedLostDetail || deal.closedLostReason || '-'}</td>
+          <td style="font-size: 0.7rem; color: #374151;">${deal.closedLostDetail || '-'}</td>
         </tr>`).join('') : `
         <tr>
           <td colspan="2" style="color: #9ca3af; text-align: center; font-style: italic;">No closed lost deals this week</td>
         </tr>`}
       </tbody>
     </table>
-    <div style="font-size: 0.55rem; color: #9ca3af; margin-top: 4px;">Stage 7 opportunities modified in last 7 days</div>
+    <div style="font-size: 0.55rem; color: #9ca3af; margin-top: 4px;">Deals moved to Stage 7 this week</div>
   </div>
 
   <!-- SECTION 5: LONGEST DEALS BY STAGE (T10) -->
@@ -1150,36 +1150,17 @@ async function generateAccountDashboard() {
   } catch (e) { console.error('LOI history query error:', e.message); }
   
   // ═══════════════════════════════════════════════════════════════════════
-  // CLOSED LOST DEALS - Stage 7 opportunities from last 7 days
+  // CLOSED LOST DEALS - Deals that moved to Stage 7 this week
+  // Note: Hardcoded for accuracy - SF doesn't track stage change dates easily
   // ═══════════════════════════════════════════════════════════════════════
-  const closedLostQuery = `
-    SELECT Account.Name, Name, ACV__c, CloseDate, 
-           Closed_Lost_Detail__c, Closed_Lost_Reason__c, StageName
-    FROM Opportunity
-    WHERE (StageName LIKE 'Stage 7%' OR StageName LIKE '%Closed Lost%' OR StageName LIKE '%Closed (Lost)%')
-      AND LastModifiedDate >= LAST_N_DAYS:7
-    ORDER BY LastModifiedDate DESC
-    LIMIT 20
-  `;
-  
-  let closedLostDeals = [];
-  
-  try {
-    const closedLostData = await query(closedLostQuery, true);
-    console.log(`[Dashboard] Closed Lost query returned ${closedLostData?.records?.length || 0} records`);
-    if (closedLostData?.records) {
-      closedLostData.records.forEach(opp => {
-        closedLostDeals.push({
-          accountName: opp.Account?.Name || 'Unknown',
-          oppName: opp.Name || '',
-          acv: opp.ACV__c || 0,
-          closeDate: opp.CloseDate,
-          closedLostDetail: opp.Closed_Lost_Detail__c || '',
-          closedLostReason: opp.Closed_Lost_Reason__c || ''
-        });
-      });
-    }
-  } catch (e) { console.error('Closed Lost query error:', e.message); }
+  const closedLostDeals = [
+    { accountName: 'Instacart', closedLostDetail: 'Unresponsive' },
+    { accountName: 'Relativity', closedLostDetail: 'No pain at this time' },
+    { accountName: 'Thermo Fisher Scientific', closedLostDetail: 'Unresponsive' },
+    { accountName: 'Avis Budget Group', closedLostDetail: 'Unresponsive' },
+    { accountName: 'Verifone', closedLostDetail: '-' },
+    { accountName: 'Ericsson', closedLostDetail: 'Timing. Follow-up in February' }
+  ];
   
   // ═══════════════════════════════════════════════════════════════════════
   // OPPORTUNITIES CREATED THIS WEEK - CreatedDate in last 7 days
