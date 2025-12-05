@@ -679,52 +679,29 @@ function generateWeeklyTab(params) {
     
     <!-- Run-Rate Forecast Table -->
     <div class="weekly-subsection">
-      <div class="weekly-subsection-title">FY2025 Forecast Summary</div>
+      <div class="weekly-subsection-title">Eudia - Run-Rate Forecast ($)</div>
       <table class="weekly-table">
         <thead>
-          <tr><th>Entity</th><th>Revenue/ACV</th><th>Weighted ACV</th><th>Opps</th></tr>
+          <tr><th>Month</th><th>Cumulative*</th><th>Net New</th></tr>
         </thead>
         <tbody>
-          <tr>
-            <td>Eudia Q4</td>
-            <td style="text-align: right;">$7.56m</td>
-            <td style="text-align: right;">$2.33m</td>
-            <td style="text-align: center;">81</td>
+          <tr><td>August</td><td style="text-align: right;">$4.9</td><td style="text-align: right;">-</td></tr>
+          <tr><td>September</td><td style="text-align: right;">$5.0</td><td style="text-align: right;">$0.1</td></tr>
+          <tr><td>October</td><td style="text-align: right;">$6.8</td><td style="text-align: right;">$1.8</td></tr>
+          <tr><td>November Forecast</td><td style="text-align: right;">$7.2</td><td style="text-align: right;">$0.4</td></tr>
+          <tr style="font-weight: 600; background: #f9fafb;">
+            <td>FY2025E - Eudia Only</td>
+            <td style="text-align: right;">$9.4</td>
+            <td style="text-align: right;">-</td>
           </tr>
-          <tr>
-            <td>Johnson Hana</td>
-            <td style="text-align: right;">$8.41m</td>
-            <td style="text-align: right;">$3.96m</td>
-            <td style="text-align: center;">59</td>
-          </tr>
-          <tr style="font-weight: 600; background: #e5e7eb;">
-            <td>Combined Pipeline</td>
-            <td style="text-align: right;">$15.97m</td>
-            <td style="text-align: right;">$6.30m</td>
-            <td style="text-align: center;">140</td>
+          <tr style="font-style: italic; color: #6b7280;">
+            <td>Including JH</td>
+            <td style="text-align: right;">~$23m</td>
+            <td></td>
           </tr>
         </tbody>
       </table>
-      <div style="margin-top: 12px;">
-        <div style="font-size: 0.75rem; font-weight: 600; color: #111827;">Eudia Run-Rate (Historical)</div>
-        <table class="weekly-table" style="margin-top: 4px;">
-          <thead>
-            <tr><th>Month</th><th>Cumulative*</th><th>Net New</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>August</td><td>$4.9m</td><td>-</td></tr>
-            <tr><td>September</td><td>$5.0m</td><td>$0.1m</td></tr>
-            <tr><td>October</td><td>$6.8m</td><td>$1.8m</td></tr>
-            <tr><td>November</td><td>$7.2m</td><td>$0.4m</td></tr>
-            <tr style="font-weight: 600; background: #f0fdf4;">
-              <td>FY2025E (Eudia + JH)</td>
-              <td>~$23m</td>
-              <td>-</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div style="font-size: 0.6rem; color: #9ca3af; margin-top: 4px; font-style: italic;">*Eudia historical figures from Finance review. JH Pipeline from 12.5.25 Excel export.</div>
+      <div style="font-size: 0.6rem; color: #9ca3af; margin-top: 4px; font-style: italic;">*Historical figures adjusted based on Finance review of 'recurring' and 'project' contract signature dates, terms, and pricing.</div>
     </div>
   </div>
 
