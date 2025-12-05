@@ -1,0 +1,201 @@
+/**
+ * Team Registry - Pre-configured User IDs and Roles
+ * 
+ * This eliminates the need for reps to look up their Salesforce User ID.
+ * Setup wizard will auto-detect based on email or name.
+ */
+
+const TEAM_MEMBERS = {
+  // Business Leads
+  'julie.stefanich@eudia.com': {
+    name: 'Julie Stefanich',
+    salesforceUserId: '005Hp00000kywEtIAI',
+    role: 'Business Lead',
+    team: 'Sales'
+  },
+  'justin.hills@eudia.com': {
+    name: 'Justin Hills',
+    salesforceUserId: '005Wj00000UVn1ZIAT',
+    role: 'Business Lead',
+    team: 'Sales'
+  },
+  'asad.hussain@eudia.com': {
+    name: 'Asad Hussain',
+    salesforceUserId: '005Wj00000DT05BIAT',
+    role: 'Business Lead',
+    team: 'Sales'
+  },
+  'himanshu@eudia.com': {
+    name: 'Himanshu Agarwal',
+    salesforceUserId: '005Hp00000kywEeIAI',
+    role: 'Business Lead',
+    team: 'Sales'
+  },
+  'ananth@eudia.com': {
+    name: 'Ananth Cherukupally',
+    salesforceUserId: '005Wj00000DSlJ6IAL',
+    role: 'Business Lead',
+    team: 'Sales'
+  },
+  'olivia@eudia.com': {
+    name: 'Olivia Jung',
+    salesforceUserId: '005Hp00000kywEiIAI',
+    role: 'Business Lead',
+    team: 'Sales'
+  },
+  'jonathan.cobb@eudia.com': {
+    name: 'Jon Cobb',
+    salesforceUserId: '005Wj00000MxJI6IAN',
+    role: 'Business Lead',
+    team: 'Sales'
+  },
+  
+  // Product Team
+  'zack.huffstutter@eudia.com': {
+    name: 'Zack Huffstutter',
+    salesforceUserId: '005Wj00000J5ljJIAR',
+    role: 'Product',
+    team: 'Product'
+  },
+  
+  // Executive
+  'omar@eudia.com': {
+    name: 'Omar Haroun',
+    salesforceUserId: '005Hp00000kywEkIAI',
+    role: 'CEO',
+    team: 'Executive'
+  },
+  'david@eudia.com': {
+    name: 'David Van Reyk',
+    salesforceUserId: '005Hp00000kywEoIAI',
+    role: 'COO',
+    team: 'Executive'
+  },
+  
+  // Admin
+  'keigan.pesenti@eudia.com': {
+    name: 'Keigan Pesenti',
+    salesforceUserId: '005Wj00000IPqFZIA1',
+    role: 'RevOps',
+    team: 'Operations'
+  }
+};
+
+// Alternate email patterns (some users might use different formats)
+const EMAIL_ALIASES = {
+  'jon.cobb@eudia.com': 'jonathan.cobb@eudia.com',
+  'himanshu.agarwal@eudia.com': 'himanshu@eudia.com',
+  'ananth.cherukupally@eudia.com': 'ananth@eudia.com',
+  'olivia.jung@eudia.com': 'olivia@eudia.com',
+  'omar.haroun@eudia.com': 'omar@eudia.com',
+  'david.vanreyk@eudia.com': 'david@eudia.com',
+  'zack@eudia.com': 'zack.huffstutter@eudia.com'
+};
+
+/**
+ * Look up team member by email
+ */
+function findByEmail(email) {
+  if (!email) return null;
+  
+  const normalizedEmail = email.toLowerCase().trim();
+  
+  // Check direct match
+  if (TEAM_MEMBERS[normalizedEmail]) {
+    return TEAM_MEMBERS[normalizedEmail];
+  }
+  
+  // Check aliases
+  const aliasedEmail = EMAIL_ALIASES[normalizedEmail];
+  if (aliasedEmail && TEAM_MEMBERS[aliasedEmail]) {
+    return TEAM_MEMBERS[aliasedEmail];
+  }
+  
+  // Check partial match (first part of email)
+  const emailPrefix = normalizedEmail.split('@')[0];
+  for (const [key, member] of Object.entries(TEAM_MEMBERS)) {
+    const memberPrefix = key.split('@')[0];
+    if (memberPrefix.includes(emailPrefix) || emailPrefix.includes(memberPrefix)) {
+      return member;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Look up team member by name
+ */
+function findByName(name) {
+  if (!name) return null;
+  
+  const normalizedName = name.toLowerCase().trim();
+  
+  for (const member of Object.values(TEAM_MEMBERS)) {
+    if (member.name.toLowerCase() === normalizedName) {
+      return member;
+    }
+    // Partial match (first name or last name)
+    const nameParts = member.name.toLowerCase().split(' ');
+    if (nameParts.some(part => normalizedName.includes(part) || part.includes(normalizedName))) {
+      return member;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Look up team member by Salesforce User ID
+ */
+function findByUserId(userId) {
+  if (!userId) return null;
+  
+  for (const member of Object.values(TEAM_MEMBERS)) {
+    if (member.salesforceUserId === userId) {
+      return member;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Get all team members
+ */
+function getAllMembers() {
+  return Object.values(TEAM_MEMBERS);
+}
+
+/**
+ * Get members by team
+ */
+function getByTeam(team) {
+  return Object.values(TEAM_MEMBERS).filter(m => m.team === team);
+}
+
+/**
+ * Get members by role
+ */
+function getByRole(role) {
+  return Object.values(TEAM_MEMBERS).filter(m => m.role === role);
+}
+
+/**
+ * Validate a Salesforce User ID format
+ */
+function isValidUserId(userId) {
+  return userId && typeof userId === 'string' && userId.startsWith('005') && userId.length >= 15;
+}
+
+module.exports = {
+  TEAM_MEMBERS,
+  findByEmail,
+  findByName,
+  findByUserId,
+  getAllMembers,
+  getByTeam,
+  getByRole,
+  isValidUserId
+};
+

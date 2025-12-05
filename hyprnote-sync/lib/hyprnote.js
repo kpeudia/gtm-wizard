@@ -212,27 +212,77 @@ async function getCurrentUser() {
 }
 
 /**
- * Parse HTML to plain text
+ * Parse HTML to clean plain text for Salesforce
+ * Produces readable format without markdown symbols
  */
 function htmlToText(html) {
   if (!html) return '';
   
-  return html
-    .replace(/<h1[^>]*>/gi, '\n## ')
-    .replace(/<h2[^>]*>/gi, '\n### ')
-    .replace(/<\/h[1-6]>/gi, '\n')
-    .replace(/<li[^>]*>/gi, '\n• ')
-    .replace(/<\/li>/gi, '')
+  let text = html
+    // Convert headers to uppercase section titles
+    .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '\n\n$1\n')
+    .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '\n\n$1\n')
+    .replace(/<h3[^>]*>(.*?)<\/h3>/gi, '\n$1\n')
+    // Handle lists - keep bullet with content on same line
+    .replace(/<li[^>]*>\s*/gi, '  - ')
+    .replace(/<\/li>/gi, '\n')
+    .replace(/<ul[^>]*>/gi, '\n')
+    .replace(/<\/ul>/gi, '')
+    .replace(/<ol[^>]*>/gi, '\n')
+    .replace(/<\/ol>/gi, '')
+    // Paragraphs
     .replace(/<p[^>]*>/gi, '\n')
-    .replace(/<\/p>/gi, '')
+    .replace(/<\/p>/gi, '\n')
     .replace(/<br\s*\/?>/gi, '\n')
+    // Remove remaining HTML tags
     .replace(/<[^>]+>/g, '')
+    // Decode entities
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    // Clean up markdown symbols that might be in the content
+    .replace(/^##\s*/gm, '')
+    .replace(/^\*\s*/gm, '  - ')
+    .replace(/^•\s*/gm, '  - ')
+    // Clean up whitespace
+    .replace(/[ \t]+/g, ' ')           // Multiple spaces to single
+    .replace(/\n[ \t]+/g, '\n')        // Trim line starts
+    .replace(/[ \t]+\n/g, '\n')        // Trim line ends
+    .replace(/\n{3,}/g, '\n\n')        // Max 2 newlines
+    .replace(/^\s+|\s+$/g, '');        // Trim start/end
+  
+  // Clean up any remaining bullet misalignment
+  const lines = text.split('\n');
+  const cleanedLines = [];
+  let lastWasBullet = false;
+  
+  for (const line of lines) {
+    const trimmed = line.trim();
+    
+    // Skip empty lines after bullets
+    if (!trimmed && lastWasBullet) continue;
+    
+    // Detect standalone bullets and merge with next line
+    if (trimmed === '-' || trimmed === '•' || trimmed === '*') {
+      lastWasBullet = true;
+      continue;
+    }
+    
+    // If this line follows a standalone bullet, prefix it
+    if (lastWasBullet && trimmed) {
+      cleanedLines.push('  - ' + trimmed);
+      lastWasBullet = false;
+      continue;
+    }
+    
+    cleanedLines.push(trimmed);
+    lastWasBullet = trimmed.startsWith('- ') || trimmed.startsWith('  - ');
+  }
+  
+  return cleanedLines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
 /**

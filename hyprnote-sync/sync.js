@@ -120,8 +120,8 @@ async function syncSession(session, config, sfConnection) {
   // Get calendar event if available
   const calendarEvent = await hyprnote.getCalendarEvent(session.calendar_event_id);
   
-  // Match to Salesforce Account
-  const match = await matcher.matchAccount(session, participants, calendarEvent);
+  // Match to Salesforce Account (with ownership prioritization)
+  const match = await matcher.matchAccount(session, participants, calendarEvent, config.rep.salesforceUserId);
   
   if (!match.account) {
     console.log('    Account: NOT FOUND (skipping)');

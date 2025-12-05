@@ -1,12 +1,15 @@
 {
   "name": "hyprnote-salesforce-sync",
-  "version": "1.0.0",
-  "description": "Sync Hyprnote meeting notes to Salesforce",
+  "version": "1.1.0",
+  "description": "Sync Hyprnote meeting notes to Salesforce - Eudia Team Edition",
   "main": "sync.js",
   "scripts": {
-    "setup": "node setup.js",
+    "setup": "node setup-quick.js",
+    "setup:manual": "node setup.js",
     "sync": "node sync.js",
-    "status": "node sync.js --status"
+    "status": "node sync.js --status",
+    "test": "node test-comprehensive.js",
+    "test:advanced": "node test-advanced.js"
   },
   "dependencies": {
     "sqlite3": "^5.1.7",

@@ -3,14 +3,90 @@
  * 
  * Intelligent matching of Hyprnote meetings to Salesforce Accounts.
  * Uses multiple strategies for reliable matching.
+ * 
+ * Enhanced with ownership-based prioritization - matches accounts
+ * owned by the rep first for higher confidence.
  */
 
 const salesforce = require('./salesforce');
+
+// Cache for rep's owned accounts (refreshed periodically)
+let ownedAccountsCache = {
+  userId: null,
+  accounts: [],
+  lastRefresh: null
+};
+
+/**
+ * Get accounts owned by a specific user
+ * @param {string} userId - Salesforce User ID
+ */
+async function getOwnedAccounts(userId) {
+  if (!userId) return [];
+  
+  // Return cached if recent (15 min)
+  const cacheAge = ownedAccountsCache.lastRefresh 
+    ? Date.now() - ownedAccountsCache.lastRefresh 
+    : Infinity;
+    
+  if (ownedAccountsCache.userId === userId && cacheAge < 15 * 60 * 1000) {
+    return ownedAccountsCache.accounts;
+  }
+  
+  try {
+    const conn = salesforce.getConnection();
+    const result = await conn.query(`
+      SELECT Id, Name, Customer_Brain__c
+      FROM Account
+      WHERE OwnerId = '${userId}'
+      ORDER BY Name
+      LIMIT 500
+    `);
+    
+    ownedAccountsCache = {
+      userId,
+      accounts: result.records || [],
+      lastRefresh: Date.now()
+    };
+    
+    return ownedAccountsCache.accounts;
+  } catch (err) {
+    console.log('Warning: Could not fetch owned accounts: ' + err.message);
+    return [];
+  }
+}
+
+/**
+ * Check if a company name matches any owned accounts
+ */
+function findInOwnedAccounts(companyName, ownedAccounts) {
+  if (!companyName || !ownedAccounts.length) return null;
+  
+  const cleanName = companyName.toLowerCase().trim();
+  
+  // Exact match
+  for (const account of ownedAccounts) {
+    if (account.Name.toLowerCase() === cleanName) {
+      return account;
+    }
+  }
+  
+  // Partial match
+  for (const account of ownedAccounts) {
+    const accountName = account.Name.toLowerCase();
+    if (accountName.includes(cleanName) || cleanName.includes(accountName.split(' ')[0])) {
+      return account;
+    }
+  }
+  
+  return null;
+}
 
 /**
  * Match a meeting to a Salesforce Account
  * 
  * Strategy priority:
+ * 0. Check rep's owned accounts first (highest priority)
  * 1. Calendar attendee emails → Contact lookup → Account
  * 2. Participant emails → Contact lookup → Account
  * 3. Company name → Account fuzzy match
@@ -19,8 +95,9 @@ const salesforce = require('./salesforce');
  * @param {Object} session - Hyprnote session
  * @param {Array} participants - Session participants
  * @param {Object} calendarEvent - Optional calendar event
+ * @param {string} repUserId - Optional: Rep's Salesforce User ID for ownership matching
  */
-async function matchAccount(session, participants, calendarEvent = null) {
+async function matchAccount(session, participants, calendarEvent = null, repUserId = null) {
   const results = {
     account: null,
     contact: null,
@@ -28,6 +105,38 @@ async function matchAccount(session, participants, calendarEvent = null) {
     confidence: 0,
     candidates: []
   };
+  
+  // Strategy 0: Check rep's owned accounts first
+  // This provides highest confidence - if they own the account, it's likely correct
+  if (repUserId) {
+    const ownedAccounts = await getOwnedAccounts(repUserId);
+    
+    // Check participant companies against owned accounts
+    const externalParticipants = participants.filter(p => !p.is_user);
+    for (const participant of externalParticipants) {
+      if (participant.company) {
+        const ownedMatch = findInOwnedAccounts(participant.company, ownedAccounts);
+        if (ownedMatch) {
+          results.account = ownedMatch;
+          results.matchMethod = 'owned_account_company';
+          results.confidence = 98;
+          return results;
+        }
+      }
+    }
+    
+    // Check meeting title against owned accounts
+    const titleCompany = extractCompanyFromTitle(session.title);
+    if (titleCompany) {
+      const ownedMatch = findInOwnedAccounts(titleCompany, ownedAccounts);
+      if (ownedMatch) {
+        results.account = ownedMatch;
+        results.matchMethod = 'owned_account_title';
+        results.confidence = 92;
+        return results;
+      }
+    }
+  }
   
   // Strategy 1: Calendar attendee emails
   if (calendarEvent && calendarEvent.participants) {
@@ -210,6 +319,8 @@ module.exports = {
   isInternalEmail,
   extractCompanyFromTitle,
   getPrimaryCompany,
-  getPrimaryContact
+  getPrimaryContact,
+  getOwnedAccounts,
+  findInOwnedAccounts
 };
 
