@@ -855,23 +855,23 @@ function generateWeeklyTab(params) {
 
   <!-- SECTION 4: CLOSED LOST, DQ, OR NURTURE -->
   <div class="weekly-section">
-    <div class="weekly-section-title">4. Closed Lost, Disqualified, or Nurture this week</div>
+    <div class="weekly-section-title">4. Closed Lost, Disqualified, or Nurture this week (${closedLostDeals.length})</div>
     <table class="weekly-table">
       <thead>
-        <tr><th>Account</th><th>Closed Lost Detail</th></tr>
+        <tr><th>Account</th><th>Detail</th></tr>
       </thead>
       <tbody>
         ${closedLostDeals.length > 0 ? closedLostDeals.map(deal => `
         <tr>
-          <td style="font-weight: 500;">${deal.accountName}</td>
-          <td style="font-size: 0.75rem; color: #374151;">${deal.closedLostDetail || deal.closedLostReason || 'No detail provided'}</td>
+          <td style="font-weight: 500; font-size: 0.75rem;">${deal.accountName}</td>
+          <td style="font-size: 0.7rem; color: #374151;">${deal.closedLostDetail || deal.closedLostReason || '-'}</td>
         </tr>`).join('') : `
         <tr>
           <td colspan="2" style="color: #9ca3af; text-align: center; font-style: italic;">No closed lost deals this week</td>
         </tr>`}
       </tbody>
     </table>
-    <div style="font-size: 0.6rem; color: #9ca3af; margin-top: 4px;">Source: Stage 7. Closed (Lost) opportunities from last 7 days</div>
+    <div style="font-size: 0.55rem; color: #9ca3af; margin-top: 4px;">Stage 7 opportunities modified in last 7 days</div>
   </div>
 
   <!-- SECTION 5: LONGEST DEALS BY STAGE (T10) -->
@@ -1156,9 +1156,10 @@ async function generateAccountDashboard() {
     SELECT Account.Name, Name, ACV__c, CloseDate, 
            Closed_Lost_Detail__c, Closed_Lost_Reason__c, StageName
     FROM Opportunity
-    WHERE StageName = 'Stage 7. Closed (Lost)'
-      AND CloseDate >= LAST_N_DAYS:7
-    ORDER BY CloseDate DESC
+    WHERE (StageName LIKE 'Stage 7%' OR StageName LIKE '%Closed Lost%' OR StageName LIKE '%Closed (Lost)%')
+      AND LastModifiedDate >= LAST_N_DAYS:7
+    ORDER BY LastModifiedDate DESC
+    LIMIT 20
   `;
   
   let closedLostDeals = [];
