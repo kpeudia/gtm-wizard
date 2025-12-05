@@ -1,5 +1,5 @@
 #!/bin/bash
-# Hyprnote Sync - Double-click to sync your meetings
+# chex - Double-click to sync your meetings
 
 clear
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -7,7 +7,7 @@ cd "$SCRIPT_DIR"
 
 echo ""
 echo "  ┌─────────────────────────────────────────┐"
-echo "  │        SYNCING YOUR MEETINGS            │"
+echo "  │      chex - SYNCING MEETINGS            │"
 echo "  └─────────────────────────────────────────┘"
 echo ""
 

@@ -1,11 +1,11 @@
 #!/bin/bash
-# Hyprnote Sync - One-Click Installer
+# chex Sync - One-Click Installer
 # Double-click this file to install
 
 clear
 echo ""
 echo "  ┌─────────────────────────────────────────┐"
-echo "  │     HYPRNOTE SYNC - QUICK INSTALL       │"
+echo "  │         chex - QUICK INSTALL            │"
 echo "  └─────────────────────────────────────────┘"
 echo ""
 

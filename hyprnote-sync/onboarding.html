@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>checks - Meeting Notes</title>
+  <title>chex - Meeting Notes</title>
   <style>
     * {
       margin: 0;
@@ -92,6 +92,12 @@
       color: #555;
     }
     
+    .step-content .detail {
+      font-size: 13px;
+      color: #888;
+      margin-top: 6px;
+    }
+    
     .download-btn {
       display: inline-block;
       background: #000;
@@ -101,7 +107,7 @@
       text-decoration: none;
       font-size: 14px;
       font-weight: 500;
-      margin-top: 8px;
+      margin-top: 10px;
       margin-right: 8px;
       transition: background 0.2s;
     }
@@ -153,6 +159,16 @@
       margin-top: 16px;
       padding-top: 16px;
       border-top: 1px solid #eee;
+    }
+    
+    .warning {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #92400e;
+      margin-top: 12px;
     }
     
     .time-estimate {
@@ -253,6 +269,34 @@
       font-weight: 500;
     }
     
+    code {
+      background: #f0f0f0;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 13px;
+    }
+    
+    .checklist {
+      list-style: none;
+      margin-top: 12px;
+    }
+    
+    .checklist li {
+      font-size: 14px;
+      color: #555;
+      padding: 4px 0;
+      padding-left: 24px;
+      position: relative;
+    }
+    
+    .checklist li:before {
+      content: "→";
+      position: absolute;
+      left: 0;
+      color: #999;
+    }
+    
     @media (max-width: 480px) {
       body {
         padding: 24px 16px;
@@ -274,7 +318,7 @@
 </head>
 <body>
   <div class="container">
-    <div class="logo">checks</div>
+    <div class="logo">chex</div>
     <p class="subtitle">AI meeting notes. Record, transcribe, remember everything.</p>
     
     <!-- MODE SELECTOR -->
@@ -289,67 +333,100 @@
       </div>
     </div>
     
-    <!-- STEP 1: DOWNLOAD APP -->
+    <!-- STEP 1: DOWNLOAD APP (BOTH MODES) -->
     <div class="section">
-      <div class="section-title">Step 1 <span class="time-estimate">2 min</span></div>
+      <div class="section-title">Step 1: Get the App <span class="time-estimate">2 min</span></div>
       
       <div class="step">
         <div class="step-number">1</div>
         <div class="step-content">
-          <h3>Download the App</h3>
-          <p>AI-powered meeting recorder and transcriber.</p>
-          <a href="https://hyprnote.com/download" class="download-btn" target="_blank">Download checks</a>
+          <h3>Download chex</h3>
+          <p>AI meeting recorder and transcriber.</p>
+          <a href="https://hyprnote.com/download" class="download-btn" target="_blank">Download for Mac</a>
+          <p class="detail">Install it and open once. Sign in with any account (Google, etc).</p>
         </div>
       </div>
-      
-      <p class="note">Works on Mac. Install and open it. Sign in with any account.</p>
     </div>
     
-    <!-- SALES TEAM: STEP 2 -->
+    <!-- INTERNAL USE: DONE -->
+    <div class="section internal-only">
+      <div class="section-title">You're Ready</div>
+      
+      <div class="usage-box">
+        <p><strong>That's it for internal use.</strong></p>
+        <p>Open chex before meetings. Click New Note, then Record.</p>
+        <p>Your notes stay on your computer. Nothing syncs anywhere.</p>
+      </div>
+    </div>
+    
+    <!-- SALES TEAM: ADDITIONAL STEPS -->
     <div class="section sales-only">
-      <div class="section-title">Step 2 - Salesforce Sync <span class="badge">Sales Team</span></div>
+      <div class="section-title">Step 2: Node.js <span class="badge">One-time</span></div>
       
       <div class="step">
         <div class="step-number">2</div>
         <div class="step-content">
-          <h3>Get the Sync Package</h3>
-          <p>Download the sync tool that connects your notes to Salesforce.</p>
-          <a href="https://github.com/cicerotech/gtm-wizard/archive/refs/heads/main.zip" class="download-btn secondary" target="_blank">Download Sync Package</a>
+          <h3>Install Node.js</h3>
+          <p>Required for the sync tool. Skip if already installed.</p>
+          <a href="https://nodejs.org/en/download/" class="download-btn secondary" target="_blank">Download Node.js</a>
+          <p class="detail">Download the LTS version. Run the installer. That's it.</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="section sales-only">
+      <div class="section-title">Step 3: Sync Tool <span class="badge">One-time</span></div>
+      
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <h3>Download the Sync Package</h3>
+          <p>Connects your meeting notes to Salesforce.</p>
+          <a href="https://github.com/cicerotech/gtm-wizard/archive/refs/heads/main.zip" class="download-btn secondary" target="_blank">Download Package</a>
+          
+          <ul class="checklist">
+            <li>Unzip the downloaded file</li>
+            <li>Find the <code>hyprnote-sync</code> folder inside</li>
+            <li>Move that folder to your Documents</li>
+          </ul>
         </div>
       </div>
       
       <div class="divider"></div>
       
       <div class="step">
-        <div class="step-number">3</div>
+        <div class="step-number">4</div>
         <div class="step-content">
-          <h3>Install</h3>
-          <p>Unzip the download. Open the <strong>hyprnote-sync</strong> folder. Double-click <strong>install.command</strong></p>
-          <p style="margin-top: 8px; color: #888; font-size: 13px;">It detects your profile automatically. Just confirm with Y.</p>
+          <h3>Get Credentials</h3>
+          <p>Ask Keigan for the <code>.env</code> file. Put it in your <code>hyprnote-sync</code> folder.</p>
+          <p class="detail">This file contains the Salesforce connection. Without it, sync won't work.</p>
         </div>
       </div>
       
-      <p class="note">First time only. Need Node.js? The installer prompts you if missing.</p>
-    </div>
-    
-    <!-- INTERNAL USE: STEP 2 -->
-    <div class="section internal-only">
-      <div class="section-title">That's It</div>
+      <div class="divider"></div>
       
-      <div class="usage-box">
-        <p>For internal meetings, you only need the app.</p>
-        <p>Your notes stay local on your computer.</p>
-        <p>No sync to Salesforce required.</p>
+      <div class="step">
+        <div class="step-number">5</div>
+        <div class="step-content">
+          <h3>Run Install</h3>
+          <p>Open your <code>hyprnote-sync</code> folder. Double-click <code>install.command</code></p>
+          
+          <div class="warning">
+            <strong>Mac security warning?</strong> If you see "cannot be opened", right-click the file and select "Open" instead. Then click "Open" in the popup.
+          </div>
+          
+          <p class="detail" style="margin-top: 12px;">It will detect your profile. Just type Y to confirm.</p>
+        </div>
       </div>
     </div>
     
     <!-- HOW TO USE -->
     <div class="section">
-      <div class="section-title">How to Use</div>
+      <div class="section-title">Daily Use</div>
       
       <div class="usage-box">
-        <p><strong>Before a call:</strong> Open checks. Click New Note. Click Record.</p>
-        <p><strong>During the call:</strong> It captures audio automatically.</p>
+        <p><strong>Before a call:</strong> Open chex. Click New Note. Click Record.</p>
+        <p><strong>During the call:</strong> It records and transcribes automatically.</p>
         <p><strong>After the call:</strong> Stop recording. AI generates your notes.</p>
       </div>
       
@@ -357,30 +434,40 @@
         <div class="divider"></div>
         <div class="usage-box">
           <p><strong>To sync to Salesforce:</strong></p>
-          <p>Double-click <strong>sync-meetings.command</strong> in the hyprnote-sync folder.</p>
-          <p style="color: #888; font-size: 13px; margin-top: 8px;">Do this at the end of each day with client calls.</p>
+          <p>Open <code>hyprnote-sync</code> folder. Double-click <code>sync-meetings.command</code></p>
+          <p class="detail" style="margin-top: 8px;">Do this at end of day. Notes appear as Events on your Accounts.</p>
         </div>
       </div>
     </div>
     
-    <!-- FAQ -->
+    <!-- TROUBLESHOOTING -->
     <div class="section sales-only">
-      <div class="section-title">Questions</div>
+      <div class="section-title">Troubleshooting</div>
       
       <div class="faq">
         <div class="faq-item">
-          <p class="faq-q">How does it know which account?</p>
-          <p class="faq-a">It matches your owned accounts first, then participant emails, then company names.</p>
+          <p class="faq-q">"Cannot be opened because it is from an unidentified developer"</p>
+          <p class="faq-a">Right-click the file, select "Open", then click "Open" in the popup.</p>
         </div>
         
         <div class="faq-item">
-          <p class="faq-q">What if it can't match?</p>
-          <p class="faq-a">The meeting is skipped. Add participant emails in the app for better matching.</p>
+          <p class="faq-q">"Hyprnote database not found"</p>
+          <p class="faq-a">Open chex (Hyprnote) first and record at least one test note.</p>
         </div>
         
         <div class="faq-item">
-          <p class="faq-q">Where do notes appear?</p>
-          <p class="faq-a">As Events on the Account, and in the Customer Brain field.</p>
+          <p class="faq-q">"Salesforce connection failed"</p>
+          <p class="faq-a">Make sure you have the <code>.env</code> file in your hyprnote-sync folder. Ask Keigan.</p>
+        </div>
+        
+        <div class="faq-item">
+          <p class="faq-q">"npm: command not found"</p>
+          <p class="faq-a">Node.js isn't installed. Go back to Step 2.</p>
+        </div>
+        
+        <div class="faq-item">
+          <p class="faq-q">Account not matching correctly?</p>
+          <p class="faq-a">Add participant emails in chex before recording for better matching.</p>
         </div>
         
         <div class="faq-item">
@@ -400,13 +487,11 @@
       });
       
       document.body.classList.toggle('internal-mode', mode === 'internal');
-      
-      // Save preference
-      localStorage.setItem('checksMode', mode);
+      localStorage.setItem('chexMode', mode);
     }
     
     // Load saved preference
-    const savedMode = localStorage.getItem('checksMode');
+    const savedMode = localStorage.getItem('chexMode');
     if (savedMode) {
       setMode(savedMode);
     }
