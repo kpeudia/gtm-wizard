@@ -1,0 +1,49 @@
+#!/bin/bash
+# Hyprnote Sync - One-Click Installer
+# Double-click this file to install
+
+clear
+echo ""
+echo "  ┌─────────────────────────────────────────┐"
+echo "  │     HYPRNOTE SYNC - QUICK INSTALL       │"
+echo "  └─────────────────────────────────────────┘"
+echo ""
+
+# Check for Node.js
+if ! command -v node &> /dev/null; then
+    echo "  Node.js not found. Opening download page..."
+    open "https://nodejs.org/en/download/"
+    echo ""
+    echo "  Please install Node.js, then double-click this file again."
+    echo ""
+    read -p "  Press Enter to exit..."
+    exit 1
+fi
+
+echo "  ✓ Node.js found"
+
+# Get script directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
+
+# Install dependencies
+echo "  Installing dependencies..."
+npm install --silent 2>/dev/null
+
+if [ $? -ne 0 ]; then
+    echo "  ✗ Installation failed. Please contact admin."
+    read -p "  Press Enter to exit..."
+    exit 1
+fi
+
+echo "  ✓ Dependencies installed"
+echo ""
+
+# Run setup
+echo "  Starting setup..."
+echo ""
+node setup-quick.js
+
+echo ""
+read -p "  Press Enter to close..."
+

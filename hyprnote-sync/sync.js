@@ -232,7 +232,7 @@ async function syncSession(session, config, sfConnection) {
 
 async function runSync() {
   console.log('\n========================================');
-  console.log('      HYPRNOTE -> SALESFORCE SYNC');
+  console.log('         MEETING NOTES SYNC');
   console.log('========================================');
   
   loadEnv();
@@ -240,6 +240,17 @@ async function runSync() {
   const synced = loadSyncedSessions();
   
   console.log('\nRep: ' + config.rep.name);
+  
+  // Check if sync is enabled
+  if (!config.salesforce?.syncEnabled || !config.rep?.salesforceUserId) {
+    console.log('\n  INTERNAL USE MODE');
+    console.log('  ─────────────────────────────────────');
+    console.log('  Salesforce sync is not enabled for your account.');
+    console.log('  Your notes stay local in checks (Hyprnote).');
+    console.log('  \n  If you should have sync access, contact Keigan (RevOps).\n');
+    return;
+  }
+  
   console.log('SF User: ' + config.rep.salesforceUserId);
   
   // Connect to Salesforce

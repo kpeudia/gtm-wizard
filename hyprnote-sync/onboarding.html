@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>checks - Meeting Notes</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #fafafa;
+      color: #1a1a1a;
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+    
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    
+    .logo {
+      font-size: 32px;
+      font-weight: 300;
+      letter-spacing: -1px;
+      margin-bottom: 4px;
+      color: #000;
+    }
+    
+    .subtitle {
+      font-size: 15px;
+      color: #666;
+      margin-bottom: 40px;
+    }
+    
+    .section {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #888;
+      margin-bottom: 16px;
+    }
+    
+    .step {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+    
+    .step:last-child {
+      margin-bottom: 0;
+    }
+    
+    .step-number {
+      width: 28px;
+      height: 28px;
+      background: #f0f0f0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      flex-shrink: 0;
+      margin-right: 16px;
+      margin-top: 2px;
+    }
+    
+    .step-content h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    .step-content p {
+      font-size: 14px;
+      color: #555;
+    }
+    
+    .download-btn {
+      display: inline-block;
+      background: #000;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      margin-top: 8px;
+      margin-right: 8px;
+      transition: background 0.2s;
+    }
+    
+    .download-btn:hover {
+      background: #333;
+    }
+    
+    .download-btn.secondary {
+      background: #f5f5f5;
+      color: #333;
+      border: 1px solid #ddd;
+    }
+    
+    .download-btn.secondary:hover {
+      background: #eee;
+    }
+    
+    .divider {
+      height: 1px;
+      background: #eee;
+      margin: 20px 0;
+    }
+    
+    .usage-box {
+      background: #f8f8f8;
+      border-radius: 6px;
+      padding: 16px 20px;
+      margin-top: 12px;
+    }
+    
+    .usage-box p {
+      font-size: 14px;
+      color: #444;
+      margin-bottom: 8px;
+    }
+    
+    .usage-box p:last-child {
+      margin-bottom: 0;
+    }
+    
+    .usage-box strong {
+      color: #000;
+    }
+    
+    .note {
+      font-size: 13px;
+      color: #888;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #eee;
+    }
+    
+    .time-estimate {
+      display: inline-block;
+      background: #f0f0f0;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #666;
+      margin-left: 8px;
+    }
+    
+    .faq {
+      margin-top: 12px;
+    }
+    
+    .faq-item {
+      margin-bottom: 16px;
+    }
+    
+    .faq-item:last-child {
+      margin-bottom: 0;
+    }
+    
+    .faq-q {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 4px;
+    }
+    
+    .faq-a {
+      font-size: 14px;
+      color: #666;
+    }
+    
+    .mode-toggle {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    
+    .mode-btn {
+      flex: 1;
+      padding: 16px;
+      border: 2px solid #e5e5e5;
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    
+    .mode-btn:hover {
+      border-color: #ccc;
+    }
+    
+    .mode-btn.active {
+      border-color: #000;
+      background: #fafafa;
+    }
+    
+    .mode-btn h4 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    .mode-btn p {
+      font-size: 12px;
+      color: #888;
+    }
+    
+    .sales-only {
+      display: block;
+    }
+    
+    .internal-only {
+      display: none;
+    }
+    
+    body.internal-mode .sales-only {
+      display: none;
+    }
+    
+    body.internal-mode .internal-only {
+      display: block;
+    }
+    
+    .badge {
+      display: inline-block;
+      background: #f0f0f0;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      color: #666;
+      margin-left: 8px;
+      font-weight: 500;
+    }
+    
+    @media (max-width: 480px) {
+      body {
+        padding: 24px 16px;
+      }
+      
+      .logo {
+        font-size: 28px;
+      }
+      
+      .section {
+        padding: 20px;
+      }
+      
+      .mode-toggle {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">checks</div>
+    <p class="subtitle">AI meeting notes. Record, transcribe, remember everything.</p>
+    
+    <!-- MODE SELECTOR -->
+    <div class="mode-toggle">
+      <div class="mode-btn active" onclick="setMode('sales')">
+        <h4>Sales Team</h4>
+        <p>Notes sync to Salesforce</p>
+      </div>
+      <div class="mode-btn" onclick="setMode('internal')">
+        <h4>Internal Use</h4>
+        <p>Notes stay local</p>
+      </div>
+    </div>
+    
+    <!-- STEP 1: DOWNLOAD APP -->
+    <div class="section">
+      <div class="section-title">Step 1 <span class="time-estimate">2 min</span></div>
+      
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <h3>Download the App</h3>
+          <p>AI-powered meeting recorder and transcriber.</p>
+          <a href="https://hyprnote.com/download" class="download-btn" target="_blank">Download checks</a>
+        </div>
+      </div>
+      
+      <p class="note">Works on Mac. Install and open it. Sign in with any account.</p>
+    </div>
+    
+    <!-- SALES TEAM: STEP 2 -->
+    <div class="section sales-only">
+      <div class="section-title">Step 2 - Salesforce Sync <span class="badge">Sales Team</span></div>
+      
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <h3>Get the Sync Package</h3>
+          <p>Download the sync tool that connects your notes to Salesforce.</p>
+          <a href="https://github.com/cicerotech/gtm-wizard/archive/refs/heads/main.zip" class="download-btn secondary" target="_blank">Download Sync Package</a>
+        </div>
+      </div>
+      
+      <div class="divider"></div>
+      
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <h3>Install</h3>
+          <p>Unzip the download. Open the <strong>hyprnote-sync</strong> folder. Double-click <strong>install.command</strong></p>
+          <p style="margin-top: 8px; color: #888; font-size: 13px;">It detects your profile automatically. Just confirm with Y.</p>
+        </div>
+      </div>
+      
+      <p class="note">First time only. Need Node.js? The installer prompts you if missing.</p>
+    </div>
+    
+    <!-- INTERNAL USE: STEP 2 -->
+    <div class="section internal-only">
+      <div class="section-title">That's It</div>
+      
+      <div class="usage-box">
+        <p>For internal meetings, you only need the app.</p>
+        <p>Your notes stay local on your computer.</p>
+        <p>No sync to Salesforce required.</p>
+      </div>
+    </div>
+    
+    <!-- HOW TO USE -->
+    <div class="section">
+      <div class="section-title">How to Use</div>
+      
+      <div class="usage-box">
+        <p><strong>Before a call:</strong> Open checks. Click New Note. Click Record.</p>
+        <p><strong>During the call:</strong> It captures audio automatically.</p>
+        <p><strong>After the call:</strong> Stop recording. AI generates your notes.</p>
+      </div>
+      
+      <div class="sales-only">
+        <div class="divider"></div>
+        <div class="usage-box">
+          <p><strong>To sync to Salesforce:</strong></p>
+          <p>Double-click <strong>sync-meetings.command</strong> in the hyprnote-sync folder.</p>
+          <p style="color: #888; font-size: 13px; margin-top: 8px;">Do this at the end of each day with client calls.</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- FAQ -->
+    <div class="section sales-only">
+      <div class="section-title">Questions</div>
+      
+      <div class="faq">
+        <div class="faq-item">
+          <p class="faq-q">How does it know which account?</p>
+          <p class="faq-a">It matches your owned accounts first, then participant emails, then company names.</p>
+        </div>
+        
+        <div class="faq-item">
+          <p class="faq-q">What if it can't match?</p>
+          <p class="faq-a">The meeting is skipped. Add participant emails in the app for better matching.</p>
+        </div>
+        
+        <div class="faq-item">
+          <p class="faq-q">Where do notes appear?</p>
+          <p class="faq-a">As Events on the Account, and in the Customer Brain field.</p>
+        </div>
+        
+        <div class="faq-item">
+          <p class="faq-q">Need help?</p>
+          <p class="faq-a">Contact Keigan (RevOps).</p>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+  
+  <script>
+    function setMode(mode) {
+      const btns = document.querySelectorAll('.mode-btn');
+      btns.forEach((btn, i) => {
+        btn.classList.toggle('active', (mode === 'sales' && i === 0) || (mode === 'internal' && i === 1));
+      });
+      
+      document.body.classList.toggle('internal-mode', mode === 'internal');
+      
+      // Save preference
+      localStorage.setItem('checksMode', mode);
+    }
+    
+    // Load saved preference
+    const savedMode = localStorage.getItem('checksMode');
+    if (savedMode) {
+      setMode(savedMode);
+    }
+  </script>
+</body>
+</html>

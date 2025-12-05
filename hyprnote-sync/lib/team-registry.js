@@ -81,14 +81,31 @@ const TEAM_MEMBERS = {
   }
 };
 
-// Alternate email patterns (some users might use different formats)
+// Alternate email patterns
+// Standard format: firstname.lastname@eudia.com
+// Exceptions: olivia@, omar@, david@, himanshu@, ananth@
 const EMAIL_ALIASES = {
+  // Jon variations
   'jon.cobb@eudia.com': 'jonathan.cobb@eudia.com',
+  'joncobb@eudia.com': 'jonathan.cobb@eudia.com',
+  
+  // Himanshu variations
   'himanshu.agarwal@eudia.com': 'himanshu@eudia.com',
+  
+  // Ananth variations
   'ananth.cherukupally@eudia.com': 'ananth@eudia.com',
+  
+  // Olivia variations
   'olivia.jung@eudia.com': 'olivia@eudia.com',
+  
+  // Omar variations
   'omar.haroun@eudia.com': 'omar@eudia.com',
+  
+  // David variations
   'david.vanreyk@eudia.com': 'david@eudia.com',
+  'david.van.reyk@eudia.com': 'david@eudia.com',
+  
+  // Zack variations
   'zack@eudia.com': 'zack.huffstutter@eudia.com'
 };
 

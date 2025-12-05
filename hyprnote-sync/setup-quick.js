@@ -89,25 +89,35 @@ async function main() {
       allMembers.forEach((member, index) => {
         console.log('   [' + (index + 1) + '] ' + member.name + ' (' + member.role + ')');
       });
+      console.log('   [0] I\'m not on this list (internal use only)');
       
-      const selection = await question(rl, '\n   Enter number (1-' + allMembers.length + '):');
-      const selectedIndex = parseInt(selection) - 1;
+      const selection = await question(rl, '\n   Enter number (0-' + allMembers.length + '):');
+      const selectedIndex = parseInt(selection);
       
-      if (selectedIndex >= 0 && selectedIndex < allMembers.length) {
-        finalMember = allMembers[selectedIndex];
-      } else {
-        // Manual entry as fallback
-        console.log('\n   Manual entry:');
+      if (selectedIndex === 0) {
+        // Internal use only - no Salesforce sync
+        console.log('\n   Setting up for internal use (notes will NOT sync to Salesforce)');
         const name = await question(rl, '   Your name:');
-        const email = await question(rl, '   Your email:');
-        const userId = await question(rl, '   Salesforce User ID (ask admin if unsure):');
         
         finalMember = {
-          name: name,
-          email: email,
-          salesforceUserId: userId,
-          role: 'Team Member',
-          team: 'Unknown'
+          name: name || 'Team Member',
+          email: '',
+          salesforceUserId: null,
+          role: 'Internal',
+          team: 'Internal',
+          syncEnabled: false
+        };
+      } else if (selectedIndex > 0 && selectedIndex <= allMembers.length) {
+        finalMember = allMembers[selectedIndex - 1];
+      } else {
+        console.log('\n   Invalid selection. Setting up for internal use.');
+        finalMember = {
+          name: 'Team Member',
+          email: '',
+          salesforceUserId: null,
+          role: 'Internal',
+          team: 'Internal',
+          syncEnabled: false
         };
       }
     }
@@ -121,26 +131,30 @@ async function main() {
     // Step 3: Save configuration
     console.log('\n[3/3] Saving configuration...');
     
+    // Determine if sync is enabled (only for known team members with SF User ID)
+    const syncEnabled = finalMember.syncEnabled !== false && !!finalMember.salesforceUserId;
+    
     const config = {
       rep: {
         name: finalMember.name,
-        email: finalMember.email || (finalMember.name.toLowerCase().replace(' ', '.') + '@eudia.com'),
-        salesforceUserId: finalMember.salesforceUserId,
+        email: finalMember.email || '',
+        salesforceUserId: finalMember.salesforceUserId || null,
         role: finalMember.role,
         team: finalMember.team
       },
       salesforce: {
-        useEnvFile: true  // Uses central credentials
+        useEnvFile: true,
+        syncEnabled: syncEnabled
       },
       hyprnote: {
         path: hyprnoteStatus.path,
         version: hyprnoteStatus.version
       },
       settings: {
-        lookbackHours: 168,  // 7 days
-        updateCustomerBrain: true,
-        createContacts: true,
-        syncOwnedAccountsFirst: true  // Prioritize accounts they own
+        lookbackHours: 168,
+        updateCustomerBrain: syncEnabled,
+        createContacts: syncEnabled,
+        syncOwnedAccountsFirst: syncEnabled
       },
       setupDate: new Date().toISOString()
     };
@@ -167,23 +181,35 @@ async function main() {
     console.log('\n');
     console.log('   Welcome, ' + finalMember.name + '!');
     console.log('\n');
-    console.log('   ┌─────────────────────────────────────────────────────┐');
-    console.log('   │  HOW TO USE                                         │');
-    console.log('   ├─────────────────────────────────────────────────────┤');
-    console.log('   │                                                     │');
-    console.log('   │  1. RECORD: Open Hyprnote → New Note → Record      │');
-    console.log('   │                                                     │');
-    console.log('   │  2. SYNC:   After calls, run: npm run sync         │');
-    console.log('   │             (or: node sync.js)                      │');
-    console.log('   │                                                     │');
-    console.log('   │  3. CHECK:  View status: npm run status            │');
-    console.log('   │                                                     │');
-    console.log('   └─────────────────────────────────────────────────────┘');
-    console.log('\n');
-    console.log('   Your meeting notes will sync to Salesforce:');
-    console.log('   • Events created on matched Accounts');
-    console.log('   • Customer Brain updated with insights');
-    console.log('   • All activity attributed to you\n');
+    
+    if (syncEnabled) {
+      console.log('   ┌─────────────────────────────────────────────────────┐');
+      console.log('   │  HOW TO USE                                         │');
+      console.log('   ├─────────────────────────────────────────────────────┤');
+      console.log('   │                                                     │');
+      console.log('   │  1. RECORD: Open checks → New Note → Record        │');
+      console.log('   │                                                     │');
+      console.log('   │  2. SYNC:   Double-click sync-meetings.command     │');
+      console.log('   │                                                     │');
+      console.log('   └─────────────────────────────────────────────────────┘');
+      console.log('\n');
+      console.log('   Your meeting notes will sync to Salesforce:');
+      console.log('   • Events created on matched Accounts');
+      console.log('   • Customer Brain updated with insights');
+      console.log('   • All activity attributed to you\n');
+    } else {
+      console.log('   ┌─────────────────────────────────────────────────────┐');
+      console.log('   │  INTERNAL USE MODE                                  │');
+      console.log('   ├─────────────────────────────────────────────────────┤');
+      console.log('   │                                                     │');
+      console.log('   │  Open checks → New Note → Record                   │');
+      console.log('   │                                                     │');
+      console.log('   │  Your notes stay local on your computer.           │');
+      console.log('   │  Nothing syncs to Salesforce.                      │');
+      console.log('   │                                                     │');
+      console.log('   └─────────────────────────────────────────────────────┘');
+      console.log('\n');
+    }
     
   } catch (error) {
     console.log('\n❌ Setup failed: ' + error.message);
