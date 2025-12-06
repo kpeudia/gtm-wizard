@@ -128,20 +128,25 @@ function generateTopCoTab(eudiaGross, eudiaWeighted, eudiaDeals, eudiaAccounts, 
   </div>
   
   <!-- ═══════════════════════════════════════════════════════════════════════ -->
-  <!-- EUDIA BY STAGE -->
+  <!-- EUDIA BY STAGE (Expandable for S1-S4) -->
   <!-- ═══════════════════════════════════════════════════════════════════════ -->
   <div class="stage-section">
     <div class="stage-title">Eudia by Stage</div>
     <div class="stage-subtitle">${eudiaDeals} opps • ${fmt(eudiaGross)} gross</div>
-    <table style="width: 100%; font-size: 0.8rem; margin-top: 8px; table-layout: fixed;">
-      <tr style="background: #f9fafb; font-weight: 600;">
-        <td style="padding: 6px; width: 55%;">Stage</td>
-        <td style="text-align: center; padding: 6px; width: 20%;">Opps</td>
-        <td style="text-align: right; padding: 6px; width: 25%;">ACV</td>
-      </tr>
+    <div style="margin-top: 8px;">
       ${stageOrder.map(stage => {
         const data = stageBreakdown[stage] || { count: 0, totalACV: 0, weightedACV: 0 };
-        // Get top products for this stage
+        const stageNum = parseInt(stage.match(/Stage (\\d)/)?.[1] || 0);
+        const isExpandable = stageNum >= 1 && stageNum <= 4;
+        // Get opportunities for this stage
+        const stageOpps = Array.from(accountMap.values()).flatMap(acc => 
+          acc.opportunities.filter(o => o.StageName === stage).map(o => ({
+            account: acc.name,
+            product: o.Product_Line__c || 'TBD',
+            acv: o.ACV__c || 0
+          }))
+        ).sort((a, b) => b.acv - a.acv).slice(0, 10);
+        // Get top products
         const stageProducts = {};
         Object.entries(productBreakdown).forEach(([prod, pData]) => {
           if (pData.byStage[stage]?.count > 0) {
@@ -153,26 +158,50 @@ function generateTopCoTab(eudiaGross, eudiaWeighted, eudiaDeals, eudiaAccounts, 
           .slice(0, 3)
           .map(([p]) => p)
           .join(', ');
-        return `
-        <tr style="border-bottom: 1px solid #f1f3f5;">
-          <td style="padding: 6px;">
-            <div style="font-size: 0.75rem;">${stage.replace('Stage ', 'S')}</div>
-            ${topProds ? '<div style="font-size: 0.6rem; color: #9ca3af;">' + topProds + '</div>' : ''}
-          </td>
-          <td style="text-align: center; padding: 6px;">${data.count}</td>
-          <td style="text-align: right; padding: 6px;">${fmt(data.totalACV)}</td>
-        </tr>`;
+        
+        if (isExpandable && data.count > 0) {
+          return '<details style="border-bottom: 1px solid #f1f3f5;">' +
+            '<summary style="display: flex; justify-content: space-between; padding: 6px; cursor: pointer; list-style: none;">' +
+              '<div style="flex: 1;">' +
+                '<div style="font-size: 0.75rem; font-weight: 500;">' + stage.replace('Stage ', 'S') + ' ▾</div>' +
+                (topProds ? '<div style="font-size: 0.6rem; color: #9ca3af;">' + topProds + '</div>' : '') +
+              '</div>' +
+              '<div style="text-align: center; width: 20%;">' + data.count + '</div>' +
+              '<div style="text-align: right; width: 25%;">' + fmt(data.totalACV) + '</div>' +
+            '</summary>' +
+            '<div style="padding: 8px 12px; background: #f9fafb; font-size: 0.7rem;">' +
+              stageOpps.map(o => {
+                const av = o.acv || 0;
+                const af = av >= 1000000 ? '$' + (av / 1000000).toFixed(1) + 'm' : '$' + (av / 1000).toFixed(0) + 'k';
+                return '<div style="display: flex; justify-content: space-between; padding: 2px 0;">' +
+                  '<span>' + o.account + ' - ' + o.product + '</span>' +
+                  '<span style="font-weight: 500;">' + af + '</span>' +
+                '</div>';
+              }).join('') +
+              (data.count > 10 ? '<div style="color: #6b7280; font-style: italic; margin-top: 4px;">...and ' + (data.count - 10) + ' more</div>' : '') +
+            '</div>' +
+          '</details>';
+        } else {
+          return '<div style="display: flex; justify-content: space-between; padding: 6px; border-bottom: 1px solid #f1f3f5;">' +
+            '<div style="flex: 1;">' +
+              '<div style="font-size: 0.75rem;">' + stage.replace('Stage ', 'S') + '</div>' +
+              (topProds ? '<div style="font-size: 0.6rem; color: #9ca3af;">' + topProds + '</div>' : '') +
+            '</div>' +
+            '<div style="text-align: center; width: 20%;">' + data.count + '</div>' +
+            '<div style="text-align: right; width: 25%;">' + fmt(data.totalACV) + '</div>' +
+          '</div>';
+        }
       }).join('')}
-      <tr style="background: #e5e7eb; font-weight: 600;">
-        <td style="padding: 6px;">TOTAL</td>
-        <td style="text-align: center; padding: 6px;">${eudiaDeals}</td>
-        <td style="text-align: right; padding: 6px;">${fmt(eudiaGross)}</td>
-      </tr>
-    </table>
+      <div style="display: flex; justify-content: space-between; padding: 6px; background: #e5e7eb; font-weight: 600;">
+        <div style="flex: 1;">TOTAL</div>
+        <div style="text-align: center; width: 20%;">${eudiaDeals}</div>
+        <div style="text-align: right; width: 25%;">${fmt(eudiaGross)}</div>
+      </div>
+    </div>
   </div>
   
   <!-- ═══════════════════════════════════════════════════════════════════════ -->
-  <!-- JOHNSON HANA BY STAGE -->
+  <!-- JOHNSON HANA BY STAGE (Expandable for S1-S4) -->
   <!-- ═══════════════════════════════════════════════════════════════════════ -->
   <div class="stage-section" style="margin-top: 16px;">
     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
@@ -185,16 +214,26 @@ function generateTopCoTab(eudiaGross, eudiaWeighted, eudiaDeals, eudiaAccounts, 
         <div style="color: #065f46;">${fmt(jhSummary.eudiaTech.pipelineValue)} (${jhSummary.eudiaTech.percentOfValue}%)</div>
       </div>
     </div>
-    <table style="width: 100%; font-size: 0.8rem; margin-top: 8px; table-layout: fixed;">
-      <tr style="background: #f9fafb; font-weight: 600;">
-        <td style="padding: 6px; width: 55%;">Stage</td>
-        <td style="text-align: center; padding: 6px; width: 20%;">Opps</td>
-        <td style="text-align: right; padding: 6px; width: 25%;">ACV</td>
-      </tr>
+    <div style="margin-top: 8px; font-size: 0.8rem;">
+      <div style="display: flex; background: #f9fafb; font-weight: 600; padding: 6px;">
+        <div style="flex: 1;">Stage</div>
+        <div style="text-align: center; width: 20%;">Opps</div>
+        <div style="text-align: right; width: 25%;">ACV</div>
+      </div>
       ${['Stage 5 - Negotiation', ...stageOrder].map(stage => {
         const data = jhSummary.byStage[stage];
         if (!data || data.count === 0) return '';
-        // Get top service lines for this stage
+        const stageNum = parseInt(stage.match(/Stage (\\d)/)?.[1] || 0);
+        const isExpandable = stageNum >= 1 && stageNum <= 4;
+        // Get opportunities for this stage
+        const stageOpps = jhAccounts.flatMap(acc => 
+          acc.opportunities.filter(o => o.stage === stage).map(o => ({
+            account: acc.name,
+            service: o.mappedServiceLine || 'Other',
+            acv: o.acv || 0
+          }))
+        ).sort((a, b) => b.acv - a.acv).slice(0, 10);
+        // Get top service lines
         const stageServiceLines = {};
         jhAccounts.forEach(acc => {
           acc.opportunities.forEach(opp => {
@@ -210,22 +249,46 @@ function generateTopCoTab(eudiaGross, eudiaWeighted, eudiaDeals, eudiaAccounts, 
           .slice(0, 2)
           .map(([sl]) => sl)
           .join(', ');
-        return `
-        <tr style="border-bottom: 1px solid #f1f3f5;">
-          <td style="padding: 6px;">
-            <div style="font-size: 0.75rem;">${stage.replace('Stage ', 'S')}</div>
-            ${topSLs ? '<div style="font-size: 0.6rem; color: #9ca3af;">' + topSLs + '</div>' : ''}
-          </td>
-          <td style="text-align: center; padding: 6px;">${data.count}</td>
-          <td style="text-align: right; padding: 6px;">${fmt(data.totalACV)}</td>
-        </tr>`;
+        
+        if (isExpandable && data.count > 0) {
+          return '<details style="border-bottom: 1px solid #f1f3f5;">' +
+            '<summary style="display: flex; justify-content: space-between; padding: 6px; cursor: pointer; list-style: none;">' +
+              '<div style="flex: 1;">' +
+                '<div style="font-size: 0.75rem; font-weight: 500;">' + stage.replace('Stage ', 'S') + ' ▾</div>' +
+                (topSLs ? '<div style="font-size: 0.6rem; color: #9ca3af;">' + topSLs + '</div>' : '') +
+              '</div>' +
+              '<div style="text-align: center; width: 20%;">' + data.count + '</div>' +
+              '<div style="text-align: right; width: 25%;">' + fmt(data.totalACV) + '</div>' +
+            '</summary>' +
+            '<div style="padding: 8px 12px; background: #f9fafb; font-size: 0.7rem;">' +
+              stageOpps.map(o => {
+                const av = o.acv || 0;
+                const af = av >= 1000000 ? '$' + (av / 1000000).toFixed(1) + 'm' : '$' + (av / 1000).toFixed(0) + 'k';
+                return '<div style="display: flex; justify-content: space-between; padding: 2px 0;">' +
+                  '<span>' + o.account + ' - ' + o.service + '</span>' +
+                  '<span style="font-weight: 500;">' + af + '</span>' +
+                '</div>';
+              }).join('') +
+              (data.count > 10 ? '<div style="color: #6b7280; font-style: italic; margin-top: 4px;">...and ' + (data.count - 10) + ' more</div>' : '') +
+            '</div>' +
+          '</details>';
+        } else {
+          return '<div style="display: flex; justify-content: space-between; padding: 6px; border-bottom: 1px solid #f1f3f5;">' +
+            '<div style="flex: 1;">' +
+              '<div style="font-size: 0.75rem;">' + stage.replace('Stage ', 'S') + '</div>' +
+              (topSLs ? '<div style="font-size: 0.6rem; color: #9ca3af;">' + topSLs + '</div>' : '') +
+            '</div>' +
+            '<div style="text-align: center; width: 20%;">' + data.count + '</div>' +
+            '<div style="text-align: right; width: 25%;">' + fmt(data.totalACV) + '</div>' +
+          '</div>';
+        }
       }).join('')}
-      <tr style="background: #e5e7eb; font-weight: 600;">
-        <td style="padding: 6px;">TOTAL</td>
-        <td style="text-align: center; padding: 6px;">${jhSummary.totalOpportunities}</td>
-        <td style="text-align: right; padding: 6px;">${fmt(jhSummary.totalPipeline)}</td>
-      </tr>
-    </table>
+      <div style="display: flex; justify-content: space-between; padding: 6px; background: #e5e7eb; font-weight: 600;">
+        <div style="flex: 1;">TOTAL</div>
+        <div style="text-align: center; width: 20%;">${jhSummary.totalOpportunities}</div>
+        <div style="text-align: right; width: 25%;">${fmt(jhSummary.totalPipeline)}</div>
+      </div>
+    </div>
   </div>
 
   <!-- Stage Definitions -->
@@ -665,12 +728,12 @@ function generateWeeklyTab(params) {
       </div>
     </div>
     
-    <!-- Signed Net New Logos Table - FY2025 Focus -->
+    <!-- Signed Net New Logos Table - FY2025 Focus (compact) -->
     <div class="weekly-subsection">
       <div class="weekly-subsection-title">Eudia - Signed Net New Logos</div>
-      <table class="weekly-table">
+      <table class="weekly-table" style="max-width: 320px;">
         <thead>
-          <tr><th>Period</th><th style="text-align: center;">Logos Signed</th></tr>
+          <tr><th style="width: 65%;">Period</th><th style="text-align: center; width: 35%;">Logos</th></tr>
         </thead>
         <tbody>
           <tr style="color: #6b7280;"><td>FY2024 Total</td><td style="text-align: center;">4</td></tr>
@@ -681,7 +744,7 @@ function generateWeeklyTab(params) {
           <tr style="font-weight: 600; background: #e5e7eb;"><td>Total</td><td style="text-align: center;">38</td></tr>
         </tbody>
       </table>
-      <div style="font-size: 0.65rem; color: #374151; margin-top: 4px;"><strong>Q4 FY2025 Logos (Nov-Dec to date):</strong> BNY Mellon, Delinea, IQVIA, Udemy Ireland Limited, World Wide Technology</div>
+      <div style="font-size: 0.65rem; color: #374151; margin-top: 4px; max-width: 320px;"><strong>Q4 FY2025 Logos (Nov-Dec):</strong> BNY Mellon, Delinea, IQVIA, Udemy Ireland Limited, World Wide Technology</div>
     </div>
     
     <!-- Current Logos by Entity -->
@@ -719,12 +782,12 @@ function generateWeeklyTab(params) {
       </details>
     </div>
     
-    <!-- Run-Rate Forecast Table - Combined View -->
+    <!-- Run-Rate Forecast Table - Combined View (compact) -->
     <div class="weekly-subsection">
       <div class="weekly-subsection-title">Run-Rate Forecast ($)</div>
-      <table class="weekly-table">
+      <table class="weekly-table" style="max-width: 280px;">
         <thead>
-          <tr><th>Month</th><th style="text-align: right;">Combined</th></tr>
+          <tr><th style="width: 60%;">Month</th><th style="text-align: right; width: 40%;">Combined</th></tr>
         </thead>
         <tbody>
           <tr><td>August</td><td style="text-align: right;">$17.6</td></tr>
@@ -2109,18 +2172,24 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   
-  // Show more accounts button (with collapse)
+  // Show more accounts button (with collapse and improved UX)
   if (showMoreBtn) {
     let expanded = false;
     showMoreBtn.addEventListener('click', function() {
       if (!expanded) {
         allAccounts.forEach(acc => acc.style.display = 'block');
         this.textContent = '▲ Collapse to top 10';
+        this.style.background = '#fef3c7';
+        this.style.color = '#92400e';
         matchCount.textContent = 'Showing all ' + allAccounts.length + ' accounts';
         expanded = true;
+        // Scroll to keep button visible
+        this.scrollIntoView({ behavior: 'smooth', block: 'end' });
       } else {
         allAccounts.forEach((acc, idx) => acc.style.display = idx < 10 ? 'block' : 'none');
         this.textContent = '+' + (allAccounts.length - 10) + ' more accounts';
+        this.style.background = '#eff6ff';
+        this.style.color = '#1e40af';
         matchCount.textContent = 'Showing top 10 accounts';
         expanded = false;
       }
@@ -2168,10 +2237,16 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!eudiaExpanded) {
         allEudiaTopco.forEach(acc => acc.style.display = 'block');
         this.textContent = '▲ Collapse to top 10';
+        this.style.background = '#fef3c7';
+        this.style.color = '#92400e';
         eudiaExpanded = true;
+        // Scroll to top of section
+        this.scrollIntoView({ behavior: 'smooth', block: 'end' });
       } else {
         allEudiaTopco.forEach((acc, idx) => acc.style.display = idx < 10 ? 'block' : 'none');
         this.textContent = '+' + (eudiaCount - 10) + ' more accounts';
+        this.style.background = '#eff6ff';
+        this.style.color = '#1e40af';
         eudiaExpanded = false;
       }
     });
@@ -2187,10 +2262,16 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!jhExpanded) {
         allJhTopco.forEach(acc => acc.style.display = 'block');
         this.textContent = '▲ Collapse to top 10';
+        this.style.background = '#fef3c7';
+        this.style.color = '#92400e';
         jhExpanded = true;
+        // Scroll to top of section
+        this.scrollIntoView({ behavior: 'smooth', block: 'end' });
       } else {
         allJhTopco.forEach((acc, idx) => acc.style.display = idx < 10 ? 'block' : 'none');
         this.textContent = '+' + (jhCount - 10) + ' more accounts';
+        this.style.background = '#eff6ff';
+        this.style.color = '#1e40af';
         jhExpanded = false;
       }
     });
