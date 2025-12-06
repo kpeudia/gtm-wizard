@@ -165,6 +165,20 @@ function generateTopCoTab(eudiaGross, eudiaWeighted, eudiaDeals, eudiaAccounts, 
           .join(', ');
         
         if (isExpandable && data.count > 0) {
+          // Get opportunities with full details for expanded view
+          const stageOppsWithDetails = Array.from(accountMap.values()).flatMap(acc => 
+            acc.opportunities.filter(o => o.StageName === stage).map(o => {
+              const ownerName = o.Owner?.Name ? o.Owner.Name.split(' ')[0] : '';
+              const targetDate = o.Target_LOI_Date__c ? new Date(o.Target_LOI_Date__c).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) : null;
+              return {
+                account: acc.name,
+                acv: o.ACV__c || 0,
+                owner: ownerName,
+                targetDate: targetDate
+              };
+            })
+          ).sort((a, b) => b.acv - a.acv).slice(0, 10);
+          
           return '<details style="border-bottom: 1px solid #f1f3f5;">' +
             '<summary style="display: flex; justify-content: space-between; padding: 6px; cursor: pointer; list-style: none;">' +
               '<div style="flex: 1;">' +
@@ -175,12 +189,16 @@ function generateTopCoTab(eudiaGross, eudiaWeighted, eudiaDeals, eudiaAccounts, 
               '<div style="text-align: right; width: 25%;">' + fmt(data.totalACV) + '</div>' +
             '</summary>' +
             '<div style="padding: 8px 12px; background: #f9fafb; font-size: 0.7rem;">' +
-              stageOpps.map(o => {
+              stageOppsWithDetails.map(o => {
                 const av = o.acv || 0;
                 const af = av >= 1000000 ? '$' + (av / 1000000).toFixed(1) + 'm' : '$' + (av / 1000).toFixed(0) + 'k';
-                return '<div style="display: flex; justify-content: space-between; padding: 2px 0;">' +
-                  '<span>' + o.account + ' - ' + o.product + '</span>' +
-                  '<span style="font-weight: 500;">' + af + '</span>' +
+                const details = [o.owner, o.targetDate].filter(x => x).join(' • ');
+                return '<div style="padding: 3px 0; border-bottom: 1px solid #e5e7eb;">' +
+                  '<div style="display: flex; justify-content: space-between;">' +
+                    '<span style="font-weight: 500;">' + o.account + '</span>' +
+                    '<span style="font-weight: 600;">' + af + '</span>' +
+                  '</div>' +
+                  (details ? '<div style="font-size: 0.6rem; color: #6b7280;">' + details + '</div>' : '') +
                 '</div>';
               }).join('') +
               (data.count > 10 ? '<div style="color: #6b7280; font-style: italic; margin-top: 4px;">...and ' + (data.count - 10) + ' more</div>' : '') +
@@ -256,6 +274,20 @@ function generateTopCoTab(eudiaGross, eudiaWeighted, eudiaDeals, eudiaAccounts, 
           .join(', ');
         
         if (isExpandable && data.count > 0) {
+          // Get opportunities with full details for expanded view
+          const stageOppsWithDetails = jhAccounts.flatMap(acc => 
+            acc.opportunities.filter(o => o.stage === stage).map(o => {
+              const ownerName = o.owner ? o.owner.split(' ')[0] : '';
+              const targetDate = o.closeDate ? new Date(o.closeDate).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) : null;
+              return {
+                account: acc.name,
+                acv: o.acv || 0,
+                owner: ownerName,
+                targetDate: targetDate
+              };
+            })
+          ).sort((a, b) => b.acv - a.acv).slice(0, 10);
+          
           return '<details style="border-bottom: 1px solid #f1f3f5;">' +
             '<summary style="display: flex; justify-content: space-between; padding: 6px; cursor: pointer; list-style: none;">' +
               '<div style="flex: 1;">' +
@@ -266,12 +298,16 @@ function generateTopCoTab(eudiaGross, eudiaWeighted, eudiaDeals, eudiaAccounts, 
               '<div style="text-align: right; width: 25%;">' + fmt(data.totalACV) + '</div>' +
             '</summary>' +
             '<div style="padding: 8px 12px; background: #f9fafb; font-size: 0.7rem;">' +
-              stageOpps.map(o => {
+              stageOppsWithDetails.map(o => {
                 const av = o.acv || 0;
                 const af = av >= 1000000 ? '$' + (av / 1000000).toFixed(1) + 'm' : '$' + (av / 1000).toFixed(0) + 'k';
-                return '<div style="display: flex; justify-content: space-between; padding: 2px 0;">' +
-                  '<span>' + o.account + ' - ' + o.service + '</span>' +
-                  '<span style="font-weight: 500;">' + af + '</span>' +
+                const details = [o.owner, o.targetDate].filter(x => x).join(' • ');
+                return '<div style="padding: 3px 0; border-bottom: 1px solid #e5e7eb;">' +
+                  '<div style="display: flex; justify-content: space-between;">' +
+                    '<span style="font-weight: 500;">' + o.account + '</span>' +
+                    '<span style="font-weight: 600;">' + af + '</span>' +
+                  '</div>' +
+                  (details ? '<div style="font-size: 0.6rem; color: #6b7280;">' + details + '</div>' : '') +
                 '</div>';
               }).join('') +
               (data.count > 10 ? '<div style="color: #6b7280; font-style: italic; margin-top: 4px;">...and ' + (data.count - 10) + ' more</div>' : '') +
@@ -481,26 +517,29 @@ function generateTopCoTab(eudiaGross, eudiaWeighted, eudiaDeals, eudiaAccounts, 
         .sort((a, b) => b[1].totalACV - a[1].totalACV)
         .slice(0, 8)
         .map(([prod, data]) => {
-          // Get top 5 opportunities for this product line
+          // Get top 5 opportunities for this product line with full details
           const prodOpps = Array.from(accountMap.values()).flatMap(acc => 
             acc.opportunities.filter(o => o.Product_Line__c === prod).map(o => {
-              // Extract stage number from StageName (e.g., "Stage 4 - Proposal" -> "4")
-              const stageMatch = o.StageName ? o.StageName.match(/Stage\\s*(\\d)/) : null;
-              const stageNum = stageMatch ? stageMatch[1] : '?';
-              // For Gov-DOD accounts, try to extract company from opportunity name
+              // Extract clean stage label (e.g., "Stage 2 - SQO" → "Stage 2 - SQO")
+              const stageMatch = o.StageName ? o.StageName.match(/Stage\\s*(\\d)\\s*[-–]?\\s*(.*)/i) : null;
+              const stageLabel = stageMatch ? 'Stage ' + stageMatch[1] + (stageMatch[2] ? ' - ' + stageMatch[2].trim() : '') : (o.StageName || 'TBD');
+              // Get owner first name
+              const ownerName = o.Owner?.Name ? o.Owner.Name.split(' ')[0] : '';
+              // Format target date
+              const targetDate = o.Target_LOI_Date__c ? new Date(o.Target_LOI_Date__c).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) : null;
+              // For Gov-DOD accounts, extract company from opp name
               let displayName = acc.name;
               if (acc.name && acc.name.toLowerCase().includes('gov') && acc.name.toLowerCase().includes('dod')) {
-                // Try to extract company from opp name (e.g., "Lockheed Martin - Cortex" -> "Lockheed Martin")
                 const oppName = o.Name || '';
                 const dashIdx = oppName.indexOf(' - ');
-                if (dashIdx > 0) {
-                  displayName = oppName.substring(0, dashIdx);
-                }
+                if (dashIdx > 0) displayName = oppName.substring(0, dashIdx);
               }
               return {
                 account: displayName,
                 acv: o.ACV__c || 0,
-                stage: stageNum
+                stageLabel: stageLabel,
+                owner: ownerName,
+                targetDate: targetDate
               };
             })
           ).sort((a, b) => b.acv - a.acv).slice(0, 5);
@@ -513,9 +552,13 @@ function generateTopCoTab(eudiaGross, eudiaWeighted, eudiaDeals, eudiaAccounts, 
             '<div style="background: #eff6ff; padding: 6px 10px; border-radius: 0 0 4px 4px; margin-top: -4px; font-size: 0.65rem;">' +
               prodOpps.map(o => {
                 const af = o.acv >= 1000000 ? '$' + (o.acv / 1000000).toFixed(1) + 'm' : '$' + (o.acv / 1000).toFixed(0) + 'k';
-                return '<div style="display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px solid #dbeafe;">' +
-                  '<span style="color: #374151;">' + o.account + ' (S' + o.stage + ')</span>' +
-                  '<span style="font-weight: 500; color: #1e40af;">' + af + '</span>' +
+                const details = [o.stageLabel, o.owner, o.targetDate].filter(x => x).join(' • ');
+                return '<div style="padding: 3px 0; border-bottom: 1px solid #dbeafe;">' +
+                  '<div style="display: flex; justify-content: space-between;">' +
+                    '<span style="font-weight: 500; color: #374151;">' + o.account + '</span>' +
+                    '<span style="font-weight: 600; color: #1e40af;">' + af + '</span>' +
+                  '</div>' +
+                  '<div style="font-size: 0.6rem; color: #6b7280;">' + details + '</div>' +
                 '</div>';
               }).join('') +
             '</div>' +
@@ -535,16 +578,22 @@ function generateTopCoTab(eudiaGross, eudiaWeighted, eudiaDeals, eudiaAccounts, 
         .sort((a, b) => b[1].acv - a[1].acv)
         .slice(0, 8)
         .map(([sl, data]) => {
-          // Get top 5 opportunities for this service line
+          // Get top 5 opportunities for this service line with full details
           const slOpps = jhAccounts.flatMap(acc => 
             acc.opportunities.filter(o => o.mappedServiceLine === sl).map(o => {
-              // Extract stage number from stage (e.g., "Stage 4 - Proposal" -> "4")
-              const stageMatch = o.stage ? o.stage.match(/Stage\\s*(\\d)/) : null;
-              const stageNum = stageMatch ? stageMatch[1] : '?';
+              // Extract clean stage label
+              const stageMatch = o.stage ? o.stage.match(/Stage\\s*(\\d)\\s*[-–]?\\s*(.*)/i) : null;
+              const stageLabel = stageMatch ? 'Stage ' + stageMatch[1] + (stageMatch[2] ? ' - ' + stageMatch[2].trim() : '') : (o.stage || 'TBD');
+              // Get owner first name
+              const ownerName = o.owner ? o.owner.split(' ')[0] : '';
+              // Format target date
+              const targetDate = o.closeDate ? new Date(o.closeDate).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) : null;
               return {
                 account: acc.name,
                 acv: o.acv || 0,
-                stage: stageNum
+                stageLabel: stageLabel,
+                owner: ownerName,
+                targetDate: targetDate
               };
             })
           ).sort((a, b) => b.acv - a.acv).slice(0, 5);
@@ -557,9 +606,13 @@ function generateTopCoTab(eudiaGross, eudiaWeighted, eudiaDeals, eudiaAccounts, 
             '<div style="background: #fef3c7; padding: 6px 10px; border-radius: 0 0 4px 4px; margin-top: -4px; font-size: 0.65rem;">' +
               slOpps.map(o => {
                 const af = o.acv >= 1000000 ? '$' + (o.acv / 1000000).toFixed(1) + 'm' : '$' + (o.acv / 1000).toFixed(0) + 'k';
-                return '<div style="display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px solid #fde68a;">' +
-                  '<span style="color: #374151;">' + o.account + ' (S' + o.stage + ')</span>' +
-                  '<span style="font-weight: 500; color: #92400e;">' + af + '</span>' +
+                const details = [o.stageLabel, o.owner, o.targetDate].filter(x => x).join(' • ');
+                return '<div style="padding: 3px 0; border-bottom: 1px solid #fde68a;">' +
+                  '<div style="display: flex; justify-content: space-between;">' +
+                    '<span style="font-weight: 500; color: #374151;">' + o.account + '</span>' +
+                    '<span style="font-weight: 600; color: #92400e;">' + af + '</span>' +
+                  '</div>' +
+                  '<div style="font-size: 0.6rem; color: #6b7280;">' + details + '</div>' +
                 '</div>';
               }).join('') +
             '</div>' +
@@ -757,20 +810,20 @@ function generateWeeklyTab(params) {
       </div>
     </div>
     
-    <!-- Opportunities with December Sign Date - Side by Side -->
+    <!-- Opportunities with December Sign Date - Side by Side (2 equal tiles) -->
     <div class="weekly-subsection">
       <div class="weekly-subsection-title">Opportunities with December Target Sign Date</div>
       <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px;">
-        <!-- Eudia -->
-        <div style="flex: 1; min-width: 280px; background: #f9fafb; border-radius: 8px; padding: 12px;">
+        <!-- Eudia - 50% width -->
+        <div style="flex: 1 1 calc(50% - 6px); min-width: 280px; background: #f9fafb; border-radius: 8px; padding: 12px;">
           <div style="font-weight: 600; color: #111827; margin-bottom: 8px; font-size: 0.75rem;">EUDIA (${decemberOpps.length} opps)</div>
           <ol class="weekly-list" style="font-size: 0.7rem; margin: 0; padding-left: 16px; line-height: 1.5;">
             ${decemberOpps.slice(0, 5).map((o, i) => `<li>${o.account}, ${fmt(o.acv)}</li>`).join('') || '<li style="color: #9ca3af;">None</li>'}
           </ol>
           <div style="margin-top: 8px; font-size: 0.75rem; font-weight: 600; color: #374151;">Total: ${fmt(decTotalACV)}</div>
         </div>
-        <!-- Johnson Hana - slightly darker gray -->
-        <div style="flex: 1; min-width: 280px; background: #e5e7eb; border-radius: 8px; padding: 12px;">
+        <!-- Johnson Hana - 50% width -->
+        <div style="flex: 1 1 calc(50% - 6px); min-width: 280px; background: #e5e7eb; border-radius: 8px; padding: 12px;">
           <div style="font-weight: 600; color: #111827; margin-bottom: 8px; font-size: 0.75rem;">JOHNSON HANA (27 opps)</div>
           <ol class="weekly-list" style="font-size: 0.7rem; margin: 0; padding-left: 16px; line-height: 1.5;">
             ${(() => {
@@ -793,11 +846,11 @@ function generateWeeklyTab(params) {
       </div>
     </div>
     
-    <!-- Signed Net New Logos + Run-Rate Forecast (side by side, top-aligned) -->
-    <div style="display: flex; flex-wrap: wrap; gap: 24px; margin-top: 12px; align-items: flex-start;">
-      <!-- Signed Net New Logos Table -->
-      <div style="flex: 1; min-width: 240px; max-width: 340px;">
-        <div class="weekly-subsection-title">Eudia - Signed Net New Logos</div>
+    <!-- Signed Net New Logos + Run-Rate Forecast (matching tile widths above) -->
+    <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; align-items: flex-start;">
+      <!-- Signed Net New Logos Table - 50% width to match EUDIA tile above -->
+      <div style="flex: 1 1 calc(50% - 6px); min-width: 280px; background: #f9fafb; border-radius: 8px; padding: 12px;">
+        <div style="font-weight: 600; color: #111827; margin-bottom: 8px; font-size: 0.75rem;">EUDIA - SIGNED NET NEW LOGOS</div>
         <table class="weekly-table" style="width: 100%;">
           <thead>
             <tr><th style="width: 70%;">Period</th><th style="text-align: center; width: 30%;">Logos</th></tr>
@@ -814,9 +867,9 @@ function generateWeeklyTab(params) {
         <div style="font-size: 0.6rem; color: #374151; margin-top: 4px;"><strong>Q4 FY2025:</strong> BNY Mellon, Delinea, IQVIA, Udemy, WWT</div>
       </div>
       
-      <!-- Run-Rate Forecast Table -->
-      <div style="flex: 1; min-width: 220px; max-width: 300px;">
-        <div class="weekly-subsection-title">Run-Rate Forecast ($)</div>
+      <!-- Run-Rate Forecast Table - 50% width to match JOHNSON HANA tile above -->
+      <div style="flex: 1 1 calc(50% - 6px); min-width: 280px; background: #e5e7eb; border-radius: 8px; padding: 12px;">
+        <div style="font-weight: 600; color: #111827; margin-bottom: 8px; font-size: 0.75rem;">RUN-RATE FORECAST ($)</div>
         <table class="weekly-table" style="width: 100%;">
           <thead>
             <tr><th style="width: 65%;">Month</th><th style="text-align: right; width: 35%;">Combined</th></tr>
@@ -826,7 +879,7 @@ function generateWeeklyTab(params) {
             <tr><td>September</td><td style="text-align: right;">$18.4m</td></tr>
             <tr><td>October</td><td style="text-align: right;">$19.8m</td></tr>
             <tr><td>November (EOM)</td><td style="text-align: right;">$19.2m</td></tr>
-            <tr style="font-weight: 600; background: #e5e7eb;">
+            <tr style="font-weight: 600; background: #d1d5db;">
               <td>FY2025E Total</td>
               <td style="text-align: right; color: #111827;">~$22m</td>
             </tr>
@@ -859,10 +912,10 @@ function generateWeeklyTab(params) {
           </div>
         </details>
         
-        <!-- OutHouse Logos (pre-expanded) -->
+        <!-- Out-House Logos (pre-expanded) -->
         <details open style="flex: 0 0 auto; min-width: 120px;">
           <summary style="cursor: pointer; font-weight: 600; font-size: 0.75rem; color: #9ca3af; padding: 6px 10px; background: #f3f4f6; border-radius: 4px 4px 0 0;">
-            OutHouse (1)
+            Out-House (1)
           </summary>
           <div style="font-size: 0.65rem; color: #6b7280; line-height: 1.4; padding: 8px 10px; background: #f3f4f6; border-radius: 0 0 4px 4px;">
             Meta
